@@ -9,7 +9,7 @@ import org.springframework.data.annotation.CreatedDate;
 import org.springframework.data.annotation.LastModifiedBy;
 import org.springframework.data.annotation.LastModifiedDate;
 
-import com.example.cdr.eventsmanagementsystem.Model.Venue.Venue;
+import com.example.cdr.eventsmanagementsystem.Model.Service.Service;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
@@ -25,9 +25,9 @@ import lombok.Setter;
 @Setter
 @Getter
 @Entity
-public class VenueProvider {
+public class ServiceProvider {
     @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY) 
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
     @OneToOne
@@ -40,8 +40,8 @@ public class VenueProvider {
     @Column(nullable = false)
     private String email;
 
-    @OneToMany(mappedBy = "venueProvider")
-    private List<Venue> venues = new ArrayList<>();
+    @OneToMany(mappedBy = "provider")
+    private List<Service> services = new ArrayList<>();
 
     @CreatedDate
     private LocalDateTime createdAt;

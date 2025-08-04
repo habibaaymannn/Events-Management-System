@@ -3,7 +3,7 @@ package com.example.cdr.eventsmanagementsystem.Service.Venue;
 import com.example.cdr.eventsmanagementsystem.Events.VenueBooked;
 import com.example.cdr.eventsmanagementsystem.Events.VenueCancelled;
 import com.example.cdr.eventsmanagementsystem.Model.Booking.Booking;
-import com.example.cdr.eventsmanagementsystem.Model.Booking.Status;
+import com.example.cdr.eventsmanagementsystem.Model.Booking.BookingStatus;
 import com.example.cdr.eventsmanagementsystem.Model.Venue.Venue;
 import com.example.cdr.eventsmanagementsystem.Repository.Venue.BookingRepository;
 import com.example.cdr.eventsmanagementsystem.Repository.Venue.VenueRepository;
@@ -39,7 +39,7 @@ public class BookingService {
     public void CancelBooking(Long id) {
         Booking booking = bookingRepository.findById(Math.toIntExact(id))
                 .orElseThrow(() -> new IllegalArgumentException("Booking not found"));
-        booking.setStatus(Status.CANCELLED);
+        booking.setStatus(BookingStatus.CANCELLED);
         bookingRepository.save(booking);
 
         eventPublisher.publishEvent(new VenueCancelled(booking.getVenue()));

@@ -9,49 +9,36 @@ import org.springframework.data.annotation.CreatedDate;
 import org.springframework.data.annotation.LastModifiedBy;
 import org.springframework.data.annotation.LastModifiedDate;
 
-import com.example.cdr.eventsmanagementsystem.Model.Venue.Venue;
+import com.example.cdr.eventsmanagementsystem.Model.Booking.Booking;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
-import jakarta.persistence.GeneratedValue;
-import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
-import jakarta.persistence.JoinColumn;
 import jakarta.persistence.OneToMany;
-import jakarta.persistence.OneToOne;
-import lombok.Getter;
-import lombok.Setter;
+import lombok.Data;
 
-@Setter
-@Getter
 @Entity
-public class VenueProvider {
+@Data
+
+public class User {
     @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY) 
-    private Long id;
+    private String id; 
 
-    @OneToOne
-    @JoinColumn(name = "user_id", nullable = false)
-    private User user;
-
-    @Column(nullable = false)
-    private String name;
-
-    @Column(nullable = false)
+    @Column(nullable = false, unique = true)
     private String email;
-
-    @OneToMany(mappedBy = "venueProvider")
-    private List<Venue> venues = new ArrayList<>();
 
     @CreatedDate
     private LocalDateTime createdAt;
-
+    
     @LastModifiedDate
     private LocalDateTime updatedAt;
-
+    
     @CreatedBy
     private String createdBy;
-
+    
     @LastModifiedBy
     private String lastModifiedBy;
+
+    @OneToMany(mappedBy = "booker")
+    private List<Booking> bookings = new ArrayList<>();
 }
