@@ -1,5 +1,6 @@
 package com.example.cdr.eventsmanagementsystem.Model.Venue;
 
+import com.example.cdr.eventsmanagementsystem.Model.User.VenueProvider;
 import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.Setter;
@@ -34,4 +35,8 @@ public class Venue {
 
     @ElementCollection
     private List<String> images;
+
+    @ManyToOne(fetch = FetchType.EAGER)
+    @JoinColumn(name = "venue_provider_id")
+    private VenueProvider venueProvider;
 }

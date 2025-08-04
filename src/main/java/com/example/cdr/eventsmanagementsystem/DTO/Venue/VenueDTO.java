@@ -16,4 +16,5 @@ public class VenueDTO {
     private Capacity capacity;
     private Pricing pricing;
     private List<String> images;
+    private Long venueProviderId;
 }
