@@ -10,33 +10,30 @@ import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.EntityListeners;
-import jakarta.persistence.GeneratedValue;
-import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
-import jakarta.persistence.JoinColumn;
 import jakarta.persistence.MappedSuperclass;
-import jakarta.persistence.OneToOne;
-import lombok.Data;
 import lombok.EqualsAndHashCode;
+import lombok.Getter;
+import lombok.Setter;
 
-@MappedSuperclass // allows this class to be extended by other entities
-@Data
+@MappedSuperclass 
+@Getter
+@Setter
 @EqualsAndHashCode(onlyExplicitlyIncluded = true)
+@EntityListeners(AuditingEntityListener.class)
 public abstract class BaseRoleEntity {
     @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
     @EqualsAndHashCode.Include
-    private Long id;
+    private String id; // Keycloak ID 
 
     @Column(nullable = false)
-    private String name; 
+    private String firstName;
+
+    @Column(nullable = false)
+    private String lastName;
 
     @Column(nullable = false, unique = true)
     private String email;
-
-    @OneToOne
-    @JoinColumn(name = "user_id", nullable = false, unique = true)
-    private User user;
 
     @CreatedDate
     private LocalDateTime createdAt;
@@ -49,4 +46,12 @@ public abstract class BaseRoleEntity {
 
     @LastModifiedBy
     private String lastModifiedBy;
+
+    public String getFullName() {
+        return firstName + " " + lastName;
+    }
+
+    public String getKeycloakId() {
+        return id;
+    }
 }

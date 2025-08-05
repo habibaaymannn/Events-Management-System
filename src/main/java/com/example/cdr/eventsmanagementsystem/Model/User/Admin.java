@@ -8,12 +8,12 @@ import com.example.cdr.eventsmanagementsystem.Model.Event.Event;
 import jakarta.persistence.Entity;
 import jakarta.persistence.OneToMany;
 import jakarta.persistence.Table;
-import lombok.Data;
-import lombok.EqualsAndHashCode;
+import lombok.Getter;
+import lombok.Setter;
 
 @Entity
-@Data
-@EqualsAndHashCode(callSuper = true)
+@Getter
+@Setter
 @Table(name = "admins")
 public class Admin extends BaseRoleEntity {    
     @OneToMany(mappedBy = "admin")

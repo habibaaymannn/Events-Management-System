@@ -10,7 +10,7 @@ import org.springframework.data.annotation.LastModifiedDate;
 
 import com.example.cdr.eventsmanagementsystem.Model.Event.Event;
 import com.example.cdr.eventsmanagementsystem.Model.Service.Service;
-import com.example.cdr.eventsmanagementsystem.Model.User.User;
+import com.example.cdr.eventsmanagementsystem.Model.User.Attendee;
 import com.example.cdr.eventsmanagementsystem.Model.Venue.Venue;
 
 import jakarta.persistence.Column;
@@ -51,7 +51,7 @@ public class Booking {
 
     @ManyToOne
     @Column(nullable = false)
-    private User booker; 
+    private Attendee booker; 
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
