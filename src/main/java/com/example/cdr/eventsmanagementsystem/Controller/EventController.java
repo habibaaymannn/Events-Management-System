@@ -1,0 +1,48 @@
+package com.example.cdr.eventsmanagementsystem.Controller;
+
+import org.springframework.web.bind.annotation.DeleteMapping;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RestController;
+
+import com.example.cdr.eventsmanagementsystem.DTO.Event.EventDTO;
+import com.example.cdr.eventsmanagementsystem.DTO.Event.EventResponseDTO;
+import com.example.cdr.eventsmanagementsystem.DTO.Event.UpdateEventDTO;
+import com.example.cdr.eventsmanagementsystem.Service.Event.EventService;
+
+import lombok.RequiredArgsConstructor;
+
+@RequiredArgsConstructor
+@RestController
+@RequestMapping("/v1/events")
+public class EventController {
+    private final EventService eventService;
+
+    @PostMapping
+    // @PreAuthorize("hasRole('organizer')")
+    public EventResponseDTO createEvent(@RequestBody EventDTO eventDTO) {
+        return eventService.createEvent(eventDTO);
+    }
+
+    @GetMapping("/{id}")
+    // @PreAuthorize("hasRole('organizer') or hasRole('attendee')")
+    public EventResponseDTO getEventById(@PathVariable Long id) {
+        return eventService.getEventById(id);
+    }
+
+    @PutMapping("/{id}")
+    // @PreAuthorize("hasRole('organizer')")
+    public EventResponseDTO updateEvent(@PathVariable Long id, @RequestBody UpdateEventDTO updateEventDTO) {
+        return eventService.updateEvent(id, updateEventDTO);
+    }
+
+    @DeleteMapping("/{id}")
+    // @PreAuthorize("hasRole('organizer')")
+    public void deleteEvent(@PathVariable Long id) {
+        eventService.deleteEvent(id);
+    }
+}
