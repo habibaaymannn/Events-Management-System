@@ -28,3 +28,8 @@ spring:
           starttls:
             enable: true
     protocol: smtp
+  security:
+    oauth2:
+      resourceserver:
+        jwt:
+          issuer-uri: http://localhost:8180/realms/EMS-realm

@@ -5,6 +5,7 @@ import java.util.List;
 
 import com.example.cdr.eventsmanagementsystem.Model.Venue.Venue;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.Entity;
 import jakarta.persistence.OneToMany;
 import jakarta.persistence.Table;
@@ -15,7 +16,9 @@ import lombok.Setter;
 @Getter
 @Setter
 @Table(name = "venue_providers")
+
 public class VenueProvider extends BaseRoleEntity {
     @OneToMany(mappedBy = "venueProvider")
+    @JsonIgnore
     private List<Venue> venues = new ArrayList<>();
 }

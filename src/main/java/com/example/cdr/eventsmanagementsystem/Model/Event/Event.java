@@ -5,6 +5,8 @@ import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 
+import com.example.cdr.eventsmanagementsystem.Model.User.Admin;
+import jakarta.persistence.*;
 import org.springframework.data.annotation.CreatedBy;
 import org.springframework.data.annotation.CreatedDate;
 import org.springframework.data.annotation.LastModifiedBy;
@@ -27,6 +29,7 @@ import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.OneToMany;
 import jakarta.persistence.Table;
+
 import lombok.Data;
 
 @Entity
@@ -72,6 +75,10 @@ public class Event {
     @JoinColumn(name = "organizer_id", nullable = false)
     private Organizer organizer;
 
+    @ManyToOne
+    @JoinColumn(name = "admin_id")
+    private Admin admin;
+  
     @ManyToOne
     @JoinColumn(name = "venue_id", nullable = false)
     private Venue venue;

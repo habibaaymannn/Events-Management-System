@@ -1,12 +1,12 @@
-package com.example.cdr.eventsmanagementsystem.Service.Venue;
+package com.example.cdr.eventsmanagementsystem.Service.Booking;
 
-import com.example.cdr.eventsmanagementsystem.Events.VenueBooked;
-import com.example.cdr.eventsmanagementsystem.Events.VenueCancelled;
+import com.example.cdr.eventsmanagementsystem.NotificationEvent.VenueBooked;
+import com.example.cdr.eventsmanagementsystem.NotificationEvent.VenueCancelled;
 import com.example.cdr.eventsmanagementsystem.Model.Booking.Booking;
 import com.example.cdr.eventsmanagementsystem.Model.Booking.BookingStatus;
 import com.example.cdr.eventsmanagementsystem.Model.Venue.Venue;
-import com.example.cdr.eventsmanagementsystem.Repository.Venue.BookingRepository;
-import com.example.cdr.eventsmanagementsystem.Repository.Venue.VenueRepository;
+import com.example.cdr.eventsmanagementsystem.Repository.BookingRepository;
+import com.example.cdr.eventsmanagementsystem.Repository.VenueRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
@@ -16,7 +16,7 @@ import java.util.List;
 
 @RequiredArgsConstructor
 @Service
-public class BookingService {
+public class VenueBookingService {
     private final BookingRepository bookingRepository;
     private final VenueRepository venueRepository;
     private final ApplicationEventPublisher eventPublisher;
