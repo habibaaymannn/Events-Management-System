@@ -1,7 +1,7 @@
-package com.example.cdr.eventsmanagementsystem.Service.Venue.Notifications;
+package com.example.cdr.eventsmanagementsystem.Service.Notifications;
 
-import com.example.cdr.eventsmanagementsystem.Events.VenueBooked;
-import com.example.cdr.eventsmanagementsystem.Events.VenueCancelled;
+import com.example.cdr.eventsmanagementsystem.NotificationEvent.VenueBooked;
+import com.example.cdr.eventsmanagementsystem.NotificationEvent.VenueCancelled;
 import com.example.cdr.eventsmanagementsystem.Model.Venue.Venue;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.event.EventListener;

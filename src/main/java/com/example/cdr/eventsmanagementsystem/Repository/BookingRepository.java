@@ -1,4 +1,4 @@
-package com.example.cdr.eventsmanagementsystem.Repository.Venue;
+package com.example.cdr.eventsmanagementsystem.Repository;
 
 import com.example.cdr.eventsmanagementsystem.Model.Booking.Booking;
 import org.springframework.data.jpa.repository.JpaRepository;

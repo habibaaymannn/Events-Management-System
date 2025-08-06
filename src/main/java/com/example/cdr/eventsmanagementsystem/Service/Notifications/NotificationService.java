@@ -1,4 +1,4 @@
-package com.example.cdr.eventsmanagementsystem.Service.Venue.Notifications;
+package com.example.cdr.eventsmanagementsystem.Service.Notifications;
 
 import com.example.cdr.eventsmanagementsystem.Model.Venue.Venue;
 import org.springframework.stereotype.Service;

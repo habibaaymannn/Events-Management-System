@@ -16,6 +16,6 @@ import lombok.Setter;
 @Setter
 @Table(name = "service_providers")
 public class ServiceProvider extends BaseRoleEntity {
-    @OneToMany(mappedBy = "provider")
+    @OneToMany(mappedBy = "serviceProvider")
     private List<Service> services = new ArrayList<>();
 }

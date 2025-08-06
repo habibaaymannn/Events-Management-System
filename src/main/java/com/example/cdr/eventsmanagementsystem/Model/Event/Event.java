@@ -5,6 +5,8 @@ import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 
+import com.example.cdr.eventsmanagementsystem.Model.User.Admin;
+import jakarta.persistence.*;
 import org.springframework.data.annotation.CreatedBy;
 import org.springframework.data.annotation.CreatedDate;
 import org.springframework.data.annotation.LastModifiedBy;
@@ -14,16 +16,8 @@ import com.example.cdr.eventsmanagementsystem.Model.Booking.Booking;
 import com.example.cdr.eventsmanagementsystem.Model.User.Organizer;
 import com.example.cdr.eventsmanagementsystem.Model.Venue.Venue;
 
-import jakarta.persistence.Column;
-import jakarta.persistence.Entity;
-import jakarta.persistence.EnumType;
-import jakarta.persistence.Enumerated;
-import jakarta.persistence.GeneratedValue;
 import static jakarta.persistence.GenerationType.IDENTITY;
-import jakarta.persistence.Id;
-import jakarta.persistence.ManyToOne;
-import jakarta.persistence.OneToMany;
-import jakarta.persistence.Table;
+
 import lombok.Data;
 
 @Entity
@@ -65,11 +59,15 @@ public class Event {
     private LocalDateTime lastModifiedDate;
     
     @ManyToOne
-    @Column(nullable = false)
+    @JoinColumn(name = "organizer_id", nullable = false)
     private Organizer organizer;
 
     @ManyToOne
-    @Column(nullable = false)
+    @JoinColumn(name = "admin_id")
+    private Admin admin;
+
+    @ManyToOne
+    @JoinColumn(name = "venue_id", nullable = false)
     private Venue venue;
 
     @OneToMany(mappedBy = "event")
