@@ -14,11 +14,11 @@ import com.example.cdr.eventsmanagementsystem.Model.Event.EventStatus;
 
 @Repository
 public interface EventRepository extends JpaRepository<Event, Long> {
-    Page<Event> findByEventStatus(EventStatus status, Pageable pageable);
-    
-    @Query("SELECT e FROM Event e WHERE e.eventDate >= :startDate AND e.eventDate <= :endDate")
-    Page<Event> findByDateRange(@Param("startDate") LocalDateTime startDate, 
-                               @Param("endDate") LocalDateTime endDate, 
-                               Pageable pageable);
+//    Page<Event> findByEventStatus(EventStatus status, Pageable pageable);
+//
+//    @Query("SELECT e FROM Event e WHERE e.eventDate >= :startDate AND e.eventDate <= :endDate")
+//    Page<Event> findByDateRange(@Param("startDate") LocalDateTime startDate,
+//                               @Param("endDate") LocalDateTime endDate,
+//                               Pageable pageable);
 
 }

@@ -4,7 +4,6 @@ import com.example.cdr.eventsmanagementsystem.Model.Venue.Capacity;
 import com.example.cdr.eventsmanagementsystem.Model.Venue.Pricing;
 import lombok.Getter;
 import lombok.Setter;
-
 import java.util.List;
 
 @Setter
@@ -16,5 +15,5 @@ public class VenueDTO {
     private Capacity capacity;
     private Pricing pricing;
     private List<String> images;
-    private Long venueProviderId;
+    private String venueProviderId;
 }

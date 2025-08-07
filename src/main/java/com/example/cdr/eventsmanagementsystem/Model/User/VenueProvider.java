@@ -17,7 +17,7 @@ import lombok.Setter;
 @Setter
 @Table(name = "venue_providers")
 
-public class VenueProvider extends BaseRoleEntity {
+public class VenueProvider extends User {
     @OneToMany(mappedBy = "venueProvider")
     @JsonIgnore
     private List<Venue> venues = new ArrayList<>();

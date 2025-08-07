@@ -15,7 +15,7 @@ import lombok.Setter;
 @Getter
 @Setter
 @Table(name = "attendees")
-public class Attendee extends BaseRoleEntity {
+public class Attendee extends User {
 //    @OneToMany(mappedBy = "booker")
 //    private List<Booking> bookings = new ArrayList<>();
 }

@@ -2,16 +2,13 @@ package com.example.cdr.eventsmanagementsystem.Model.User;
 
 import java.time.LocalDateTime;
 
+import jakarta.persistence.*;
 import org.springframework.data.annotation.CreatedBy;
 import org.springframework.data.annotation.CreatedDate;
 import org.springframework.data.annotation.LastModifiedBy;
 import org.springframework.data.annotation.LastModifiedDate;
 import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 
-import jakarta.persistence.Column;
-import jakarta.persistence.EntityListeners;
-import jakarta.persistence.Id;
-import jakarta.persistence.MappedSuperclass;
 import lombok.EqualsAndHashCode;
 import lombok.Getter;
 import lombok.Setter;
@@ -21,7 +18,7 @@ import lombok.Setter;
 @Setter
 @EqualsAndHashCode(onlyExplicitlyIncluded = true)
 @EntityListeners(AuditingEntityListener.class)
-public abstract class BaseRoleEntity {
+public class User {
     @Id
     @EqualsAndHashCode.Include
     private String id; // Keycloak ID 
@@ -34,6 +31,12 @@ public abstract class BaseRoleEntity {
 
     @Column(nullable = false, unique = true)
     private String email;
+
+    @Transient
+    private String password;
+
+    @Transient
+    private String userType;
 
     @CreatedDate
     private LocalDateTime createdAt;

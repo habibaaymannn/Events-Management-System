@@ -8,7 +8,7 @@ import org.springframework.data.annotation.CreatedDate;
 import org.springframework.data.annotation.LastModifiedBy;
 import org.springframework.data.annotation.LastModifiedDate;
 import com.example.cdr.eventsmanagementsystem.Model.Event.Event;
-import com.example.cdr.eventsmanagementsystem.Model.Service.Service;
+import com.example.cdr.eventsmanagementsystem.Model.Service.Services;
 import com.example.cdr.eventsmanagementsystem.Model.Venue.Venue;
 import lombok.Getter;
 import lombok.Setter;
@@ -35,7 +35,7 @@ public class Booking {
     private Event event;
 
     @ManyToOne
-    private Service service;
+    private Services service;
 
 //    @ManyToOne
 //    @JoinColumn(name = "booker_id", nullable = false)
