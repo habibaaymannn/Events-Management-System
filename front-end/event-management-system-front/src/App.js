@@ -1,8 +1,8 @@
 import { BrowserRouter as Router, Routes, Route, Link } from "react-router-dom";
-import VenueProviderDashboard from "./components/VenueProviderDashboard";
-import ServiceProviderDashboard from "./components/ServiceProviderDashboard";
-import EventOrganizerDashboard from "./components/EventOrganizerDashboard";
-import EventAttendeeDashboard from "./components/EventAttendeeDashboard";
+import VenueProviderDashboard from "./components/venue-provider/VenueProviderDashboard";
+import ServiceProviderDashboard from "./components/service-provider/ServiceProviderDashboard";
+import EventOrganizerDashboard from "./components/event-organizer/EventOrganizerDashboard";
+import EventAttendeeDashboard from "./components/event-attendee/EventAttendeeDashboard";
 import AdminDashboard from "./components/admin/AdminDashboard";
 import './App.css';
 
