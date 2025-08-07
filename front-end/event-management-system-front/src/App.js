@@ -3,7 +3,7 @@ import VenueProviderDashboard from "./components/VenueProviderDashboard";
 import ServiceProviderDashboard from "./components/ServiceProviderDashboard";
 import EventOrganizerDashboard from "./components/EventOrganizerDashboard";
 import EventAttendeeDashboard from "./components/EventAttendeeDashboard";
-import AdminDashboard from "./components/AdminDashboard";
+import AdminDashboard from "./components/admin/AdminDashboard";
 import './App.css';
 
 function App() {
@@ -24,7 +24,7 @@ function App() {
           <Route path="/service-provider" element={<ServiceProviderDashboard />} />
           <Route path="/event-organizer" element={<EventOrganizerDashboard />} />
           <Route path="/event-attendee" element={<EventAttendeeDashboard />} />
-          <Route path="/admin" element={<AdminDashboard />} />
+          <Route path="/admin/*" element={<AdminDashboard />} />
         </Routes>
       </div>
     </Router>

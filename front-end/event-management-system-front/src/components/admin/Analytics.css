@@ -1,0 +1,119 @@
+.bar-list {
+  width: 100%;
+  margin-top: 1rem;
+}
+.bar-row {
+  display: flex;
+  align-items: center;
+  margin-bottom: 0.5rem;
+}
+.bar-label {
+  flex: 1 0 80px;
+  text-align: left;
+  font-size: 1rem;
+}
+.bar-bg {
+  flex: 3 1 100px;
+  background: #e0e0e0;
+  border-radius: 8px;
+  height: 18px;
+  margin: 0 0.5rem;
+  overflow: hidden;
+}
+
+.bar-fill {
+  height: 100%;
+  border-radius: 8px;
+  transition: width 0.3s;
+}
+
+.bar-value {
+  min-width: 24px;
+  text-align: right;
+  font-weight: bold;
+}
+
+.analytics-dashboard {
+  width: 100%;
+}
+
+.analytics-dashboard h3 {
+  text-align: center;
+  margin-bottom: 2rem;
+}
+
+.analytics-status-cards {
+  display: flex;
+  justify-content: center;
+  gap: 1.5rem;
+  margin-bottom: 2rem;
+}
+
+.status-card {
+  min-width: 120px;
+  padding: 1.2rem 1rem;
+  border-radius: 8px;
+  color: #fff;
+  font-weight: bold;
+  text-align: center;
+  font-size: 1.1rem;
+  box-shadow: 0 2px 8px rgba(25, 118, 210, 0.07);
+}
+
+.status-upcoming { background: #1976d2; }
+.status-ongoing { background: #43a047; }
+.status-completed { background: #757575; }
+.status-cancelled { background: #d32f2f; }
+
+.analytics-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr); /* 4 cards per row */
+  gap: 1.5rem;
+  justify-items: center;
+}
+
+@media (max-width: 1200px) {
+  .analytics-grid {
+    grid-template-columns: repeat(2, 1fr); /* 2 per row on medium screens */
+  }
+}
+
+@media (max-width: 700px) {
+  .analytics-grid {
+    grid-template-columns: 1fr; /* 1 per row on small screens */
+  }
+}
+.analytics-card {
+  background: #f5faff;
+  border-radius: 8px;
+  box-shadow: 0 2px 8px rgba(25, 118, 210, 0.07);
+  padding: 1.5rem 1rem;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  width: 100%;
+  max-width: 320px;
+}
+
+.analytics-card h4 {
+  margin: 0 0 1rem 0;
+  color: #1976d2;
+  font-size: 1.1rem;
+  text-align: center;
+}
+
+.analytics-card ul {
+  margin: 0;
+  padding-left: 0;
+  list-style: none;
+  text-align: center;
+}
+
+.analytics-number {
+  font-size: 2rem;
+  font-weight: bold;
+  color: #1976d2;
+  margin: 0.5rem 0;
+  text-align: center;
+}
