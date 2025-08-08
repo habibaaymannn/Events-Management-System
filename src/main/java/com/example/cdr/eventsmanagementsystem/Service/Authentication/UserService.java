@@ -1,26 +1,23 @@
 package com.example.cdr.eventsmanagementsystem.Service.Authentication;
 
 import com.example.cdr.eventsmanagementsystem.DTO.UserDTO;
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
-
 import java.util.List;
 import java.util.Map;
-import java.util.stream.Collectors;
 
+
+@RequiredArgsConstructor
 @Service
 public class UserService {
-    private final Map<String,IUserService> strategies;
+    private final List<IUserService> strategies;
 
-    public UserService(List<IUserService> strategyList) {
-        strategies = strategyList.stream()
-                .collect(Collectors.toMap(s -> s.getUserType(), s -> s));
-    }
+    public void saveUserData(UserDTO userDTO) {
+        IUserService strategy = strategies.stream()
+                .filter(s -> s.supports(userDTO.getUserType()))
+                .findFirst()
+                .orElseThrow(() -> new IllegalArgumentException("Unsupported userType: " + userDTO.getUserType()));
 
-    public void registerUser(UserDTO userDTO) {
-        IUserService strategy = strategies.get(userDTO.getUserType().toLowerCase());
-        if (strategy == null) {
-            throw new IllegalArgumentException("Invalid userType");
-        }
-        strategy.register(userDTO);
+        strategy.saveUserData(userDTO);
     }
 }

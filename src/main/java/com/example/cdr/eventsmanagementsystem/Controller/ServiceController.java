@@ -1,13 +1,11 @@
 package com.example.cdr.eventsmanagementsystem.Controller;
 
 import com.example.cdr.eventsmanagementsystem.Model.Service.Services;
-import com.example.cdr.eventsmanagementsystem.Model.User.ServiceProvider;
 import com.example.cdr.eventsmanagementsystem.Service.Service.ServicesService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
-
 import java.nio.file.AccessDeniedException;
 
 @RestController

@@ -1,8 +1,6 @@
 package com.example.cdr.eventsmanagementsystem.Controller.Authentication;
 
 import com.example.cdr.eventsmanagementsystem.DTO.UserDTO;
-import com.example.cdr.eventsmanagementsystem.Model.User.User;
-import com.example.cdr.eventsmanagementsystem.Model.User.VenueProvider;
 import com.example.cdr.eventsmanagementsystem.Service.Authentication.UserService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
@@ -19,7 +17,7 @@ public class UserController {
 
     @PostMapping("/register")
     public ResponseEntity<String> register(@RequestBody UserDTO userDTO) {
-        userService.registerUser(userDTO);
+        userService.saveUserData(userDTO);
         return ResponseEntity.ok("User registered successfully");
     }
 }

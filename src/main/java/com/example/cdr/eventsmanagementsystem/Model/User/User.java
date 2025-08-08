@@ -2,6 +2,7 @@ package com.example.cdr.eventsmanagementsystem.Model.User;
 
 import java.time.LocalDateTime;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
 import org.springframework.data.annotation.CreatedBy;
 import org.springframework.data.annotation.CreatedDate;
@@ -33,9 +34,11 @@ public class User {
     private String email;
 
     @Transient
+    @JsonIgnore
     private String password;
 
     @Transient
+    @JsonIgnore
     private String userType;
 
     @CreatedDate
