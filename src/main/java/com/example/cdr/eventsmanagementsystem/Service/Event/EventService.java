@@ -1,7 +1,6 @@
 package com.example.cdr.eventsmanagementsystem.Service.Event;
 
 import java.util.List;
-import java.util.stream.Collectors;
 
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -12,9 +11,11 @@ import com.example.cdr.eventsmanagementsystem.DTO.Event.EventResponseDTO;
 import com.example.cdr.eventsmanagementsystem.DTO.Event.UpdateEventDTO;
 import com.example.cdr.eventsmanagementsystem.Mapper.EventMapper;
 import com.example.cdr.eventsmanagementsystem.Model.Event.Event;
-import com.example.cdr.eventsmanagementsystem.Model.Event.EventStatus;
 import com.example.cdr.eventsmanagementsystem.Model.Event.EventType;
+import com.example.cdr.eventsmanagementsystem.Model.User.Organizer;
 import com.example.cdr.eventsmanagementsystem.Repository.EventRepository;
+import com.example.cdr.eventsmanagementsystem.Repository.OrganizerRepository;
+import com.example.cdr.eventsmanagementsystem.Service.Auth.UserSyncService;
 
 import jakarta.persistence.EntityNotFoundException;
 
@@ -22,23 +23,39 @@ import jakarta.persistence.EntityNotFoundException;
 public class EventService implements IEventService {
     private final EventRepository eventRepository;
     private final EventMapper eventMapper;
+    private final UserSyncService userSyncService;
+    private final OrganizerRepository organizerRepository;
 
-    public EventService(EventRepository eventRepository, EventMapper eventMapper) {
+    public EventService(EventRepository eventRepository, EventMapper eventMapper, UserSyncService userSyncService, OrganizerRepository organizerRepository) {
         this.eventRepository = eventRepository;
         this.eventMapper = eventMapper;
+        this.userSyncService = userSyncService;
+        this.organizerRepository = organizerRepository;
     }
 
     @Override
     public EventResponseDTO createEvent(EventDTO eventDTO) {
-        Event event = eventMapper.toEvent(eventDTO);
-        
-        event.setStatus(EventStatus.DRAFT);
-        
-        // TODO: Add organizer
-    
-        
+        Organizer organizer = ensureCurrentUserAsOrganizer();
+        Event event = eventMapper.toEventWithDefaults(eventDTO, organizer);
         Event savedEvent = eventRepository.save(event);
         return eventMapper.toEventResponseDTO(savedEvent);
+    }
+
+    private Organizer ensureCurrentUserAsOrganizer() {
+        String userId = userSyncService.getCurrentUserId();
+        String email = userSyncService.getCurrentUserEmail();
+        
+        Organizer organizer = organizerRepository.findById(userId).orElse(null);
+        
+        if (organizer == null) {
+            organizer = new Organizer();
+            organizer.setId(userId);
+            organizer.setEmail(email);
+            
+            organizer = organizerRepository.save(organizer);
+        }
+        
+        return organizer;
     }
 
     @Override
@@ -76,8 +93,6 @@ public class EventService implements IEventService {
     @Override
     public List<EventResponseDTO> getEventsByType(EventType type) {
         List<Event> events = eventRepository.findByType(type);
-        return events.stream()
-                .map(eventMapper::toEventResponseDTO)
-                .collect(Collectors.toList());
+        return events.stream().map(eventMapper::toEventResponseDTO).toList();
     }
 }

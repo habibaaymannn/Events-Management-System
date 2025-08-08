@@ -2,14 +2,28 @@ package com.example.cdr.eventsmanagementsystem.Model.Booking;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
-import jakarta.persistence.*;
+
 import org.springframework.data.annotation.CreatedBy;
 import org.springframework.data.annotation.CreatedDate;
 import org.springframework.data.annotation.LastModifiedBy;
 import org.springframework.data.annotation.LastModifiedDate;
+
 import com.example.cdr.eventsmanagementsystem.Model.Event.Event;
 import com.example.cdr.eventsmanagementsystem.Model.Service.Service;
+import com.example.cdr.eventsmanagementsystem.Model.User.Attendee;
+import com.example.cdr.eventsmanagementsystem.Model.User.BaseRoleEntity;
+import com.example.cdr.eventsmanagementsystem.Model.User.Organizer;
 import com.example.cdr.eventsmanagementsystem.Model.Venue.Venue;
+
+import jakarta.persistence.Column;
+import jakarta.persistence.Entity;
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.GenerationType;
+import jakarta.persistence.Id;
+import jakarta.persistence.ManyToOne;
+import jakarta.persistence.Table;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.ToString;
@@ -37,9 +51,12 @@ public class Booking {
     @ManyToOne
     private Service service;
 
-//    @ManyToOne
-//    @JoinColumn(name = "booker_id", nullable = false)
-//    private Attendee booker;
+    @Column(name = "booker_id", nullable = false)
+    private String bookerId;  // Keycloak ID
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "booker_type", nullable = false)  
+    private BookerType bookerType; 
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
@@ -65,4 +82,19 @@ public class Booking {
     private String createdBy;
     @LastModifiedBy 
     private String lastModifiedBy;
+
+    public void setAttendeeBooker(Attendee attendee) {
+        this.bookerId = attendee.getId();
+        this.bookerType = BookerType.ATTENDEE;
+    }
+
+    public void setOrganizerBooker(Organizer organizer) {
+        this.bookerId = organizer.getId();
+        this.bookerType = BookerType.ORGANIZER;
+    }
+
+    public void setBooker(BaseRoleEntity user, BookerType type) {
+        this.bookerId = user.getId();
+        this.bookerType = type;
+    }
 }

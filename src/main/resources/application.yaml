@@ -2,7 +2,7 @@ spring:
   application:
     name: Events-Management-System
   datasource:
-    url:  jdbc:postgresql://postgres:5432/Events-Management-System
+    url: jdbc:postgresql://postgres:5432/Events-Management-System
     username: postgres
     password: postgres
     driver-class-name: org.postgresql.Driver
@@ -19,8 +19,8 @@ spring:
   mail:
     host: smtp.gmail.com
     port: 587
-    username: <your-username>
-    password: <your-pass>
+    username: mahmoud.smtp.test@gmail.com
+    password: qlos ofpo hkku twon
     properties:
       mail:
         smtp:
@@ -33,3 +33,5 @@ spring:
       resourceserver:
         jwt:
           issuer-uri: http://localhost:8180/realms/EMS-realm
+  stripe:
+    api-key: ${STRIPE_SECRET_KEY:sk_test_51RtDgxBHXOhVkYjpZM4hk3PuCYxLOaCX2e4zzTO9qJTq56mJMfJ3NBMSCXlxP0VZ0rtAFEuPqOzQMLUZ8CHAKmS200DzUHCMAM}

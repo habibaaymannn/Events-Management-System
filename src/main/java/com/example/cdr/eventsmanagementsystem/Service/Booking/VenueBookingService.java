@@ -1,18 +1,20 @@
 package com.example.cdr.eventsmanagementsystem.Service.Booking;
 
-import com.example.cdr.eventsmanagementsystem.NotificationEvent.VenueBooked;
-import com.example.cdr.eventsmanagementsystem.NotificationEvent.VenueCancelled;
-import com.example.cdr.eventsmanagementsystem.Model.Booking.Booking;
-import com.example.cdr.eventsmanagementsystem.Model.Booking.BookingStatus;
-import com.example.cdr.eventsmanagementsystem.Model.Venue.Venue;
-import com.example.cdr.eventsmanagementsystem.Repository.BookingRepository;
-import com.example.cdr.eventsmanagementsystem.Repository.VenueRepository;
-import lombok.RequiredArgsConstructor;
+import java.util.List;
+
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.util.List;
+import com.example.cdr.eventsmanagementsystem.Model.Booking.Booking;
+import com.example.cdr.eventsmanagementsystem.Model.Venue.Venue;
+import com.example.cdr.eventsmanagementsystem.NotificationEvent.VenueBooked;
+import com.example.cdr.eventsmanagementsystem.Repository.BookingRepository;
+import com.example.cdr.eventsmanagementsystem.Repository.VenueRepository;
+
+import lombok.RequiredArgsConstructor;
+
+// This class wll be deleted - we will not use it
 
 @RequiredArgsConstructor
 @Service
@@ -37,11 +39,11 @@ public class VenueBookingService {
     }
     @Transactional
     public void CancelBooking(Long id) {
-        Booking booking = bookingRepository.findById(Math.toIntExact(id))
-                .orElseThrow(() -> new IllegalArgumentException("Booking not found"));
-        booking.setStatus(BookingStatus.CANCELLED);
-        bookingRepository.save(booking);
+        // Booking booking = bookingRepository.findById(Math.toIntExact(id))
+        //         .orElseThrow(() -> new IllegalArgumentException("Booking not found"));
+        // booking.setStatus(BookingStatus.CANCELLED);
+        // bookingRepository.save(booking);
 
-        eventPublisher.publishEvent(new VenueCancelled(booking.getVenue()));
+        // eventPublisher.publishEvent(new VenueCancelled(booking.getVenue()));
     }
 }

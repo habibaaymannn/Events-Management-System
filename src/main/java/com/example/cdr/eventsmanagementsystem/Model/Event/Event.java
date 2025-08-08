@@ -69,7 +69,6 @@ public class Event {
     @LastModifiedDate
     private LocalDateTime lastModifiedDate;
     
-    // Made optional for now
     @ManyToOne
     @JoinColumn(name = "organizer_id")
     private Organizer organizer;
@@ -78,7 +77,6 @@ public class Event {
     @JoinColumn(name = "admin_id")
     private Admin admin;
   
-    // Made optional for now
     @ManyToOne
     @JoinColumn(name = "venue_id")
     private Venue venue;
