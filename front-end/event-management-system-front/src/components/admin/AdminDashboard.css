@@ -1,79 +1,129 @@
 .admin-dashboard {
   min-height: calc(100vh - 80px);
   width: 100%;
+  max-width: 1400px;
   margin: 0 auto;
-  background: #f9f9f9;
-  box-sizing: border-box;
-  display: flex;
-  flex-direction: column;
-  align-items: stretch;
+  padding: 2rem 1rem;
 }
 
 .admin-dashboard h2 {
   text-align: center;
   margin-bottom: 2rem;
+  color: #2c3e50;
+  font-size: 2.5rem;
+  font-weight: 700;
 }
 
 .admin-section {
   margin-bottom: 2rem;
-  padding: 1rem;
-  background: #fff;
-  border-radius: 6px;
-  box-shadow: 0 1px 4px rgba(0,0,0,0.03);
+  padding: 2rem;
+  background: white;
+  border-radius: 16px;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  transition: all 0.3s ease;
+}
+
+.admin-section:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.15);
 }
 
 .admin-section h3 {
-  margin-bottom: 0.5rem;
-  color: #333;
+  margin-bottom: 1.5rem;
+  color: #2c3e50;
+  font-size: 1.5rem;
+  font-weight: 600;
+  border-bottom: 2px solid #f8f9fa;
+  padding-bottom: 0.5rem;
 }
 
 .admin-section ul {
-  list-style: disc inside;
+  list-style: none;
   margin: 0;
-  padding-left: 1rem;
+  padding: 0;
+}
+
+.admin-section li {
+  padding: 0.5rem 0;
+  border-bottom: 1px solid #f8f9fa;
+  color: #495057;
 }
 
 .admin-table {
   width: 100%;
   border-collapse: collapse;
+  background: white;
+  border-radius: 12px;
+  overflow: hidden;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
   margin-bottom: 1rem;
 }
 
 .admin-table th,
 .admin-table td {
-  border: 1px solid #ddd;
-  padding: 0.5rem;
+  padding: 1rem;
   text-align: left;
+  border: none;
 }
 
 .admin-table th {
-  background: #f0f0f0;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  font-weight: 600;
+  font-size: 0.9rem;
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+}
+
+.admin-table tbody tr {
+  transition: all 0.3s ease;
+  border-bottom: 1px solid #f8f9fa;
+}
+
+.admin-table tbody tr:hover {
+  background: linear-gradient(135deg, #f8f9ff 0%, #f0f2ff 100%);
 }
 
 .admin-table button {
   margin-right: 0.5rem;
-  padding: 0.25rem 0.75rem;
+  padding: 8px 16px;
   border: none;
-  border-radius: 4px;
-  background: #ccc;
-  color: #333;
-  cursor: pointer; /* default for enabled buttons */
-  transition: background 0.2s, color 0.2s;
+  border-radius: 6px;
+  font-size: 0.85rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.admin-table button:not(:disabled) {
+  background: linear-gradient(135deg, #667eea, #764ba2);
+  color: white;
+}
+
+.admin-table button:not(:disabled):hover {
+  background: linear-gradient(135deg, #764ba2, #667eea);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
 }
 
 .admin-table button:disabled {
   cursor: not-allowed;
-  background: #eee;
-  color: #aaa;
+  background: #e9ecef;
+  color: #6c757d;
 }
 
 .admin-tabs {
   display: flex;
   align-items: center;
-  border-bottom: 2px solid #e0e0e0;
-  background: #fff;
+  background: white;
   margin-bottom: 2rem;
-  padding: 0 1rem;
+  padding: 0;
+  border-radius: 12px;
+  overflow: hidden;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
 }
 
 .admin-tab-spacer {
@@ -81,18 +131,66 @@
 }
 
 .admin-tabs a {
-  padding: 0.5rem 1.5rem;
- 
-  border-radius: 4px 4px 0 0;
+  padding: 1rem 2rem;
   text-decoration: none;
-  color: #333;
-  font-weight: 500;
-  transition: background 0.2s;
+  color: #495057;
+  font-weight: 600;
+  transition: all 0.3s ease;
+  border-bottom: 3px solid transparent;
+}
+
+.admin-tabs a:hover {
+  background: #f8f9fa;
+  color: #667eea;
 }
 
 .admin-tabs a.active,
 .admin-tabs a[aria-current="page"] {
-  background: #fff;
-  border-bottom: 2px solid #1976d2;
-  color: #1976d2;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  border-bottom: 3px solid #764ba2;
+}
+
+.calendar-available {
+  background: linear-gradient(135deg, #28a745, #20c997) !important;
+  color: #fff !important;
+  border-radius: 50% !important;
+}
+
+.calendar-booked {
+  background: linear-gradient(135deg, #dc3545, #e74c3c) !important;
+  color: #fff !important;
+  border-radius: 50% !important;
+}
+
+.center-calendar {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 2rem;
+  background: white;
+  border-radius: 16px;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+  margin: 2rem 0;
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+  .admin-dashboard {
+    padding: 1rem 0.5rem;
+  }
+  
+  .admin-section {
+    padding: 1.5rem;
+  }
+  
+  .admin-tabs {
+    flex-direction: column;
+  }
+  
+  .admin-tabs a {
+    width: 100%;
+    text-align: center;
+  }
 }

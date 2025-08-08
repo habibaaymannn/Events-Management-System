@@ -1,7 +1,9 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import Calendar from "react-calendar";
 import "react-calendar/dist/Calendar.css";
 import "./../admin/AdminDashboard.css";
+import "./VenueTable.css";
+import { useNavigate } from "react-router-dom";
 
 const initialVenues = [
   {
@@ -20,7 +22,14 @@ const initialVenues = [
 ];
 
 const VenueProviderDashboard = () => {
-  const [venues, setVenues] = useState(initialVenues);
+  const navigate = useNavigate();
+  const [venues, setVenues] = useState(() => {
+    const stored = localStorage.getItem("venues");
+    return stored ? JSON.parse(stored) : initialVenues;
+  });
+  useEffect(() => {
+    localStorage.setItem("venues", JSON.stringify(venues));
+  }, [venues]);
   const [showAdd, setShowAdd] = useState(false);
   const [newVenue, setNewVenue] = useState({
     name: "",
@@ -37,6 +46,22 @@ const VenueProviderDashboard = () => {
   const [activeVenue, setActiveVenue] = useState(null);
   const [calendarMode, setCalendarMode] = useState(null); // "availability" or "booking"
   const [selectedDate, setSelectedDate] = useState(new Date());
+
+  // Add helper function to safely get image URL
+  const getImageUrl = (img) => {
+    try {
+      if (typeof img === "string") {
+        return img;
+      }
+      if (img instanceof File || img instanceof Blob) {
+        return URL.createObjectURL(img);
+      }
+      return null;
+    } catch (error) {
+      console.warn("Failed to create image URL:", error);
+      return null;
+    }
+  };
 
   // Add Venue Handler
   const handleAddVenue = (e) => {
@@ -181,149 +206,225 @@ const VenueProviderDashboard = () => {
   };
 
   return (
-    <div className="admin-dashboard">
-      <h2>Venue Provider Dashboard</h2>
-      <div className="admin-section">
-        <h3>Your Venues</h3>
-        <button onClick={() => setShowAdd(!showAdd)}>
-          {showAdd ? "Cancel" : "Add New Venue"}
-        </button>
-        {showAdd && (
-          <form onSubmit={handleAddVenue} style={{ marginTop: "1rem" }}>
-            <div>
-              <input
-                required
-                placeholder="Venue Name"
-                value={newVenue.name}
-                onChange={e => setNewVenue({ ...newVenue, name: e.target.value })}
-              />
-              <input
-                required
-                placeholder="Type (e.g. Villa, Hall)"
-                value={newVenue.type}
-                onChange={e => setNewVenue({ ...newVenue, type: e.target.value })}
-              />
-              <input
-                required
-                placeholder="Location"
-                value={newVenue.location}
-                onChange={e => setNewVenue({ ...newVenue, location: e.target.value })}
-              />
-              <input
-                required
-                type="number"
-                placeholder="Min Capacity"
-                value={newVenue.capacity_minimum}
-                onChange={e => setNewVenue({ ...newVenue, capacity_minimum: e.target.value })}
-                min={1}
-              />
-              <input
-                required
-                type="number"
-                placeholder="Max Capacity"
-                value={newVenue.capacity_maximum}
-                onChange={e => setNewVenue({ ...newVenue, capacity_maximum: e.target.value })}
-                min={1}
-              />
-              <input
-                required
-                type="number"
-                placeholder="Price"
-                value={newVenue.price}
-                onChange={e => setNewVenue({ ...newVenue, price: e.target.value })}
-                min={1}
-              />
-              <select
-                value={newVenue.priceType}
-                onChange={e => setNewVenue({ ...newVenue, priceType: e.target.value })}
-              >
-                <option value="per event">Per Event</option>
-                <option value="per hour">Per Hour</option>
-              </select>
-              <input
-                type="file"
-                multiple
-                onChange={e => setNewVenue({ ...newVenue, images: Array.from(e.target.files) })}
-              />
-              <div style={{ marginTop: 8 }}>
-                {newVenue.images && newVenue.images.length > 0 &&
-                  newVenue.images.map((img, idx) => (
-                    <img
-                      key={idx}
-                      src={typeof img === "string" ? img : URL.createObjectURL(img)}
-                      alt="venue"
-                      width={40}
-                      style={{ marginRight: 4 }}
+    <main>
+      <div className="card">
+        <div className="card-header">
+          <h2 className="card-title text-center">Venue Provider Dashboard</h2>
+        </div>
+        
+        <div className="mb-3">
+          <h3 style={{ color: '#495057', marginBottom: '1rem' }}>Your Venues</h3>
+          <button 
+            className={`btn ${showAdd ? 'btn-secondary' : 'btn-primary'}`}
+            onClick={() => setShowAdd(!showAdd)}
+          >
+            {showAdd ? "Cancel" : "Add New Venue"}
+          </button>
+          
+          {showAdd && (
+            <div className="card mt-3">
+              <form onSubmit={handleAddVenue}>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))', gap: '1rem' }}>
+                  <div className="form-group">
+                    <label className="form-label">Venue Name</label>
+                    <input
+                      required
+                      className="form-control"
+                      placeholder="Enter venue name"
+                      value={newVenue.name}
+                      onChange={e => setNewVenue({ ...newVenue, name: e.target.value })}
                     />
-                  ))}
-              </div>
-            </div>
-            <button type="submit" style={{ marginTop: "1rem" }}>
-              Add Venue
-            </button>
-          </form>
-        )}
-        <table className="admin-table" style={{ marginTop: "1rem" }}>
-          <thead>
-            <tr>
-              <th>Name</th>
-              <th>Type</th>
-              <th>Location</th>
-              <th>Capacity</th>
-              <th>Price</th>
-              <th>Images</th>
-              <th>Set Availability</th>
-              <th>Book</th>
-              <th>Actions</th>
-            </tr>
-          </thead>
-          <tbody>
-            {venues.map(v => (
-              <tr key={v.id}>
-                <td>{v.name}</td>
-                <td>{v.type}</td>
-                <td>{v.location}</td>
-                <td>
-                  {v.capacity_minimum} - {v.capacity_maximum}
-                </td>
-                <td>
-                  {v.price} ({v.priceType})
-                </td>
-                <td>
-                  {v.images.length > 0
-                    ? v.images.map((img, idx) => (
+                  </div>
+                  <div className="form-group">
+                    <label className="form-label">Type</label>
+                    <input
+                      required
+                      className="form-control"
+                      placeholder="e.g. Villa, Hall"
+                      value={newVenue.type}
+                      onChange={e => setNewVenue({ ...newVenue, type: e.target.value })}
+                    />
+                  </div>
+                  <div className="form-group">
+                    <label className="form-label">Location</label>
+                    <input
+                      required
+                      className="form-control"
+                      placeholder="Enter location"
+                      value={newVenue.location}
+                      onChange={e => setNewVenue({ ...newVenue, location: e.target.value })}
+                    />
+                  </div>
+                  <div className="form-group">
+                    <label className="form-label">Min Capacity</label>
+                    <input
+                      required
+                      type="number"
+                      className="form-control"
+                      placeholder="Minimum capacity"
+                      value={newVenue.capacity_minimum}
+                      onChange={e => setNewVenue({ ...newVenue, capacity_minimum: e.target.value })}
+                      min={1}
+                    />
+                  </div>
+                  <div className="form-group">
+                    <label className="form-label">Max Capacity</label>
+                    <input
+                      required
+                      type="number"
+                      className="form-control"
+                      placeholder="Maximum capacity"
+                      value={newVenue.capacity_maximum}
+                      onChange={e => setNewVenue({ ...newVenue, capacity_maximum: e.target.value })}
+                      min={1}
+                    />
+                  </div>
+                  <div className="form-group">
+                    <label className="form-label">Price</label>
+                    <input
+                      required
+                      type="number"
+                      className="form-control"
+                      placeholder="Enter price"
+                      value={newVenue.price}
+                      onChange={e => setNewVenue({ ...newVenue, price: e.target.value })}
+                      min={1}
+                    />
+                  </div>
+                  <div className="form-group">
+                    <label className="form-label">Price Type</label>
+                    <select
+                      className="form-control"
+                      value={newVenue.priceType}
+                      onChange={e => setNewVenue({ ...newVenue, priceType: e.target.value })}
+                    >
+                      <option value="per event">Per Event</option>
+                      <option value="per hour">Per Hour</option>
+                    </select>
+                  </div>
+                  <div className="form-group">
+                    <label className="form-label">Images</label>
+                    <input
+                      type="file"
+                      multiple
+                      className="form-control"
+                      onChange={e => setNewVenue({ ...newVenue, images: Array.from(e.target.files) })}
+                    />
+                  </div>
+                </div>
+                <div style={{ marginTop: 16 }}>
+                  {newVenue.images && newVenue.images.length > 0 &&
+                    newVenue.images.map((img, idx) => {
+                      const imageUrl = getImageUrl(img);
+                      return imageUrl ? (
                         <img
                           key={idx}
-                          src={typeof img === "string" ? img : URL.createObjectURL(img)}
-                          alt="venue"
-                          width={30}
-                          style={{ marginRight: 2 }}
+                          src={imageUrl}
+                          alt="venue preview"
+                          style={{
+                            width: 60,
+                            height: 60,
+                            objectFit: 'cover',
+                            borderRadius: 8,
+                            marginRight: 8,
+                            border: '2px solid #e9ecef'
+                          }}
                         />
-                      ))
-                    : "None"}
-                </td>
-                <td>
-                  <button onClick={() => { setActiveVenue(v); setCalendarMode("availability"); }}>
-                    Set Availability
-                  </button>
-                </td>
-                <td>
-                  <button onClick={() => { setActiveVenue(v); setCalendarMode("booking"); }}>
-                    Book
-                  </button>
-                </td>
-                <td>
-                  <button onClick={() => handleRemoveVenue(v.id)}>Remove</button>
-                </td>
+                      ) : null;
+                    })}
+                </div>
+                <button type="submit" className="btn btn-success mt-3">
+                  Add Venue
+                </button>
+              </form>
+            </div>
+          )}
+          
+          <table className="table mt-3">
+            <thead>
+              <tr>
+                <th>Name</th>
+                <th>Type</th>
+                <th>Location</th>
+                <th>Capacity</th>
+                <th>Price</th>
+                <th>Set Availability</th>
+                <th>Book</th>
+                <th>Actions</th>
               </tr>
-            ))}
-          </tbody>
-        </table>
+            </thead>
+            <tbody>
+              {venues.map(v => (
+                <tr
+                  key={v.id}
+                  style={{ cursor: "pointer" }}
+                  onClick={e => {
+                    if (e.target.tagName === "BUTTON") return;
+                    navigate(`/venue/${v.id}/details`);
+                  }}
+                >
+                  <td>
+                    <div>
+                      <strong style={{ color: '#2c3e50' }}>{v.name}</strong>
+                      <div style={{ fontSize: '0.8rem', color: '#6c757d' }}>Click to view details</div>
+                    </div>
+                  </td>
+                  <td>{v.type}</td>
+                  <td>{v.location}</td>
+                  <td>
+                    <span style={{ fontWeight: 600 }}>{v.capacity_minimum} - {v.capacity_maximum}</span>
+                    <div style={{ fontSize: '0.8rem', color: '#6c757d' }}>people</div>
+                  </td>
+                  <td>
+                    <div style={{ fontWeight: 700, color: '#28a745' }}>${v.price}</div>
+                    <div style={{ fontSize: '0.8rem', color: '#6c757d' }}>({v.priceType})</div>
+                  </td>
+                  <td>
+                    <button 
+                      className="btn btn-primary"
+                      style={{ fontSize: '0.8rem', padding: '8px 12px' }}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        navigate(`/venue/${v.id}/availability`);
+                      }}
+                    >
+                      Set Availability
+                    </button>
+                  </td>
+                  <td>
+                    <button 
+                      className="btn btn-success"
+                      style={{ fontSize: '0.8rem', padding: '8px 12px' }}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        navigate(`/venue/${v.id}/book`);
+                      }}
+                    >
+                      Book
+                    </button>
+                  </td>
+                  <td>
+                    <button 
+                      className="btn btn-danger"
+                      style={{ fontSize: '0.8rem', padding: '8px 12px' }}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleRemoveVenue(v.id);
+                      }}
+                    >
+                      Remove
+                    </button>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
       </div>
 
       {activeVenue && calendarMode === "availability" && renderAvailabilityCalendar(activeVenue)}
       {activeVenue && calendarMode === "booking" && renderBookingCalendar(activeVenue)}
-    </div>
+    </main>
   );
 };
 

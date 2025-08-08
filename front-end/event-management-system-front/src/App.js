@@ -4,6 +4,9 @@ import ServiceProviderDashboard from "./components/service-provider/ServiceProvi
 import EventOrganizerDashboard from "./components/event-organizer/EventOrganizerDashboard";
 import EventAttendeeDashboard from "./components/event-attendee/EventAttendeeDashboard";
 import AdminDashboard from "./components/admin/AdminDashboard";
+import SetAvailability from "./components/venue-provider/SetAvailability";
+import BookVenue from "./components/venue-provider/BookVenue";
+import VenueDetails from "./components/venue-provider/VenueDetails";
 import './App.css';
 
 function App() {
@@ -25,6 +28,10 @@ function App() {
           <Route path="/event-organizer" element={<EventOrganizerDashboard />} />
           <Route path="/event-attendee" element={<EventAttendeeDashboard />} />
           <Route path="/admin/*" element={<AdminDashboard />} />
+          <Route path="/" element={<VenueProviderDashboard />} />
+          <Route path="/venue/:id/availability" element={<SetAvailability />} />
+          <Route path="/venue/:id/book" element={<BookVenue />} />
+          <Route path="/venue/:id/details" element={<VenueDetails />} />
         </Routes>
       </div>
     </Router>
