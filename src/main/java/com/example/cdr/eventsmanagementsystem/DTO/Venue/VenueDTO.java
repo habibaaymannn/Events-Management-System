@@ -1,4 +1,4 @@
-package com.example.cdr.eventsmanagementsystem.DTO;
+package com.example.cdr.eventsmanagementsystem.DTO.Venue;
 
 import com.example.cdr.eventsmanagementsystem.Model.Venue.Capacity;
 import com.example.cdr.eventsmanagementsystem.Model.Venue.Pricing;

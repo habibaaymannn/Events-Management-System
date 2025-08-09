@@ -2,6 +2,7 @@ package com.example.cdr.eventsmanagementsystem.Service.Event;
 
 import java.util.List;
 
+import com.example.cdr.eventsmanagementsystem.Util.AuthUtil;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
@@ -42,8 +43,10 @@ public class EventService implements IEventService {
     }
 
     private Organizer ensureCurrentUserAsOrganizer() {
-        String userId = userSyncService.getCurrentUserId();
+        String userId = AuthUtil.getCurrentUserId();
         String email = userSyncService.getCurrentUserEmail();
+        String firstName = userSyncService.getCurrentUserFirstName();
+        String lastName = userSyncService.getCurrentUserLastName();
         
         Organizer organizer = organizerRepository.findById(userId).orElse(null);
         
@@ -51,6 +54,8 @@ public class EventService implements IEventService {
             organizer = new Organizer();
             organizer.setId(userId);
             organizer.setEmail(email);
+            organizer.setFirstName(firstName);
+            organizer.setLastName(lastName);
             
             organizer = organizerRepository.save(organizer);
         }

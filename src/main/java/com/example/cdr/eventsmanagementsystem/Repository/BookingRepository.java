@@ -11,4 +11,6 @@ import com.example.cdr.eventsmanagementsystem.Model.Booking.Booking;
 public interface BookingRepository extends JpaRepository<Booking, Long> {
     List<Booking> findByBookerId(String bookerId);
     List<Booking> findByEvent_Id(Long eventId);
+    List<Booking> findByService_ServiceProvider_Id(String serviceProviderId);
+    List<Booking> findByVenue_VenueProvider_Id(String venueProviderId);
 }

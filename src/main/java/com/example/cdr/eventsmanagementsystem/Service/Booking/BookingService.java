@@ -5,6 +5,7 @@ import java.time.LocalDateTime;
 import java.util.List;
 import java.util.stream.Collectors;
 
+import com.example.cdr.eventsmanagementsystem.Util.AuthUtil;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -149,7 +150,7 @@ public class BookingService implements IBookingService {
     @Override
     @Transactional
     public ServiceBookingResponse bookService(ServiceBookingRequest request) {
-        com.example.cdr.eventsmanagementsystem.Model.Service.Service service = 
+        com.example.cdr.eventsmanagementsystem.Model.Service.Services service =
                 serviceRepository.findById(request.getServiceId())
                 .orElseThrow(() -> new EntityNotFoundException("Service not found"));
 
@@ -276,7 +277,7 @@ public class BookingService implements IBookingService {
         Booking booking = bookingRepository.findById(request.getBookingId())
                 .orElseThrow(() -> new EntityNotFoundException("Booking not found"));
 
-        String currentUserId = userSyncService.getCurrentUserId();
+        String currentUserId = AuthUtil.getCurrentUserId();
         if (!booking.getBookerId().equals(currentUserId)) {
             throw new RuntimeException("You can only cancel your own bookings");
         }

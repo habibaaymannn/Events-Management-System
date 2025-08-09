@@ -1,8 +1,12 @@
-package com.example.cdr.eventsmanagementsystem.Service;
+package com.example.cdr.eventsmanagementsystem.Service.Venue;
 
+import com.example.cdr.eventsmanagementsystem.Model.Booking.Booking;
+import com.example.cdr.eventsmanagementsystem.Model.Booking.BookingStatus;
+import com.example.cdr.eventsmanagementsystem.Repository.BookingRepository;
+import com.example.cdr.eventsmanagementsystem.Util.AuthUtil;
 import org.springframework.stereotype.Service;
 
-import com.example.cdr.eventsmanagementsystem.DTO.VenueDTO;
+import com.example.cdr.eventsmanagementsystem.DTO.Venue.VenueDTO;
 import com.example.cdr.eventsmanagementsystem.Mapper.VenueMapper;
 import com.example.cdr.eventsmanagementsystem.Model.User.VenueProvider;
 import com.example.cdr.eventsmanagementsystem.Model.Venue.Venue;
@@ -11,14 +15,19 @@ import com.example.cdr.eventsmanagementsystem.Repository.VenueRepository;
 import com.example.cdr.eventsmanagementsystem.Service.Auth.UserSyncService;
 
 import lombok.RequiredArgsConstructor;
+import org.springframework.transaction.annotation.Transactional;
+
+import java.nio.file.AccessDeniedException;
+import java.util.List;
 
 @RequiredArgsConstructor
 @Service
-public class VenueService {
+public class VenueService implements IVenueService {
     private final VenueRepository venueRepository;
     private final VenueMapper venueMapper;
     private final VenueProviderRepository venueProviderRepository;
     private final UserSyncService userSyncService;
+    private final BookingRepository bookingRepository;
 
     public Venue addVenue(VenueDTO dto) {
         Venue newVenue = venueMapper.toVenue(dto);
@@ -47,4 +56,25 @@ public class VenueService {
     public void deleteVenue(Long id) {
         venueRepository.deleteById(id);
     }
+
+
+    public List<Booking> getBookingsForVenueProvider() {
+        String venueProviderId = AuthUtil.getCurrentUserId();
+        return bookingRepository.findByVenue_VenueProvider_Id(venueProviderId);
+    }
+    @Transactional
+    public void cancelBooking(Long bookingId) throws AccessDeniedException {
+        String venueProviderId = AuthUtil.getCurrentUserId();
+        Booking booking = bookingRepository.findById(bookingId)
+                .orElseThrow(() -> new IllegalArgumentException("Booking not found"));
+
+        if (booking.getVenue() == null ||
+                !booking.getVenue().getVenueProvider().getKeycloakId().equals(venueProviderId)) {
+            throw new AccessDeniedException("You are not allowed to cancel this venue booking");
+        }
+
+        booking.setStatus(BookingStatus.CANCELLED);
+        bookingRepository.save(booking);
+    }
+
 }
