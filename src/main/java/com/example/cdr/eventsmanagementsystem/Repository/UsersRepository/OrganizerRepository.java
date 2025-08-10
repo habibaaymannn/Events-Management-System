@@ -1,9 +1,11 @@
 package com.example.cdr.eventsmanagementsystem.Repository.UsersRepository;
 
-import com.example.cdr.eventsmanagementsystem.Model.User.Organizer;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.stereotype.Repository;
 
+import com.example.cdr.eventsmanagementsystem.Model.User.Organizer;
+
+@Repository
 public interface OrganizerRepository extends JpaRepository<Organizer, String> {
-    boolean existsByEmail(String email);
 
 }

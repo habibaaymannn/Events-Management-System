@@ -2,27 +2,29 @@ package com.example.cdr.eventsmanagementsystem.Model.User;
 
 import java.time.LocalDateTime;
 
-import com.fasterxml.jackson.annotation.JsonIgnore;
-import jakarta.persistence.*;
 import org.springframework.data.annotation.CreatedBy;
 import org.springframework.data.annotation.CreatedDate;
 import org.springframework.data.annotation.LastModifiedBy;
 import org.springframework.data.annotation.LastModifiedDate;
 import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 
+import jakarta.persistence.Column;
+import jakarta.persistence.EntityListeners;
+import jakarta.persistence.Id;
+import jakarta.persistence.MappedSuperclass;
 import lombok.EqualsAndHashCode;
 import lombok.Getter;
 import lombok.Setter;
 
-@MappedSuperclass 
+@MappedSuperclass
 @Getter
 @Setter
 @EqualsAndHashCode(onlyExplicitlyIncluded = true)
 @EntityListeners(AuditingEntityListener.class)
-public class User {
+public abstract class BaseRoleEntity {
     @Id
     @EqualsAndHashCode.Include
-    private String id; // Keycloak ID 
+    private String id; // Keycloak ID
 
     @Column(nullable = false)
     private String firstName;
@@ -32,14 +34,6 @@ public class User {
 
     @Column(nullable = false, unique = true)
     private String email;
-
-    @Transient
-    @JsonIgnore
-    private String password;
-
-    @Transient
-    @JsonIgnore
-    private String userType;
 
     @CreatedDate
     private LocalDateTime createdAt;

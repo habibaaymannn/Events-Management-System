@@ -1,6 +1,6 @@
 package com.example.cdr.eventsmanagementsystem.Service.Venue;
 
-import com.example.cdr.eventsmanagementsystem.DTO.VenueDTO;
+import com.example.cdr.eventsmanagementsystem.DTO.Venue.VenueDTO;
 import com.example.cdr.eventsmanagementsystem.Model.Venue.Venue;
 
 import java.nio.file.AccessDeniedException;

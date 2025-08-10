@@ -1,16 +1,26 @@
 package com.example.cdr.eventsmanagementsystem.Mapper;
 
+import java.time.LocalDateTime;
+
 import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;
+import org.mapstruct.MappingTarget;
+import org.mapstruct.Named;
 
 import com.example.cdr.eventsmanagementsystem.DTO.Event.EventDTO;
+import com.example.cdr.eventsmanagementsystem.DTO.Event.EventResponseDTO;
+import com.example.cdr.eventsmanagementsystem.DTO.Event.UpdateEventDTO;
 import com.example.cdr.eventsmanagementsystem.Model.Event.Event;
+import com.example.cdr.eventsmanagementsystem.Model.Event.EventStatus;
+import com.example.cdr.eventsmanagementsystem.Model.User.Organizer;
+import com.example.cdr.eventsmanagementsystem.Model.Venue.Venue;
 
 @Mapper(componentModel = "spring")
 public interface EventMapper {
     @Mapping(target = "id", ignore = true)
     @Mapping(target = "organizer", ignore = true)
     @Mapping(target = "venue", ignore = true)
+    @Mapping(target = "admin", ignore = true)
     @Mapping(target = "bookings", ignore = true)
     @Mapping(target = "status", ignore = true)
     @Mapping(target = "createdBy", ignore = true)
@@ -18,8 +28,77 @@ public interface EventMapper {
     @Mapping(target = "createdDate", ignore = true)
     @Mapping(target = "lastModifiedDate", ignore = true)
     Event toEvent(EventDTO dto);
-    
-    @Mapping(source = "venue.id", target = "venueId")
-    @Mapping(target = "serviceProviderIds", ignore = true)
+
+    default Event toEventWithDefaults(EventDTO dto, Organizer organizer) {
+        Event event = toEvent(dto);
+        
+        if (organizer != null) {
+            event.setOrganizer(organizer);
+            if (organizer.getId() != null) {
+                event.setCreatedBy(organizer.getId());
+                event.setLastModifiedBy(organizer.getId());
+            }
+        }
+
+        if (event.getStatus() == null) {
+            event.setStatus(EventStatus.DRAFT);
+        }
+
+        if (event.getStartTime() == null) {
+            event.setStartTime(LocalDateTime.now());
+        }
+        if (event.getEndTime() == null) {
+            event.setEndTime(event.getStartTime().plusHours(1));
+        }
+
+            // free cancellation default
+        if (event.getFreeCancellationDeadline() == null) {
+            event.setFreeCancellationDeadline(LocalDateTime.now().plusDays(1));
+        }
+
+        if (event.getCreatedDate() == null) {
+            event.setCreatedDate(LocalDateTime.now());
+        }
+        event.setLastModifiedDate(LocalDateTime.now());
+        
+        return event;
+    }
+
+    @Mapping(target = "id", ignore = true)
+    @Mapping(target = "organizer", ignore = true)
+    @Mapping(target = "venue", ignore = true)
+    @Mapping(target = "admin", ignore = true)
+    @Mapping(target = "bookings", ignore = true)
+    @Mapping(target = "status", ignore = true)
+    @Mapping(target = "createdBy", ignore = true)
+    @Mapping(target = "lastModifiedBy", ignore = true)
+    @Mapping(target = "createdDate", ignore = true)
+    @Mapping(target = "lastModifiedDate", ignore = true)
+    @Mapping(target = "freeCancellationDeadline", ignore = true)
+    void updateEventFromDTO(UpdateEventDTO dto, @MappingTarget Event event);
+
+    @Mapping(source = "organizer.id", target = "organizerId")
     EventDTO toEventDTO(Event event);
+
+    UpdateEventDTO toUpdateEventDTO(Event event);
+
+    @Mapping(source = "organizer.id", target = "organizerId")
+    @Mapping(source = "organizer", target = "organizerName", qualifiedByName = "getOrganizerName")
+    @Mapping(source = "venue.id", target = "venueId")
+    @Mapping(source = "venue", target = "venueName", qualifiedByName = "getVenueName")
+    @Mapping(target = "serviceProviderIds", ignore = true)
+    @Mapping(target = "serviceProviderNames", ignore = true)
+    EventResponseDTO toEventResponseDTO(Event event);
+
+    @Named("getOrganizerName")
+    default String getOrganizerName(Organizer organizer) {
+        if (organizer == null) return null;
+        return organizer.getFirstName() + " " + organizer.getLastName();
+    }
+
+    @Named("getVenueName")
+    default String getVenueName(Venue venue) {
+        if (venue == null) return null;
+        return venue.getName();
+    }
 }

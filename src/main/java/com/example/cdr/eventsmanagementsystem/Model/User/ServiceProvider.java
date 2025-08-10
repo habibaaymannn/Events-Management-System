@@ -2,12 +2,9 @@ package com.example.cdr.eventsmanagementsystem.Model.User;
 
 import java.util.ArrayList;
 import java.util.List;
-<<<<<<< Updated upstream
 
-=======
->>>>>>> Stashed changes
+
 import com.example.cdr.eventsmanagementsystem.Model.Service.Services;
-
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.Entity;
 import jakarta.persistence.OneToMany;
@@ -19,7 +16,7 @@ import lombok.Setter;
 @Getter
 @Setter
 @Table(name = "service_providers")
-public class ServiceProvider extends User {
+public class ServiceProvider extends BaseRoleEntity {
     @OneToMany(mappedBy = "serviceProvider")
     @JsonIgnore
     private List<Services> services = new ArrayList<>();

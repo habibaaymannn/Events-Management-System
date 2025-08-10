@@ -6,7 +6,4 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import java.util.Optional;
 
 public interface VenueProviderRepository extends JpaRepository<VenueProvider, String> {
-    Optional<VenueProvider> findById(String id);
-    boolean existsByEmail(String email);
-
 }

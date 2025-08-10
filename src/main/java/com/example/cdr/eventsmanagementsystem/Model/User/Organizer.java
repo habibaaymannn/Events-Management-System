@@ -15,7 +15,8 @@ import lombok.Setter;
 @Getter
 @Setter
 @Table(name = "organizers")
-public class Organizer extends User {
+public class Organizer extends BaseRoleEntity {
+
     @OneToMany(mappedBy = "organizer")
     private List<Event> events = new ArrayList<>();
 }
