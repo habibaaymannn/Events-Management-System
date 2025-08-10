@@ -12,7 +12,7 @@ public interface VenueMapper {
     @Mapping(source = "type", target = "type",  qualifiedByName = "stringToType")
     Venue toVenue(VenueDTO dto);
 
-    void updateVenue(VenueDTO dto,@MappingTarget     Venue venue);
+    void updateVenue(VenueDTO dto,@MappingTarget Venue venue);
 
     @Named("stringToType")
     Type stringToType(String type);

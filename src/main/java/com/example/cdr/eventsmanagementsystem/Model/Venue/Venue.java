@@ -36,6 +36,10 @@ public class Venue {
     @Column(nullable = false)
     private Type type;
 
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false)
+    private Availability availability;
+
     @Column(nullable = false)
     private String location;
 
@@ -44,6 +48,7 @@ public class Venue {
 
     @Embedded
     private Pricing pricing;
+
 
     @ElementCollection
     private List<String> images;

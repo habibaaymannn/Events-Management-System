@@ -11,6 +11,7 @@ import java.util.List;
 public class VenueDTO {
     private String name;
     private String type;
+    private String availability;
     private String location;
     private Capacity capacity;
     private Pricing pricing;

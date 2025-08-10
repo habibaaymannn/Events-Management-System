@@ -2,7 +2,10 @@ package com.example.cdr.eventsmanagementsystem.Model.User;
 
 import java.util.ArrayList;
 import java.util.List;
+<<<<<<< Updated upstream
 
+=======
+>>>>>>> Stashed changes
 import com.example.cdr.eventsmanagementsystem.Model.Service.Services;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;

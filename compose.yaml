@@ -1,6 +1,7 @@
 services:
   postgres:
     image: 'postgres:latest'
+    container_name: ems-postgres
     environment:
       - POSTGRES_DB=Events-Management-System
       - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
@@ -9,13 +10,20 @@ services:
       - '5432:5432'
   keycloak:
     image: quay.io/keycloak/keycloak:25.0.1
+    container_name: ems-keycloak
     command:
       - start-dev
+      - --import-realm
+      - --features=scripts,admin-fine-grained-authz
     ports:
       - '8180:8080'
     environment:
-      KEYCLOAK_ADMIN: ${KEYCLOAK_USERNAME}
-      KEYCLOAK_ADMIN_PASSWORD: ${KEYCLOAK_PASSWORD}
-      KC_HTTP_PORT: 8080
-      KC_HOSTNAME_URL: http://localhost:8180
-      KC_HOSTNAME_ADMIN_URL: http://localhost:8180
+      - KEYCLOAK_ADMIN=${KEYCLOAK_USERNAME}
+      - KEYCLOAK_ADMIN_PASSWORD=${KEYCLOAK_PASSWORD}
+      - KC_HTTP_PORT=8080
+      - KC_HOSTNAME_URL=http://localhost:8180
+      - KC_HOSTNAME_ADMIN_URL=http://localhost:8180
+      - KC_USER_PROFILE_ENABLED=true
+    volumes:
+      - C:/IntelliJ IDEA 2024.2.4/Keycloak-role-spi/target/Keycloak-role-spi-0.0.1-SNAPSHOT.jar:/opt/keycloak/providers/Keycloak-role-spi-0.0.1-SNAPSHOT.jar
+#      - ./Keycloak/realm.json:/opt/keycloak/data/import/realm.json

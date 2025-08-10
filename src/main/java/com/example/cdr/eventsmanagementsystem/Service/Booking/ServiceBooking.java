@@ -3,8 +3,6 @@ package com.example.cdr.eventsmanagementsystem.Service.Booking;
 import com.example.cdr.eventsmanagementsystem.Model.Booking.Booking;
 import com.example.cdr.eventsmanagementsystem.Model.Booking.BookingStatus;
 import com.example.cdr.eventsmanagementsystem.Model.Service.Services;
-import com.example.cdr.eventsmanagementsystem.NotificationEvent.ServiceBooked;
-import com.example.cdr.eventsmanagementsystem.NotificationEvent.ServiceCancelled;
 import com.example.cdr.eventsmanagementsystem.Repository.BookingRepository;
 import com.example.cdr.eventsmanagementsystem.Repository.ServiceRepository;
 import lombok.RequiredArgsConstructor;
