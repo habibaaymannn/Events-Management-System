@@ -23,10 +23,10 @@ function App() {
           </ul>
         </nav>
         <Routes>
-          <Route path="/venue-provider" element={<VenueProviderDashboard />} />
-          <Route path="/service-provider" element={<ServiceProviderDashboard />} />
-          <Route path="/event-organizer" element={<EventOrganizerDashboard />} />
-          <Route path="/event-attendee" element={<EventAttendeeDashboard />} />
+          <Route path="/venue-provider/*" element={<VenueProviderDashboard />} />
+          <Route path="/service-provider/*" element={<ServiceProviderDashboard />} />
+          <Route path="/event-organizer/*" element={<EventOrganizerDashboard />} />
+          <Route path="/event-attendee/*" element={<EventAttendeeDashboard />} />
           <Route path="/admin/*" element={<AdminDashboard />} />
           <Route path="/" element={<VenueProviderDashboard />} />
           <Route path="/venue/:id/availability" element={<SetAvailability />} />

@@ -43,47 +43,53 @@ const EventMonitoring = () => {
   };
 
   return (
-    <div>
-      <h3>Event Monitoring</h3>
-      <table className="admin-table">
-        <thead>
-          <tr>
-            <th>Event Name</th>
-            <th>Owner</th>
-            <th>Location</th>
-            <th>Date/Time</th>
-            <th>Status</th>
-            <th>Approval</th>
-            <th>Actions</th>
-          </tr>
-        </thead>
-        <tbody>
-          {events.map((e) => (
-            <tr key={e.id}>
-              <td>{e.name}</td>
-              <td>{e.owner}</td>
-              <td>{e.location}</td>
-              <td>{e.date}</td>
-              <td>{e.status}</td>
-              <td>{e.approval}</td>
-              <td>
-                <button
-                  onClick={() => handleCancel(e.id)}
-                  disabled={e.status === "Cancelled" || e.status === "Completed"}
-                >
-                  Cancel
-                </button>
-                <button
-                  onClick={() => handleFlag(e.id)}
-                  disabled={e.approval === "Flagged"}
-                >
-                  Flag
-                </button>
-              </td>
+    <div className="admin-page">
+      <div className="page-header">
+        <h3 className="page-title">Event Monitoring</h3>
+        <p className="page-subtitle">Monitor event status, approvals, and take administrative actions</p>
+      </div>
+
+      <div className="admin-section">
+        <table className="admin-table">
+          <thead>
+            <tr>
+              <th>Event Name</th>
+              <th>Owner</th>
+              <th>Location</th>
+              <th>Date/Time</th>
+              <th>Status</th>
+              <th>Approval</th>
+              <th>Actions</th>
             </tr>
-          ))}
-        </tbody>
-      </table>
+          </thead>
+          <tbody>
+            {events.map((e) => (
+              <tr key={e.id}>
+                <td>{e.name}</td>
+                <td>{e.owner}</td>
+                <td>{e.location}</td>
+                <td>{e.date}</td>
+                <td>{e.status}</td>
+                <td>{e.approval}</td>
+                <td>
+                  <button
+                    onClick={() => handleCancel(e.id)}
+                    disabled={e.status === "Cancelled" || e.status === "Completed"}
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    onClick={() => handleFlag(e.id)}
+                    disabled={e.approval === "Flagged"}
+                  >
+                    Flag
+                  </button>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
     </div>
   );
 };

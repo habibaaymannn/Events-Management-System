@@ -1,6 +1,7 @@
 import React from "react";
 import "./Analytics.css";
 import { PieChart, Pie, Cell, Legend, Tooltip, ResponsiveContainer } from "recharts";
+import { useNavigate } from "react-router-dom";
 
 // Mock data
 const events = [
@@ -114,155 +115,172 @@ const renderCustomLabel = ({
   );
 };
 
-const Analytics = () => (
-  <div className="analytics-dashboard">
-    <h3>Analytics Dashboard</h3>
-    <div className="analytics-grid">
-      {/* Main Pie Chart */}
-      <div className="analytics-card" style={{ minHeight: 400 }}>
-        <h4>Total Events by Status</h4>
-        <ResponsiveContainer width="100%" height={320}>
-          <PieChart>
-            <Pie
-              data={pieData}
-              dataKey="value"
-              nameKey="name"
-              cx="50%"
-              cy="50%"
-              outerRadius={110}
-              label={renderCustomLabel}
-              labelLine={false}
-            >
-              {pieData.map((entry, idx) => (
-                <Cell key={`cell-${idx}`} fill={pieColors[idx]} />
-              ))}
-            </Pie>
-            <Tooltip />
-            <Legend />
-          </PieChart>
-        </ResponsiveContainer>
+const Analytics = () => {
+  const navigate = useNavigate();
+
+  const handleEventStatusClick = () => {
+    navigate('/admin/events');
+  };
+
+  const handleUserBreakdownClick = () => {
+    navigate('/admin/users');
+  };
+
+  return (
+    <div className="analytics-dashboard">
+      {/* Admin Header */}
+      <div className="admin-header">
+        <h2 className="admin-title">Admin Dashboard</h2>
+        <p className="admin-subtitle">Monitor and manage your event management system</p>
       </div>
-      {/* User Breakdown as bar chart */}
-      <div className="analytics-card">
-        <h4>User Breakdown</h4>
-        <div className="bar-list">
-          {userRoles.map(([role, count]) => (
-            <div className="bar-row" key={role}>
-              <span className="bar-label">{role}</span>
-              <div className="bar-bg">
-                <div
-                  className="bar-fill"
-                  style={{
-                    width: `${(count / maxUserCount) * 100}%`,
-                    background: "#1976d2"
-                  }}
-                />
-              </div>
-              <span className="bar-value">{count}</span>
-            </div>
-          ))}
+
+      <div className="analytics-grid">
+        {/* Main Pie Chart */}
+        <div className="analytics-card clickable-card" style={{ minHeight: 400 }} onClick={handleEventStatusClick}>
+          <h4>Total Events by Status <span className="link-indicator">→</span></h4>
+          <ResponsiveContainer width="100%" height={320}>
+            <PieChart>
+              <Pie
+                data={pieData}
+                dataKey="value"
+                nameKey="name"
+                cx="50%"
+                cy="50%"
+                outerRadius={110}
+                label={renderCustomLabel}
+                labelLine={false}
+              >
+                {pieData.map((entry, idx) => (
+                  <Cell key={`cell-${idx}`} fill={pieColors[idx]} />
+                ))}
+              </Pie>
+              <Tooltip />
+              <Legend />
+            </PieChart>
+          </ResponsiveContainer>
         </div>
-      </div>
-      {/* Venue Utilization as mini pie */}
-      <div className="analytics-card">
-        <h4>Venue Utilization Rate</h4>
-        <ResponsiveContainer width={120} height={120}>
-          <PieChart>
-            <Pie
-              data={venuePie}
-              dataKey="value"
-              nameKey="name"
-              cx="50%"
-              cy="50%"
-              innerRadius={35}
-              outerRadius={55}
-              labelLine={false}
-            >
-              {venuePie.map((entry, idx) => (
-                <Cell key={`cell-venue-${idx}`} fill={utilColors[idx]} />
-              ))}
-            </Pie>
-            <Tooltip />
-          </PieChart>
-        </ResponsiveContainer>
-        <p className="analytics-number">{venueUtilization}%</p>
-        <p>
-          {bookedVenues} booked / {totalVenues} total
-        </p>
-      </div>
-      {/* Service Providers Utilization as mini pie */}
-      <div className="analytics-card">
-        <h4>Service Providers Utilization Rate</h4>
-        <ResponsiveContainer width={120} height={120}>
-          <PieChart>
-            <Pie
-              data={servicePie}
-              dataKey="value"
-              nameKey="name"
-              cx="50%"
-              cy="50%"
-              innerRadius={35}
-              outerRadius={55}
-              labelLine={false}
-            >
-              {servicePie.map((entry, idx) => (
-                <Cell key={`cell-service-${idx}`} fill={utilColors[idx]} />
-              ))}
-            </Pie>
-            <Tooltip />
-          </PieChart>
-        </ResponsiveContainer>
-        <p className="analytics-number">{serviceUtilization}%</p>
-        <p>
-          {bookedServices} booked / {totalServices} total
-        </p>
-      </div>
-      {/* Event Type Distribution as bar chart */}
-      <div className="analytics-card">
-        <h4>Event Type Distribution</h4>
-        <div className="bar-list">
-          {eventTypes.map(([type, count]) => (
-            <div className="bar-row" key={type}>
-              <span className="bar-label">{type}</span>
-              <div className="bar-bg">
-                <div
-                  className="bar-fill"
-                  style={{
-                    width: `${(count / maxTypeCount) * 100}%`,
-                    background: "#43a047"
-                  }}
-                />
+        {/* User Breakdown as bar chart */}
+        <div className="analytics-card clickable-card" onClick={handleUserBreakdownClick}>
+          <h4>User Breakdown <span className="link-indicator">→</span></h4>
+          <div className="bar-list">
+            {userRoles.map(([role, count]) => (
+              <div className="bar-row" key={role}>
+                <span className="bar-label">{role}</span>
+                <div className="bar-bg">
+                  <div
+                    className="bar-fill"
+                    style={{
+                      width: `${(count / maxUserCount) * 100}%`,
+                      background: "#1976d2"
+                    }}
+                  />
+                </div>
+                <span className="bar-value">{count}</span>
               </div>
-              <span className="bar-value">{count}</span>
-            </div>
-          ))}
+            ))}
+          </div>
         </div>
-      </div>
-      {/* Daily Cancellation Count */}
-      <div className="analytics-card">
-  <h4>Daily Cancellation Count</h4>
-  <div style={{ display: "flex", alignItems: "center", justifyContent: "center", height: "100px" }}>
-    <span className="analytics-number">{dailyCancellations}</span>
-  </div>
-  </div>
-      {/* Daily Booking Count */}
-      <div className="analytics-card">
-      <h4>Daily Booking Count</h4>
-      <div style={{ display: "flex", alignItems: "center", justifyContent: "center", height: "100px" }}>
-        <span className="analytics-number">{dailyBookings}</span>
-      </div>
-  </div>
-      {/* Revenue per Organizer */}
-      <div className="analytics-card">
-        <h4>Revenue per Organizer</h4>
-        <ul>
-          {Object.entries(revenuePerOrganizer).map(([org, rev]) => (
-            <li key={org}><strong>{org}:</strong> ${rev}</li>
-          ))}
-        </ul>
+        {/* Venue Utilization as mini pie */}
+        <div className="analytics-card">
+          <h4>Venue Utilization Rate</h4>
+          <ResponsiveContainer width={120} height={120}>
+            <PieChart>
+              <Pie
+                data={venuePie}
+                dataKey="value"
+                nameKey="name"
+                cx="50%"
+                cy="50%"
+                innerRadius={35}
+                outerRadius={55}
+                labelLine={false}
+              >
+                {venuePie.map((entry, idx) => (
+                  <Cell key={`cell-venue-${idx}`} fill={utilColors[idx]} />
+                ))}
+              </Pie>
+              <Tooltip />
+            </PieChart>
+          </ResponsiveContainer>
+          <p className="analytics-number">{venueUtilization}%</p>
+          <p>
+            {bookedVenues} booked / {totalVenues} total
+          </p>
+        </div>
+        {/* Service Providers Utilization as mini pie */}
+        <div className="analytics-card">
+          <h4>Service Providers Utilization Rate</h4>
+          <ResponsiveContainer width={120} height={120}>
+            <PieChart>
+              <Pie
+                data={servicePie}
+                dataKey="value"
+                nameKey="name"
+                cx="50%"
+                cy="50%"
+                innerRadius={35}
+                outerRadius={55}
+                labelLine={false}
+              >
+                {servicePie.map((entry, idx) => (
+                  <Cell key={`cell-service-${idx}`} fill={utilColors[idx]} />
+                ))}
+              </Pie>
+              <Tooltip />
+            </PieChart>
+          </ResponsiveContainer>
+          <p className="analytics-number">{serviceUtilization}%</p>
+          <p>
+            {bookedServices} booked / {totalServices} total
+          </p>
+        </div>
+        {/* Event Type Distribution as bar chart */}
+        <div className="analytics-card">
+          <h4>Event Type Distribution</h4>
+          <div className="bar-list">
+            {eventTypes.map(([type, count]) => (
+              <div className="bar-row" key={type}>
+                <span className="bar-label">{type}</span>
+                <div className="bar-bg">
+                  <div
+                    className="bar-fill"
+                    style={{
+                      width: `${(count / maxTypeCount) * 100}%`,
+                      background: "#43a047"
+                    }}
+                  />
+                </div>
+                <span className="bar-value">{count}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+        {/* Daily Cancellation Count */}
+        <div className="analytics-card">
+          <h4>Daily Cancellation Count</h4>
+          <div style={{ display: "flex", alignItems: "center", justifyContent: "center", height: "100px" }}>
+            <span className="analytics-number">{dailyCancellations}</span>
+          </div>
+        </div>
+        {/* Daily Booking Count */}
+        <div className="analytics-card">
+          <h4>Daily Booking Count</h4>
+          <div style={{ display: "flex", alignItems: "center", justifyContent: "center", height: "100px" }}>
+            <span className="analytics-number">{dailyBookings}</span>
+          </div>
+        </div>
+        {/* Revenue per Organizer */}
+        <div className="analytics-card">
+          <h4>Revenue per Organizer</h4>
+          <ul>
+            {Object.entries(revenuePerOrganizer).map(([org, rev]) => (
+              <li key={org}><strong>{org}:</strong> ${rev}</li>
+            ))}
+          </ul>
+        </div>
       </div>
     </div>
-  </div>
-);
+  );
+};
 
 export default Analytics;
