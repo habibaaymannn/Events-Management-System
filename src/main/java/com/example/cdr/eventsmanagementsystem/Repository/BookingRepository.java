@@ -17,6 +17,9 @@ public interface BookingRepository extends JpaRepository<Booking, Long> {
     List<Booking> findByBookerId(String bookerId);
     List<Booking> findByEvent_Id(Long eventId);
 
+    List<Booking> findByService_ServiceProvider_Id(String serviceProviderId);
+    List<Booking> findByVenue_VenueProvider_Id(String venueProviderId);
+
     long countByVenueIsNotNullAndStatus(BookingStatus status);
 
     @Query("select function('date', b.createdAt) as date, count(b) as count from Booking b "+

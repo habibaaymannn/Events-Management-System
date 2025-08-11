@@ -116,12 +116,12 @@ public class UserSyncService {
             return "organizer";
         }
         if (authentication.getAuthorities().stream()
-                .anyMatch(auth -> auth.getAuthority().equals("ROLE_venue_provider"))) {
-            return "venue_provider";
+                .anyMatch(auth -> auth.getAuthority().equals("ROLE_venue provider"))) {
+            return "venue provider";
         }
         if (authentication.getAuthorities().stream()
-                .anyMatch(auth -> auth.getAuthority().equals("ROLE_service_provider"))) {
-            return "service_provider";
+                .anyMatch(auth -> auth.getAuthority().equals("ROLE_service provider"))) {
+            return "service provider";
         }
         if (authentication.getAuthorities().stream()
                 .anyMatch(auth -> auth.getAuthority().equals("ROLE_attendee"))) {
@@ -137,9 +137,9 @@ public class UserSyncService {
                 return attendeeRepository.findById(userId).orElse(null);
             case "organizer":
                 return organizerRepository.findById(userId).orElse(null);
-            case "service_provider":
+            case "service provider":
                 return serviceProviderRepository.findById(userId).orElse(null);
-            case "venue_provider":
+            case "venue provider":
                 return venueProviderRepository.findById(userId).orElse(null);
             default:
                 return attendeeRepository.findById(userId).orElse(null);
@@ -168,9 +168,9 @@ public class UserSyncService {
                 return new Attendee();
             case "organizer":
                 return new Organizer();
-            case "service_provider":
+            case "service provider":
                 return new ServiceProvider();
-            case "venue_provider":
+            case "venue provider":
                 return new VenueProvider();
             case "admin":
                 return new Admin();
@@ -185,9 +185,9 @@ public class UserSyncService {
                 return attendeeRepository.save((Attendee) user);
             case "organizer":
                 return organizerRepository.save((Organizer) user);
-            case "service_provider":
+            case "service provider":
                 return serviceProviderRepository.save((ServiceProvider) user);
-            case "venue_provider":
+            case "venue provider":
                     return venueProviderRepository.save((VenueProvider) user);
             default:
                 return attendeeRepository.save((Attendee) user);
@@ -213,6 +213,28 @@ public class UserSyncService {
             return jwt.getClaimAsString("email");
         }
         
+        return null;
+    }
+
+    public String getCurrentUserFirstName() {
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+
+        if (authentication != null && authentication.getPrincipal() instanceof Jwt) {
+            Jwt jwt = (Jwt) authentication.getPrincipal();
+            return jwt.getClaimAsString("given_name");
+        }
+
+        return null;
+    }
+
+    public String getCurrentUserLastName() {
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+
+        if (authentication != null && authentication.getPrincipal() instanceof Jwt) {
+            Jwt jwt = (Jwt) authentication.getPrincipal();
+            return jwt.getClaimAsString("family_name");
+        }
+
         return null;
     }
 

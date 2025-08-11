@@ -1,5 +1,7 @@
 package com.example.cdr.eventsmanagementsystem.Controller;
 
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -23,11 +25,13 @@ import lombok.extern.slf4j.Slf4j;
 @RestController
 @RequestMapping("/v1/payments")
 @RequiredArgsConstructor
+@Tag(name = "Payment", description = "Payment management APIs")
 public class PaymentController {
 
     private final IStripeService stripeService;
     private final PaymentMapper paymentMapper;
 
+    @Operation(summary = "Create a payment intent", description = "Creates a Stripe payment intent with optional customer creation")
     @PostMapping("/create-intent")
     public ResponseEntity<PaymentIntentResponse> createPaymentIntent(
             @RequestBody CreatePaymentIntentRequest request) {
@@ -39,24 +43,26 @@ public class PaymentController {
         return ResponseEntity.ok(response);
     }
 
+    @Operation(summary = "Retrieve a payment intent", description = "Retrieves a Stripe payment intent by its ID")
     @GetMapping("/intent/{paymentIntentId}")
     public ResponseEntity<PaymentIntentResponse> getPaymentIntent(
             @PathVariable String paymentIntentId) {
-        
+
         PaymentIntent paymentIntent = stripeService.retrievePaymentIntent(paymentIntentId);
         PaymentIntentResponse response = paymentMapper.fromStripePaymentIntent(paymentIntent);
         return ResponseEntity.ok(response);
     }
 
+    @Operation(summary = "Confirm a payment", description = "Confirms a Stripe payment intent using payment method ID")
     @PostMapping("/confirm")
     public ResponseEntity<PaymentIntentResponse> confirmPayment(
             @RequestBody ConfirmPaymentRequest request) {
-                
+
         try {
             PaymentIntent paymentIntent = stripeService.confirmPayment(request);
             PaymentIntentResponse response = paymentMapper.fromStripePaymentIntent(paymentIntent);
             return ResponseEntity.ok(response);
-            
+
         } catch (Exception e) {
             return ResponseEntity.status(HttpStatus.BAD_REQUEST).build();
         }

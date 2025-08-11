@@ -1,5 +1,5 @@
 package com.example.cdr.eventsmanagementsystem.Mapper;
-import com.example.cdr.eventsmanagementsystem.DTO.VenueDTO;
+import com.example.cdr.eventsmanagementsystem.DTO.Venue.VenueDTO;
 import com.example.cdr.eventsmanagementsystem.Model.Venue.Type;
 import com.example.cdr.eventsmanagementsystem.Model.Venue.Venue;
 import org.mapstruct.Mapper;

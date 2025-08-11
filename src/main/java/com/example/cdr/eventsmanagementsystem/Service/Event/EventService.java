@@ -2,6 +2,7 @@ package com.example.cdr.eventsmanagementsystem.Service.Event;
 
 import java.util.List;
 
+import com.example.cdr.eventsmanagementsystem.Util.AuthUtil;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
@@ -37,6 +38,8 @@ public class EventService implements IEventService {
         Event savedEvent = eventRepository.save(event);
         return eventMapper.toEventResponseDTO(savedEvent);
     }
+
+    
 
     @Override
     public EventResponseDTO getEventById(Long id) {
