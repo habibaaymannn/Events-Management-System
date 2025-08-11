@@ -1,8 +1,11 @@
 package com.example.cdr.eventsmanagementsystem.Repository;
 
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.List;
 
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
@@ -33,4 +36,10 @@ public interface BookingRepository extends JpaRepository<Booking, Long> {
            "group by function('date', b.cancelledAt) order by function('date', b.cancelledAt)")
     List<LocalDateCount> countDailyCancellationsBetween(@Param("start") LocalDate start,
                                                         @Param("end") LocalDate end);
+
+    Page<Booking> findByStatusAndUpdatedAtBetweenAndStripePaymentIdIsNotNull(
+            BookingStatus status,
+            LocalDateTime start,
+            LocalDateTime end,
+            Pageable pageable);
 }

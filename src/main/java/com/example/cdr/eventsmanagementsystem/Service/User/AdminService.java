@@ -4,12 +4,16 @@ import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.Comparator;
+import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -43,6 +47,7 @@ import com.example.cdr.eventsmanagementsystem.Repository.VenueRepository;
 import com.example.cdr.eventsmanagementsystem.Service.Auth.UserSyncService;
 import com.example.cdr.eventsmanagementsystem.Service.Booking.IStripeService;
 
+import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
 
 @Service
@@ -107,21 +112,47 @@ public class AdminService implements IAdminService {
 
     @Override
     public UserDetailsDto updateUserRole(String userId, String role) {
-        BaseRoleEntity found = userSyncService.findUserById(userId);
-        if (found == null) {
+        BaseRoleEntity existing = userSyncService.findUserById(userId);
+        if (existing == null) {
             throw new IllegalArgumentException("User not found: " + userId);
         }
 
-        switch (found) {
-            case Admin admin -> adminRepository.save(admin);
-            case Organizer organizer -> organizerRepository.save(organizer);
-            case ServiceProvider serviceProvider -> serviceProviderRepository.save(serviceProvider);
-            case VenueProvider venueProvider -> venueProviderRepository.save(venueProvider);
-            case Attendee attendee -> attendeeRepository.save(attendee);
-            default -> throw new IllegalArgumentException("Unknown user role");
+        String normalizedRole = role == null ? "" : role.toLowerCase().replace('_', ' ').trim();
+
+        BaseRoleEntity target = switch (normalizedRole) {
+            case "admin" -> new Admin();
+            case "organizer" -> new Organizer();
+            case "service provider" -> new ServiceProvider();
+            case "venue provider" -> new VenueProvider();
+            case "attendee" -> new Attendee();
+            default -> throw new IllegalArgumentException("Unknown target role: " + role);
+        };
+
+        if (existing.getClass().equals(target.getClass())) {
+            return adminMapper.toUserDetails(existing);
         }
 
-        return adminMapper.toUserDetails(found);
+        target.setId(existing.getId());
+        target.setFirstName(existing.getFirstName());
+        target.setLastName(existing.getLastName());
+        target.setEmail(existing.getEmail());
+        target.setActive(existing.isActive());
+
+        if (existing instanceof Admin) {
+            adminRepository.deleteById(userId);
+        } else if (existing instanceof Organizer) {
+            organizerRepository.deleteById(userId);
+        } else if (existing instanceof ServiceProvider) {
+            serviceProviderRepository.deleteById(userId);
+        } else if (existing instanceof VenueProvider) {
+            venueProviderRepository.deleteById(userId);
+        } else if (existing instanceof Attendee) {
+            attendeeRepository.deleteById(userId);
+        }
+
+        userSyncService.saveUser(target);
+
+        return adminMapper.toUserDetails(target);
     }
 
     @Override
@@ -156,14 +187,16 @@ public class AdminService implements IAdminService {
 
     @Override
     public void cancelEvent(Long eventId) {
-        Event event = eventRepository.findById(eventId).orElseThrow();
+        Event event = eventRepository.findById(eventId)
+                .orElseThrow(() -> new EntityNotFoundException("Event not found with id: " + eventId));
         event.setStatus(EventStatus.CANCELLED);
         eventRepository.save(event);
     }
 
     @Override
     public void flagEvent(Long eventId, String reason) {
-        Event event = eventRepository.findById(eventId).orElseThrow();
+        Event event = eventRepository.findById(eventId)
+                .orElseThrow(() -> new EntityNotFoundException("Event not found with id: " + eventId));
         event.setFlagged(true);
         event.setFlagReason(reason);
         eventRepository.save(event);
@@ -215,26 +248,49 @@ public class AdminService implements IAdminService {
 
     @Override
     public Page<OrganizerRevenueDto> getRevenuePerOrganizer(LocalDate startDate, LocalDate endDate, Pageable pageable) {
-        Map<String, BigDecimal> totalsByOrganizer = bookingRepository.findAll().stream()
-                .filter(b -> b.getStatus() == BookingStatus.BOOKED)
-                .filter(b -> b.getUpdatedAt() != null)
-                .filter(b -> {
-                    LocalDate d = b.getUpdatedAt().toLocalDate();
-                    return !d.isBefore(startDate) && !d.isAfter(endDate);
-                })
-                .collect(Collectors.groupingBy(Booking::getBookerId,
-                        Collectors.mapping(
-                                Booking::getStripePaymentId,
-                                Collectors.reducing(BigDecimal.ZERO, id -> {
-                                    if (id == null) return BigDecimal.ZERO;
-                                    try {
-                                        var intent = stripeService.retrievePaymentIntent(id);
-                                        return BigDecimal.valueOf(intent.getAmount()).divide(BigDecimal.valueOf(100));
-                                    } catch (Exception e) {
-                                        return BigDecimal.ZERO;
-                                    }
-                                }, BigDecimal::add)
-                        )));
+        // Aggregate amounts per organizer using paginated scan and cached Stripe lookups
+        Map<String, BigDecimal> totalsByOrganizer = new HashMap<>();
+        Map<String, BigDecimal> paymentAmountCache = new HashMap<>();
+
+        java.time.LocalDateTime startTs = startDate.atStartOfDay();
+        java.time.LocalDateTime endTs = endDate.atTime(java.time.LocalTime.MAX);
+
+        PageRequest scanPage = PageRequest.of(0, 500);
+        Page<Booking> page;
+        do {
+            page = bookingRepository.findByStatusAndUpdatedAtBetweenAndStripePaymentIdIsNotNull(
+                    BookingStatus.BOOKED, startTs, endTs, scanPage);
+
+            // Deduplicate payment intent IDs per page
+            Set<String> uniquePaymentIds = page.getContent().stream()
+                    .map(Booking::getStripePaymentId)
+                    .filter(id -> id != null && !id.isBlank())
+                    .collect(Collectors.toCollection(HashSet::new));
+
+            for (String paymentId : uniquePaymentIds) {
+                if (!paymentAmountCache.containsKey(paymentId)) {
+                    try {
+                        var intent = stripeService.retrievePaymentIntent(paymentId);
+                        BigDecimal amount = BigDecimal.valueOf(intent.getAmount())
+                                .divide(BigDecimal.valueOf(100));
+                        paymentAmountCache.put(paymentId, amount);
+                    } catch (Exception e) {
+                        paymentAmountCache.put(paymentId, BigDecimal.ZERO);
+                    }
+                }
+            }
+
+            // Accumulate totals per organizer
+            for (Booking b : page.getContent()) {
+                String organizerId = b.getBookerId();
+                String paymentId = b.getStripePaymentId();
+                if (paymentId == null || paymentId.isBlank()) continue;
+                BigDecimal amount = paymentAmountCache.getOrDefault(paymentId, BigDecimal.ZERO);
+                totalsByOrganizer.merge(organizerId, amount, BigDecimal::add);
+            }
+
+            scanPage = scanPage.next();
+        } while (page.hasNext());
 
         List<OrganizerRevenueDto> items = totalsByOrganizer.entrySet().stream()
                 .map(e -> {
