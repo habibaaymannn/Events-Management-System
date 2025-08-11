@@ -238,6 +238,11 @@ public class UserSyncService {
         return null;
     }
 
+    public String getCurrentUserRole() {
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        return getCurrentUserRole(authentication);
+    }
+
     public BaseRoleEntity findUserById(String id) {
         BaseRoleEntity user = adminRepository.findById(id).orElse(null);
         if (user != null) return user;

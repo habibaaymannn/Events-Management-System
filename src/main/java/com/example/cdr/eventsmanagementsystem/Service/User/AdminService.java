@@ -117,13 +117,11 @@ public class AdminService implements IAdminService {
             throw new IllegalArgumentException("User not found: " + userId);
         }
 
-        String normalizedRole = role == null ? "" : role.toLowerCase().replace('_', ' ').trim();
-
-        BaseRoleEntity target = switch (normalizedRole) {
+        BaseRoleEntity target = switch (role) {
             case "admin" -> new Admin();
             case "organizer" -> new Organizer();
-            case "service provider" -> new ServiceProvider();
-            case "venue provider" -> new VenueProvider();
+            case "service_provider" -> new ServiceProvider();
+            case "venue_provider" -> new VenueProvider();
             case "attendee" -> new Attendee();
             default -> throw new IllegalArgumentException("Unknown target role: " + role);
         };
@@ -168,6 +166,7 @@ public class AdminService implements IAdminService {
     @Override
     public void resetPassword(String userId) {
         // TODO: Implement password reset
+        throw new UnsupportedOperationException("Not implemented");
     }
 
     @Override
@@ -248,7 +247,6 @@ public class AdminService implements IAdminService {
 
     @Override
     public Page<OrganizerRevenueDto> getRevenuePerOrganizer(LocalDate startDate, LocalDate endDate, Pageable pageable) {
-        // Aggregate amounts per organizer using paginated scan and cached Stripe lookups
         Map<String, BigDecimal> totalsByOrganizer = new HashMap<>();
         Map<String, BigDecimal> paymentAmountCache = new HashMap<>();
 
@@ -261,7 +259,6 @@ public class AdminService implements IAdminService {
             page = bookingRepository.findByStatusAndUpdatedAtBetweenAndStripePaymentIdIsNotNull(
                     BookingStatus.BOOKED, startTs, endTs, scanPage);
 
-            // Deduplicate payment intent IDs per page
             Set<String> uniquePaymentIds = page.getContent().stream()
                     .map(Booking::getStripePaymentId)
                     .filter(id -> id != null && !id.isBlank())
@@ -280,9 +277,8 @@ public class AdminService implements IAdminService {
                 }
             }
 
-            // Accumulate totals per organizer
             for (Booking b : page.getContent()) {
-                String organizerId = b.getBookerId();
+                String organizerId = b.getEvent().getOrganizer().getId();
                 String paymentId = b.getStripePaymentId();
                 if (paymentId == null || paymentId.isBlank()) continue;
                 BigDecimal amount = paymentAmountCache.getOrDefault(paymentId, BigDecimal.ZERO);

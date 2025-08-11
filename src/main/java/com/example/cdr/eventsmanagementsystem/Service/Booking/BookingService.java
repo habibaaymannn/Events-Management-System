@@ -5,7 +5,6 @@ import java.time.LocalDateTime;
 import java.util.List;
 import java.util.stream.Collectors;
 
-import com.example.cdr.eventsmanagementsystem.Util.AuthUtil;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -34,6 +33,7 @@ import com.example.cdr.eventsmanagementsystem.Repository.ServiceRepository;
 import com.example.cdr.eventsmanagementsystem.Repository.VenueRepository;
 import com.example.cdr.eventsmanagementsystem.Service.Auth.UserSyncService;
 import com.example.cdr.eventsmanagementsystem.Service.Notifications.BookingNotificationService;
+import com.example.cdr.eventsmanagementsystem.Util.AuthUtil;
 import com.stripe.model.Customer;
 import com.stripe.model.PaymentIntent;
 
@@ -278,7 +278,9 @@ public class BookingService implements IBookingService {
                 .orElseThrow(() -> new EntityNotFoundException("Booking not found"));
 
         String currentUserId = AuthUtil.getCurrentUserId();
-        if (!booking.getBookerId().equals(currentUserId)) {
+        String currentRole = userSyncService.getCurrentUserRole();
+        boolean isAdmin = currentRole != null && currentRole.equalsIgnoreCase("admin");
+        if (!isAdmin && !booking.getBookerId().equals(currentUserId)) {
             throw new RuntimeException("You can only cancel your own bookings");
         }
 

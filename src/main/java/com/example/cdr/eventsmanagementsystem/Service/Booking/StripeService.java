@@ -110,15 +110,25 @@ public class StripeService implements IStripeService {
                 params.put("amount", toCents(amount));
             }
             
-            if (reason != null) {
-                params.put("reason", reason);
-            }
+            String normalizedReason = normalizeRefundReason(reason);
+            params.put("reason", normalizedReason);
 
             return Refund.create(params);
 
         } catch (StripeException e) {
             throw new RuntimeException("Failed to create refund: " + e.getMessage(), e);
         }
+    }
+
+    private String normalizeRefundReason(String reason) {
+        if (reason == null || reason.isBlank()) {
+            return "requested_by_customer";
+        }
+        String r = reason.trim().toLowerCase().replace(' ', '_');
+        if (r.equals("requested_by_customer") || r.equals("duplicate") || r.equals("fraudulent")) {
+            return r;
+        }
+        return "requested_by_customer";
     }
 
     @Override

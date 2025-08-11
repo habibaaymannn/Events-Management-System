@@ -6,7 +6,5 @@ import lombok.Data;
 public class CancelBookingRequest {
     private Long bookingId;
     
-    private String cancelledById; 
-    
     private String reason;  
 }
