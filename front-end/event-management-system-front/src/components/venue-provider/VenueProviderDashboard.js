@@ -11,9 +11,53 @@ const VenueProviderDashboard = () => {
     const stored = localStorage.getItem("venues");
     return stored ? JSON.parse(stored) : initialVenues;
   });
+  
+  // Add booking requests state
+  const [bookingRequests, setBookingRequests] = useState(() => {
+    const stored = localStorage.getItem("bookingRequests");
+    return stored ? JSON.parse(stored) : [];
+  });
+
+  // Get venue booking requests
+  const venueBookingRequests = bookingRequests.filter(req => 
+    req.type === 'venue' && 
+    venues.some(v => v.id.toString() === req.itemId.toString())
+  );
+
   useEffect(() => {
     localStorage.setItem("venues", JSON.stringify(venues));
   }, [venues]);
+
+  useEffect(() => {
+    localStorage.setItem("bookingRequests", JSON.stringify(bookingRequests));
+  }, [bookingRequests]);
+
+  // Handle booking request approval/rejection
+  const handleBookingRequest = (requestId, action) => {
+    const updatedRequests = bookingRequests.map(req => {
+      if (req.id === requestId) {
+        const newStatus = action === 'approve' ? 'confirmed' : 'rejected';
+        
+        // If approved, add booking to venue
+        if (action === 'approve') {
+          const venue = venues.find(v => v.id.toString() === req.itemId.toString());
+          if (venue) {
+            const updatedVenues = venues.map(v => 
+              v.id === venue.id 
+                ? { ...v, bookings: [...(v.bookings || []), { date: req.date, user: req.organizerEmail, eventName: req.eventName }] }
+                : v
+            );
+            setVenues(updatedVenues);
+          }
+        }
+        
+        return { ...req, status: newStatus, updatedAt: new Date().toISOString() };
+      }
+      return req;
+    });
+    
+    setBookingRequests(updatedRequests);
+  };
 
   const [showAdd, setShowAdd] = useState(false);
   const [editVenueId, setEditVenueId] = useState(null);
@@ -289,7 +333,58 @@ const VenueProviderDashboard = () => {
       <h2 style={{ textAlign: "center", marginBottom: 24, color: "#2c3e50", fontSize: "2.5rem", fontWeight: 700 }}>
         Venue Provider Dashboard
       </h2>
-      
+
+      {/* Booking Requests Section */}
+      {venueBookingRequests.filter(req => req.status === 'pending').length > 0 && (
+        <div className="card" style={{ marginBottom: 32, border: '2px solid #ffc107' }}>
+          <h3 style={{ marginBottom: 20, color: "#f59e0b" }}>Pending Booking Requests</h3>
+          <div style={{ overflowX: "auto", width: '100%' }}>
+            <table className="table" style={{ minWidth: '800px', width: '100%' }}>
+              <thead>
+                <tr>
+                  <th>Event Name</th>
+                  <th>Organizer</th>
+                  <th>Date</th>
+                  <th>Venue</th>
+                  <th>Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                {venueBookingRequests.filter(req => req.status === 'pending').map(req => {
+                  const venue = venues.find(v => v.id.toString() === req.itemId.toString());
+                  return (
+                    <tr key={req.id}>
+                      <td style={{ fontWeight: 600 }}>{req.eventName}</td>
+                      <td>{req.organizerEmail}</td>
+                      <td>{new Date(req.date).toLocaleDateString()}</td>
+                      <td>{venue?.name || 'Unknown Venue'}</td>
+                      <td>
+                        <div style={{ display: "flex", gap: 4 }}>
+                          <button
+                            onClick={() => handleBookingRequest(req.id, 'approve')}
+                            className="btn btn-success"
+                            style={{ padding: "6px 12px", fontSize: "0.8rem" }}
+                          >
+                            Approve
+                          </button>
+                          <button
+                            onClick={() => handleBookingRequest(req.id, 'reject')}
+                            className="btn btn-danger"
+                            style={{ padding: "6px 12px", fontSize: "0.8rem" }}
+                          >
+                            Reject
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
+
       <button
         onClick={() => {
           setShowAdd(!showAdd);

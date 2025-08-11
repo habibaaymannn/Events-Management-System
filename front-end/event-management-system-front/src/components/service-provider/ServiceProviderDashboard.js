@@ -99,19 +99,53 @@ const ServiceProviderDashboard = () => {
 		const stored = localStorage.getItem("services");
 		return stored ? JSON.parse(stored) : initialServices;
 	});
+	
+	// Add booking requests state
+	const [bookingRequests, setBookingRequests] = useState(() => {
+		const stored = localStorage.getItem("bookingRequests");
+		return stored ? JSON.parse(stored) : [];
+	});
+
+	// Get service booking requests
+	const serviceBookingRequests = bookingRequests.filter(req => 
+		req.type === 'service' && 
+		services.some(s => s.id.toString() === req.itemId.toString())
+	);
+
 	useEffect(() => {
 		localStorage.setItem("services", JSON.stringify(services));
 	}, [services]);
 
-	const [showAdd, setShowAdd] = useState(false);
-	const [editServiceId, setEditServiceId] = useState(null);
-	const [formService, setFormService] = useState({
-		name: "",
-		description: "",
-		price: "",
-		location: "",
-		availability: "AVAILABLE",
-	});
+	useEffect(() => {
+		localStorage.setItem("bookingRequests", JSON.stringify(bookingRequests));
+	}, [bookingRequests]);
+
+	// Handle booking request approval/rejection
+	const handleBookingRequest = (requestId, action) => {
+		const updatedRequests = bookingRequests.map(req => {
+			if (req.id === requestId) {
+				const newStatus = action === 'approve' ? 'confirmed' : 'rejected';
+				
+				// If approved, add booking to service
+				if (action === 'approve') {
+					const service = services.find(s => s.id.toString() === req.itemId.toString());
+					if (service) {
+						const updatedServices = services.map(s => 
+							s.id === service.id 
+								? { ...s, bookings: [...(s.bookings || []), { date: req.date, user: req.organizerEmail, eventName: req.eventName }] }
+								: s
+						);
+						setServices(updatedServices);
+					}
+				}
+				
+				return { ...req, status: newStatus, updatedAt: new Date().toISOString() };
+			}
+			return req;
+		});
+		
+		setBookingRequests(updatedRequests);
+	};
 
 	// Add or Edit Service
 	const handleServiceFormSubmit = (e) => {
@@ -174,6 +208,57 @@ const ServiceProviderDashboard = () => {
 			>
 				Service Provider Dashboard
 			</h2>
+
+			{/* Booking Requests Section */}
+			{serviceBookingRequests.filter(req => req.status === 'pending').length > 0 && (
+				<div className="card" style={{ marginBottom: 32, border: '2px solid #ffc107' }}>
+					<h3 style={{ marginBottom: 20, color: "#f59e0b" }}>Pending Booking Requests</h3>
+					<div style={{ overflowX: "auto", width: '100%' }}>
+						<table className="table" style={{ minWidth: '800px', width: '100%' }}>
+							<thead>
+								<tr>
+									<th>Event Name</th>
+									<th>Organizer</th>
+									<th>Date</th>
+									<th>Service</th>
+									<th>Actions</th>
+								</tr>
+							</thead>
+							<tbody>
+								{serviceBookingRequests.filter(req => req.status === 'pending').map(req => {
+									const service = services.find(s => s.id.toString() === req.itemId.toString());
+									return (
+										<tr key={req.id}>
+											<td style={{ fontWeight: 600 }}>{req.eventName}</td>
+											<td>{req.organizerEmail}</td>
+											<td>{new Date(req.date).toLocaleDateString()}</td>
+											<td>{service?.name || 'Unknown Service'}</td>
+											<td>
+												<div style={{ display: "flex", gap: 4 }}>
+													<button
+														onClick={() => handleBookingRequest(req.id, 'approve')}
+														className="btn btn-success"
+														style={{ padding: "6px 12px", fontSize: "0.8rem" }}
+													>
+														Approve
+													</button>
+													<button
+														onClick={() => handleBookingRequest(req.id, 'reject')}
+														className="btn btn-danger"
+														style={{ padding: "6px 12px", fontSize: "0.8rem" }}
+													>
+														Reject
+													</button>
+												</div>
+											</td>
+										</tr>
+									);
+								})}
+							</tbody>
+						</table>
+					</div>
+				</div>
+			)}
 
 			<button
 				onClick={() => {
