@@ -12,7 +12,7 @@ public class AuthUtil {
         if (authentication != null) {
             Object principal = authentication.getPrincipal();
             if (principal instanceof Jwt jwt) {
-                return jwt.getSubject();
+                return jwt.getSubject(); 
             }
         }
 
