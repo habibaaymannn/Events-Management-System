@@ -1,4 +1,4 @@
-package com.example.cdr.eventsmanagementsystem.Service;
+package com.example.cdr.eventsmanagementsystem.Service.Venue;
 
 import org.springframework.stereotype.Service;
 
@@ -14,12 +14,13 @@ import lombok.RequiredArgsConstructor;
 
 @RequiredArgsConstructor
 @Service
-public class VenueService {
+public class VenueService implements IVenueService {
     private final VenueRepository venueRepository;
     private final VenueMapper venueMapper;
     private final VenueProviderRepository venueProviderRepository;
     private final UserSyncService userSyncService;
 
+    @Override
     public Venue addVenue(VenueDTO dto) {
         Venue newVenue = venueMapper.toVenue(dto);
 
@@ -29,6 +30,7 @@ public class VenueService {
         return venueRepository.save(newVenue);
     }
 
+    @Override
     public Venue updateVenue(Long id, VenueDTO dto) {
         Venue venue = venueRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Venue not found"));
@@ -44,6 +46,7 @@ public class VenueService {
         return venueRepository.save(venue);
     }
 
+    @Override
     public void deleteVenue(Long id) {
         venueRepository.deleteById(id);
     }

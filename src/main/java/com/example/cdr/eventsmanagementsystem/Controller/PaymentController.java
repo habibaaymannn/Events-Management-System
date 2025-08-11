@@ -13,7 +13,7 @@ import com.example.cdr.eventsmanagementsystem.DTO.Payment.ConfirmPaymentRequest;
 import com.example.cdr.eventsmanagementsystem.DTO.Payment.CreatePaymentIntentRequest;
 import com.example.cdr.eventsmanagementsystem.DTO.Payment.PaymentIntentResponse;
 import com.example.cdr.eventsmanagementsystem.Mapper.PaymentMapper;
-import com.example.cdr.eventsmanagementsystem.Service.Booking.StripeService;
+import com.example.cdr.eventsmanagementsystem.Service.Booking.IStripeService;
 import com.stripe.model.PaymentIntent;
 
 import lombok.RequiredArgsConstructor;
@@ -25,7 +25,7 @@ import lombok.extern.slf4j.Slf4j;
 @RequiredArgsConstructor
 public class PaymentController {
 
-    private final StripeService stripeService;
+    private final IStripeService stripeService;
     private final PaymentMapper paymentMapper;
 
     @PostMapping("/create-intent")
@@ -33,22 +33,7 @@ public class PaymentController {
             @RequestBody CreatePaymentIntentRequest request) {
         
         
-        String customerId = null;
-        if (request.getCustomerEmail() != null) {
-            var customer = stripeService.createCustomer(
-                request.getCustomerEmail(), 
-                request.getCustomerName(), 
-                request.getCustomerPhone()
-            );
-            customerId = customer.getId();
-        }
-        
-        PaymentIntent paymentIntent = stripeService.createPaymentIntent(
-            request.getAmount(),
-            request.getCurrency(),
-            customerId,
-            request.getDescription()
-        );
+        PaymentIntent paymentIntent = stripeService.createPaymentIntent(request);
         
         PaymentIntentResponse response = paymentMapper.fromStripePaymentIntent(paymentIntent);
         return ResponseEntity.ok(response);
@@ -68,10 +53,7 @@ public class PaymentController {
             @RequestBody ConfirmPaymentRequest request) {
                 
         try {
-            PaymentIntent paymentIntent = stripeService.confirmPaymentIntent(
-                request.getPaymentIntentId(),
-                request.getPaymentMethodId()
-            );
+            PaymentIntent paymentIntent = stripeService.confirmPayment(request);
             PaymentIntentResponse response = paymentMapper.fromStripePaymentIntent(paymentIntent);
             return ResponseEntity.ok(response);
             

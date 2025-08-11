@@ -86,4 +86,9 @@ public class Event {
 
     private LocalDateTime freeCancellationDeadline;  
     private BigDecimal retailPrice; 
+
+    @Column(nullable = false)
+    private boolean flagged = false;
+
+    private String flagReason;
 }

@@ -19,7 +19,7 @@ import com.example.cdr.eventsmanagementsystem.DTO.Event.EventDTO;
 import com.example.cdr.eventsmanagementsystem.DTO.Event.EventResponseDTO;
 import com.example.cdr.eventsmanagementsystem.DTO.Event.UpdateEventDTO;
 import com.example.cdr.eventsmanagementsystem.Model.Event.EventType;
-import com.example.cdr.eventsmanagementsystem.Service.Event.EventService;
+import com.example.cdr.eventsmanagementsystem.Service.Event.IEventService;
 
 import lombok.RequiredArgsConstructor;
 
@@ -27,7 +27,7 @@ import lombok.RequiredArgsConstructor;
 @RestController
 @RequestMapping("/v1/events")
 public class EventController {
-    private final EventService eventService;
+    private final IEventService eventService;
 
     @PostMapping
     // @PreAuthorize("hasRole('organizer')")
