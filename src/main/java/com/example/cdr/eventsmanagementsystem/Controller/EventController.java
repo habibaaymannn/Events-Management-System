@@ -19,7 +19,7 @@ import com.example.cdr.eventsmanagementsystem.DTO.Event.EventDTO;
 import com.example.cdr.eventsmanagementsystem.DTO.Event.EventResponseDTO;
 import com.example.cdr.eventsmanagementsystem.DTO.Event.UpdateEventDTO;
 import com.example.cdr.eventsmanagementsystem.Model.Event.EventType;
-import com.example.cdr.eventsmanagementsystem.Service.Event.EventService;
+import com.example.cdr.eventsmanagementsystem.Service.Event.IEventService;
 
 import lombok.RequiredArgsConstructor;
 
@@ -28,7 +28,7 @@ import lombok.RequiredArgsConstructor;
 @RequestMapping("/v1/events")
 @Tag(name = "Event", description = "Event management APIs")
 public class EventController {
-    private final EventService eventService;
+    private final IEventService eventService;
 
     @Operation(summary = "Create a new event", description = "Creates a new event with the provided details")
     @PostMapping

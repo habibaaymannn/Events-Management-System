@@ -7,6 +7,8 @@ import java.util.Map;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
+import com.example.cdr.eventsmanagementsystem.DTO.Payment.ConfirmPaymentRequest;
+import com.example.cdr.eventsmanagementsystem.DTO.Payment.CreatePaymentIntentRequest;
 import com.stripe.Stripe;
 import com.stripe.exception.StripeException;
 import com.stripe.model.Customer;
@@ -34,7 +36,7 @@ public class StripeService implements IStripeService {
     public PaymentIntent createPaymentIntent(BigDecimal amount, String currency, String customerId, String description) {
         try {
             PaymentIntentCreateParams params = PaymentIntentCreateParams.builder()
-                    .setAmount(amount.multiply(new BigDecimal("100")).longValue()) 
+                    .setAmount(toCents(amount)) 
                     .setCurrency(currency)
                     .setCustomer(customerId)
                     .setDescription(description)
@@ -46,8 +48,7 @@ public class StripeService implements IStripeService {
                     )
                     .build();
 
-            PaymentIntent intent = PaymentIntent.create(params);
-            return intent;
+            return PaymentIntent.create(params);
         } catch (StripeException e) {
             throw new RuntimeException("Failed to create payment intent", e);
         }
@@ -63,8 +64,7 @@ public class StripeService implements IStripeService {
                     .setReturnUrl("http://localhost:3000/booking-success")
                     .build();
 
-            PaymentIntent confirmedIntent = intent.confirm(confirmParams);
-            return confirmedIntent;
+            return intent.confirm(confirmParams);
         } catch (StripeException e) {
             throw new RuntimeException("Failed to confirm payment intent", e);
         }
@@ -101,32 +101,65 @@ public class StripeService implements IStripeService {
     }
 
     @Override
-    public Customer retrieveCustomer(String customerId) {
-        try {
-            return Customer.retrieve(customerId);
-        } catch (StripeException e) {
-            throw new RuntimeException("Failed to retrieve customer: " + e.getMessage(), e);
-        }
-    }
-
-    @Override
     public Refund createRefund(String paymentIntentId, BigDecimal amount, String reason) {
         try {
             Map<String, Object> params = new HashMap<>();
             params.put("payment_intent", paymentIntentId);
             
             if (amount != null) {
-                params.put("amount", amount.multiply(new BigDecimal("100")).longValue());
+                params.put("amount", toCents(amount));
             }
             
-            if (reason != null) {
-                params.put("reason", reason);
-            }
+            String normalizedReason = normalizeRefundReason(reason);
+            params.put("reason", normalizedReason);
 
             return Refund.create(params);
 
         } catch (StripeException e) {
             throw new RuntimeException("Failed to create refund: " + e.getMessage(), e);
         }
+    }
+
+    private String normalizeRefundReason(String reason) {
+        if (reason == null || reason.isBlank()) {
+            return "requested_by_customer";
+        }
+        String r = reason.trim().toLowerCase().replace(' ', '_');
+        if (r.equals("requested_by_customer") || r.equals("duplicate") || r.equals("fraudulent")) {
+            return r;
+        }
+        return "requested_by_customer";
+    }
+
+    @Override
+    public PaymentIntent createPaymentIntent(CreatePaymentIntentRequest request) {
+        String customerId = ensureCustomerId(request);
+        return createPaymentIntent(
+            request.getAmount(),
+            request.getCurrency(),
+            customerId,
+            request.getDescription()
+        );
+    }
+
+    @Override
+    public PaymentIntent confirmPayment(ConfirmPaymentRequest request) {
+        return confirmPaymentIntent(request.getPaymentIntentId(), request.getPaymentMethodId());
+    }
+
+    private long toCents(BigDecimal amount) {
+        return amount.multiply(new BigDecimal("100")).longValue();
+    }
+
+    private String ensureCustomerId(CreatePaymentIntentRequest request) {
+        if (request.getCustomerEmail() == null) {
+            return null;
+        }
+        Customer customer = createCustomer(
+            request.getCustomerEmail(),
+            request.getCustomerName(),
+            request.getCustomerPhone()
+        );
+        return customer.getId();
     }
 }

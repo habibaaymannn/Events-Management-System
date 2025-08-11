@@ -15,7 +15,6 @@ import com.example.cdr.eventsmanagementsystem.Model.Event.Event;
 import com.example.cdr.eventsmanagementsystem.Model.Event.EventType;
 import com.example.cdr.eventsmanagementsystem.Model.User.Organizer;
 import com.example.cdr.eventsmanagementsystem.Repository.EventRepository;
-import com.example.cdr.eventsmanagementsystem.Repository.OrganizerRepository;
 import com.example.cdr.eventsmanagementsystem.Service.Auth.UserSyncService;
 
 import jakarta.persistence.EntityNotFoundException;
@@ -25,43 +24,22 @@ public class EventService implements IEventService {
     private final EventRepository eventRepository;
     private final EventMapper eventMapper;
     private final UserSyncService userSyncService;
-    private final OrganizerRepository organizerRepository;
 
-    public EventService(EventRepository eventRepository, EventMapper eventMapper, UserSyncService userSyncService, OrganizerRepository organizerRepository) {
+    public EventService(EventRepository eventRepository, EventMapper eventMapper, UserSyncService userSyncService) {
         this.eventRepository = eventRepository;
         this.eventMapper = eventMapper;
         this.userSyncService = userSyncService;
-        this.organizerRepository = organizerRepository;
     }
 
     @Override
     public EventResponseDTO createEvent(EventDTO eventDTO) {
-        Organizer organizer = ensureCurrentUserAsOrganizer();
+        Organizer organizer = userSyncService.ensureOrganizerExists();
         Event event = eventMapper.toEventWithDefaults(eventDTO, organizer);
         Event savedEvent = eventRepository.save(event);
         return eventMapper.toEventResponseDTO(savedEvent);
     }
 
-    private Organizer ensureCurrentUserAsOrganizer() {
-        String userId = AuthUtil.getCurrentUserId();
-        String email = userSyncService.getCurrentUserEmail();
-        String firstName = userSyncService.getCurrentUserFirstName();
-        String lastName = userSyncService.getCurrentUserLastName();
-        
-        Organizer organizer = organizerRepository.findById(userId).orElse(null);
-        
-        if (organizer == null) {
-            organizer = new Organizer();
-            organizer.setId(userId);
-            organizer.setEmail(email);
-            organizer.setFirstName(firstName);
-            organizer.setLastName(lastName);
-            
-            organizer = organizerRepository.save(organizer);
-        }
-        
-        return organizer;
-    }
+    
 
     @Override
     public EventResponseDTO getEventById(Long id) {

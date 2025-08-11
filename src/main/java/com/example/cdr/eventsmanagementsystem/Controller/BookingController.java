@@ -23,7 +23,7 @@ import com.example.cdr.eventsmanagementsystem.DTO.Booking.Response.EventBookingR
 import com.example.cdr.eventsmanagementsystem.DTO.Booking.Response.ServiceBookingResponse;
 import com.example.cdr.eventsmanagementsystem.DTO.Booking.Response.VenueBookingResponse;
 import com.example.cdr.eventsmanagementsystem.Model.Booking.BookingStatus;
-import com.example.cdr.eventsmanagementsystem.Service.Booking.BookingService;
+import com.example.cdr.eventsmanagementsystem.Service.Booking.IBookingService;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -35,7 +35,7 @@ import lombok.extern.slf4j.Slf4j;
 @Tag(name="Booking" , description = "Booking management APIs")
 public class BookingController {
 
-    private final BookingService bookingService;
+    private final IBookingService bookingService;
 
     @Operation(summary = "Book an event", description = "Creates a new event booking for an attendee")
     @PostMapping("/events")

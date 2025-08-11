@@ -12,6 +12,7 @@ import com.example.cdr.eventsmanagementsystem.Model.User.BaseRoleEntity;
 import com.example.cdr.eventsmanagementsystem.Model.User.Organizer;
 import com.example.cdr.eventsmanagementsystem.Model.User.ServiceProvider;
 import com.example.cdr.eventsmanagementsystem.Model.User.VenueProvider;
+import com.example.cdr.eventsmanagementsystem.Repository.AdminRepository;
 import com.example.cdr.eventsmanagementsystem.Repository.AttendeeRepository;
 import com.example.cdr.eventsmanagementsystem.Repository.OrganizerRepository;
 import com.example.cdr.eventsmanagementsystem.Repository.ServiceProviderRepository;
@@ -25,6 +26,7 @@ import lombok.extern.slf4j.Slf4j;
 @RequiredArgsConstructor
 public class UserSyncService {
     
+    private final AdminRepository adminRepository;
     private final AttendeeRepository attendeeRepository;
     private final OrganizerRepository organizerRepository;
     private final ServiceProviderRepository serviceProviderRepository;
@@ -213,20 +215,66 @@ public class UserSyncService {
         
         return null;
     }
+
     public String getCurrentUserFirstName() {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+
         if (authentication != null && authentication.getPrincipal() instanceof Jwt) {
             Jwt jwt = (Jwt) authentication.getPrincipal();
             return jwt.getClaimAsString("given_name");
         }
+
         return null;
     }
+
     public String getCurrentUserLastName() {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+
         if (authentication != null && authentication.getPrincipal() instanceof Jwt) {
             Jwt jwt = (Jwt) authentication.getPrincipal();
             return jwt.getClaimAsString("family_name");
         }
+
         return null;
+    }
+
+    public String getCurrentUserRole() {
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        return getCurrentUserRole(authentication);
+    }
+
+    public BaseRoleEntity findUserById(String id) {
+        BaseRoleEntity user = adminRepository.findById(id).orElse(null);
+        if (user != null) return user;
+        user = organizerRepository.findById(id).orElse(null);
+        if (user != null) return user;
+        user = serviceProviderRepository.findById(id).orElse(null);
+        if (user != null) return user;
+        user = venueProviderRepository.findById(id).orElse(null);
+        if (user != null) return user;
+        return attendeeRepository.findById(id).orElse(null);
+    }
+
+    public void saveUser(BaseRoleEntity user) {
+        if (user instanceof Attendee attendee) {
+            attendeeRepository.save(attendee);
+            return;
+        }
+        if (user instanceof Organizer organizer) {
+            organizerRepository.save(organizer);
+            return;
+        }
+        if (user instanceof ServiceProvider sp) {
+            serviceProviderRepository.save(sp);
+            return;
+        }
+        if (user instanceof VenueProvider vp) {
+            venueProviderRepository.save(vp);
+            return;
+        }
+        if (user instanceof Admin admin) {
+            adminRepository.save(admin);
+            return;
+        }
     }
 }
