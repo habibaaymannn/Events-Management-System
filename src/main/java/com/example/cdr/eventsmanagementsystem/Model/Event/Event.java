@@ -5,8 +5,7 @@ import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 
-import com.example.cdr.eventsmanagementsystem.Model.User.Admin;
-import jakarta.persistence.*;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import org.springframework.data.annotation.CreatedBy;
 import org.springframework.data.annotation.CreatedDate;
 import org.springframework.data.annotation.LastModifiedBy;
@@ -14,6 +13,7 @@ import org.springframework.data.annotation.LastModifiedDate;
 import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 
 import com.example.cdr.eventsmanagementsystem.Model.Booking.Booking;
+import com.example.cdr.eventsmanagementsystem.Model.User.Admin;
 import com.example.cdr.eventsmanagementsystem.Model.User.Organizer;
 import com.example.cdr.eventsmanagementsystem.Model.Venue.Venue;
 
@@ -29,7 +29,6 @@ import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.OneToMany;
 import jakarta.persistence.Table;
-
 import lombok.Data;
 
 @Entity
@@ -62,7 +61,7 @@ public class Event {
     @CreatedBy
     private String createdBy;
     
-    @LastModifiedBy
+    @LastModifiedBy 
     private String lastModifiedBy;
     
     @CreatedDate
@@ -72,7 +71,7 @@ public class Event {
     private LocalDateTime lastModifiedDate;
     
     @ManyToOne
-    @JoinColumn(name = "organizer_id", nullable = false)
+    @JoinColumn(name = "organizer_id")
     private Organizer organizer;
 
     @ManyToOne
@@ -80,12 +79,18 @@ public class Event {
     private Admin admin;
   
     @ManyToOne
-    @JoinColumn(name = "venue_id", nullable = false)
+    @JoinColumn(name = "venue_id")
     private Venue venue;
 
     @OneToMany(mappedBy = "event")
+    @JsonIgnore
     private List<Booking> bookings = new ArrayList<>();
 
     private LocalDateTime freeCancellationDeadline;  
     private BigDecimal retailPrice; 
+
+    @Column(nullable = false)
+    private boolean flagged = false;
+
+    private String flagReason;
 }

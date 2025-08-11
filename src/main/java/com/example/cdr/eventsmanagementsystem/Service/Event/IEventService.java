@@ -2,22 +2,19 @@ package com.example.cdr.eventsmanagementsystem.Service.Event;
 
 import java.util.List;
 
-import javax.xml.stream.EventFilter;
-
-import org.springframework.boot.autoconfigure.data.web.SpringDataWebProperties.Pageable;
-import org.springframework.stereotype.Service;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 
 import com.example.cdr.eventsmanagementsystem.DTO.Event.EventDTO;
+import com.example.cdr.eventsmanagementsystem.DTO.Event.EventResponseDTO;
 import com.example.cdr.eventsmanagementsystem.DTO.Event.UpdateEventDTO;
-import com.example.cdr.eventsmanagementsystem.Model.Event.Event;
 import com.example.cdr.eventsmanagementsystem.Model.Event.EventType;
 
-@Service
 public interface IEventService {
-    void createEvent(EventDTO event);
-    Event getEventById(Long id);
-    void updateEvent(UpdateEventDTO event);
+    EventResponseDTO createEvent(EventDTO eventDTO);
+    EventResponseDTO getEventById(Long id);
+    EventResponseDTO updateEvent(Long eventId, UpdateEventDTO updateDTO);
     void deleteEvent(Long id);
-    List<EventDTO> getAllEvents(Pageable pageable, EventFilter filter);
-    List<EventDTO> getEventsByType(EventType type);
+    Page<EventResponseDTO> getAllEvents(Pageable pageable);
+    List<EventResponseDTO> getEventsByType(EventType type);
 }

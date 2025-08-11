@@ -1,5 +1,10 @@
 package com.example.cdr.eventsmanagementsystem.Config;
 
+import java.util.Collections;
+import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
+
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
@@ -10,8 +15,6 @@ import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationConverter;
 import org.springframework.security.web.SecurityFilterChain;
-import java.util.*;
-import java.util.stream.Collectors;
 
 @EnableWebSecurity
 @Configuration
@@ -21,7 +24,7 @@ public class SecurityConfig {
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         http.csrf(t -> t.disable());
         http.authorizeHttpRequests(authorize -> {
-            authorize.anyRequest().authenticated();
+            authorize.anyRequest().permitAll();
         });
         http.oauth2ResourceServer(t ->{
             t.jwt(configurer -> configurer.jwtAuthenticationConverter(jwtAuthenticationConverter()));

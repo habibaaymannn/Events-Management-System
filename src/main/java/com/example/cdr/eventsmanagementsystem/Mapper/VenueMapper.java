@@ -1,5 +1,5 @@
 package com.example.cdr.eventsmanagementsystem.Mapper;
-import com.example.cdr.eventsmanagementsystem.DTO.VenueDTO;
+import com.example.cdr.eventsmanagementsystem.DTO.Venue.VenueDTO;
 import com.example.cdr.eventsmanagementsystem.Model.Venue.Type;
 import com.example.cdr.eventsmanagementsystem.Model.Venue.Venue;
 import org.mapstruct.Mapper;
@@ -15,6 +15,20 @@ public interface VenueMapper {
     void updateVenue(VenueDTO dto,@MappingTarget     Venue venue);
 
     @Named("stringToType")
-    Type stringToType(String type);
+    default Type stringToType(String type) {
+        if (type == null) return null;
+        String normalized = type.trim().toUpperCase();
+        switch (normalized) {
+            case "VILLA":
+                return Type.Villa;
+            case "CHALET":
+                return Type.Chalet;
+            case "SCHOOL_HALL":
+            case "SCHOOLHALL":
+                return Type.SchoolHall;
+            default:
+                throw new IllegalArgumentException("Unsupported venue type: " + type + ". Allowed: Villa, Chalet, SchoolHall");
+        }
+    }
 
 }

@@ -1,13 +1,15 @@
 package com.example.cdr.eventsmanagementsystem.Service.Notifications;
 
-import com.example.cdr.eventsmanagementsystem.NotificationEvent.VenueBooked;
-import com.example.cdr.eventsmanagementsystem.NotificationEvent.VenueCancelled;
-import com.example.cdr.eventsmanagementsystem.Model.Venue.Venue;
-import lombok.RequiredArgsConstructor;
 import org.springframework.context.event.EventListener;
 import org.springframework.mail.SimpleMailMessage;
 import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.stereotype.Service;
+
+import com.example.cdr.eventsmanagementsystem.Model.Venue.Venue;
+import com.example.cdr.eventsmanagementsystem.NotificationEvent.VenueBooked;
+import com.example.cdr.eventsmanagementsystem.NotificationEvent.VenueCancelled;
+
+import lombok.RequiredArgsConstructor;
 
 @RequiredArgsConstructor
 @Service
