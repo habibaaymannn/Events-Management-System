@@ -1,11 +1,9 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import "./AdminDashboard.css";
 
 const EventMonitoring = () => {
   const navigate = useNavigate();
   const [events, setEvents] = useState([]);
-  const [filter, setFilter] = useState("all");
 
   useEffect(() => {
     loadEvents();
@@ -79,99 +77,28 @@ const EventMonitoring = () => {
     return "Unknown";
   };
 
-  const filteredEvents = events.filter(event => {
-    if (filter === "all") return true;
-    if (filter === "flagged") return event.flagged;
-    if (filter === "cancelled") return event.status === "CANCELLED";
-    if (filter === "pending") return getApprovalStatus(event) === "Pending Approval";
-    return true;
-  });
-
-  const getEventStats = () => {
-    const now = new Date();
-    return {
-      upcoming: events.filter(e => new Date(e.startTime) > now && e.status !== "CANCELLED").length,
-      ongoing: events.filter(e => {
-        const start = new Date(e.startTime);
-        const end = new Date(e.endTime);
-        return start <= now && end >= now && e.status !== "CANCELLED";
-      }).length,
-      completed: events.filter(e => new Date(e.endTime) < now && e.status !== "CANCELLED").length,
-      cancelled: events.filter(e => e.status === "CANCELLED").length,
-      flagged: events.filter(e => e.flagged).length,
-      total: events.length
-    };
-  };
-
-  const stats = getEventStats();
-
   return (
-    <div className="admin-page">
-      <div className="page-header">
+    <div style={{ width: '98vw', maxWidth: '98vw', margin: "10px auto", padding: '0 10px' }}>
+      <div style={{ marginBottom: '2rem' }}>
         <button 
           onClick={() => navigate('/')} 
-          className="btn btn-secondary" 
-          style={{ position: 'absolute', left: '2rem', top: '2rem' }}
+          className="btn btn-secondary mb-3"
         >
           ← Back to Dashboard
         </button>
-        <h1 className="page-title">Event Monitoring</h1>
-        <p className="page-subtitle">Monitor all events, ownership, and approval status</p>
-      </div>
-
-      {/* Event Statistics */}
-      <div style={{ 
-        display: 'grid', 
-        gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))', 
-        gap: '1.5rem',
-        marginBottom: '2rem'
-      }}>
-        <div className="card text-center">
-          <h3 className="text-primary">{stats.total}</h3>
-          <p className="text-muted">Total Events</p>
-        </div>
-        <div className="card text-center">
-          <h3 className="text-warning">{stats.upcoming}</h3>
-          <p className="text-muted">Upcoming</p>
-        </div>
-        <div className="card text-center">
-          <h3 className="text-success">{stats.ongoing}</h3>
-          <p className="text-muted">Ongoing</p>
-        </div>
-        <div className="card text-center">
-          <h3 className="text-muted">{stats.completed}</h3>
-          <p className="text-muted">Completed</p>
-        </div>
-        <div className="card text-center">
-          <h3 className="text-danger">{stats.cancelled}</h3>
-          <p className="text-muted">Cancelled</p>
-        </div>
-        <div className="card text-center">
-          <h3 className="text-warning">{stats.flagged}</h3>
-          <p className="text-muted">Flagged</p>
-        </div>
-      </div>
-
-      {/* Filter Controls */}
-      <div className="filter-controls" style={{ marginBottom: '2rem' }}>
-        <select
-          value={filter}
-          onChange={(e) => setFilter(e.target.value)}
-          className="form-control"
-          style={{ width: '200px' }}
-        >
-          <option value="all">All Events</option>
-          <option value="pending">Pending Approval</option>
-          <option value="flagged">Flagged Events</option>
-          <option value="cancelled">Cancelled Events</option>
-        </select>
+        <h2 style={{ margin: 0, color: "#2c3e50", fontSize: "2.5rem", fontWeight: 700 }}>
+          Event Monitoring
+        </h2>
+        <p style={{ color: "#6c757d", fontSize: "1.1rem", marginTop: "0.5rem" }}>
+          Monitor all events, ownership, and approval status
+        </p>
       </div>
 
       {/* Events List */}
       <div className="card" style={{ width: '100%', padding: '1.5rem' }}>
         <h3 style={{ marginBottom: 20, color: "#2c3e50" }}>All Events</h3>
         <div style={{ overflowX: "auto", width: '100%' }}>
-          <table className="admin-table" style={{ minWidth: '1400px', width: '100%' }}>
+          <table className="table" style={{ minWidth: '1400px', width: '100%' }}>
             <thead>
               <tr>
                 <th>Event Name</th>
@@ -185,14 +112,14 @@ const EventMonitoring = () => {
               </tr>
             </thead>
             <tbody>
-              {filteredEvents.length === 0 ? (
+              {events.length === 0 ? (
                 <tr>
                   <td colSpan="8" style={{ textAlign: "center", color: "#6c757d", padding: "2rem" }}>
                     No events found.
                   </td>
                 </tr>
               ) : (
-                filteredEvents.map(event => (
+                events.map(event => (
                   <tr key={`${event.id}-${event.source}`}>
                     <td style={{ fontWeight: 600 }}>{event.name}</td>
                     <td>{event.organizer || 'Event Organizer'}</td>

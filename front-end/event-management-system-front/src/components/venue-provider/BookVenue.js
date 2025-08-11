@@ -2,7 +2,6 @@ import React, { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import Calendar from "react-calendar";
 import "react-calendar/dist/Calendar.css";
-import "./../admin/AdminDashboard.css";
 
 const BookVenue = () => {
   const { id } = useParams();
@@ -108,13 +107,15 @@ const BookVenue = () => {
   const isAvailable = venue.availability.includes(dateStr);
 
   return (
-    <main>
+    <div style={{ width: '98vw', maxWidth: '98vw', margin: "10px auto", padding: '0 10px' }}>
       <div className="card">
-        <div className="card-header">
+        <div style={{ marginBottom: '2rem' }}>
           <button onClick={() => navigate(-1)} className="btn btn-secondary mb-3">
             ← Back to Dashboard
           </button>
-          <h2 className="card-title">Book: {venue.name}</h2>
+          <h2 style={{ margin: 0, color: "#2c3e50", fontSize: "2rem", fontWeight: 700 }}>
+            Book: {venue?.name || 'Venue'}
+          </h2>
         </div>
         
         <div className="center-calendar">
@@ -132,8 +133,8 @@ const BookVenue = () => {
             onChange={setSelectedDate}
             tileClassName={({ date }) => {
               const dateStr = date.toISOString().split("T")[0];
-              if (venue.bookings.some(b => b.date === dateStr)) return "calendar-booked";
-              if (venue.availability.includes(dateStr)) return "calendar-available";
+              if (venue?.bookings?.some(b => b.date === dateStr)) return "calendar-booked";
+              if (venue?.availability?.includes(dateStr)) return "calendar-available";
               return null;
             }}
             style={{
@@ -186,9 +187,9 @@ const BookVenue = () => {
           <div style={{ marginTop: '2rem' }}>
             <div className="card" style={{ maxWidth: '500px', margin: '0 auto' }}>
               <h5 style={{ color: '#2c3e50', marginBottom: '1rem' }}>
-                All Bookings for {venue.name}
+                All Bookings for {venue?.name || 'this venue'}
               </h5>
-              {venue.bookings && venue.bookings.length > 0 ? (
+              {venue?.bookings && venue.bookings.length > 0 ? (
                 <div style={{ maxHeight: '200px', overflowY: 'auto' }}>
                   {venue.bookings.map((booking, idx) => (
                     <div key={idx} style={{
@@ -214,7 +215,7 @@ const BookVenue = () => {
           </div>
         </div>
       </div>
-    </main>
+    </div>
   );
 };
 

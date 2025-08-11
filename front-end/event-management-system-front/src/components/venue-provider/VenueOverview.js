@@ -1,7 +1,6 @@
 import React from "react";
 import { useNavigate } from "react-router-dom";
 import { PieChart, Pie, Cell, ResponsiveContainer, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend } from "recharts";
-import "./VenueOverview.css";
 
 // Mock data
 const venues = [
@@ -46,56 +45,53 @@ const VenueOverview = () => {
     const handleRevenueClick = () => navigate('/venue-provider/revenue');
 
     return (
-        <div className="venue-overview">
+        <div style={{ width: '98vw', maxWidth: '98vw', margin: "10px auto", padding: '0 10px' }}>
             {/* Header */}
-            <div className="overview-header">
-                <h2 className="overview-title">Venue Provider Dashboard</h2>
-                <p className="overview-subtitle">Manage your venues, bookings, and revenue efficiently</p>
-            </div>
+            <h2 style={{ textAlign: "center", marginBottom: 24, color: "#2c3e50", fontSize: "2.5rem", fontWeight: 700 }}>
+                Venue Provider Dashboard
+            </h2>
+            <p style={{ textAlign: "center", marginBottom: 32, color: "#6c757d", fontSize: "1.1rem" }}>
+                Manage your venues, bookings, and revenue efficiently
+            </p>
 
             {/* Quick Stats */}
-            <div className="stats-grid">
-                <div className="stat-card clickable-stat" onClick={handleVenuesClick}>
-                    <div className="stat-icon venues-icon">🏢</div>
-                    <div className="stat-content">
-                        <h3 className="stat-number">{totalVenues}</h3>
-                        <p className="stat-label">Total Venues</p>
-                        <span className="stat-link">View Details →</span>
-                    </div>
+            <div style={{ 
+                display: 'grid', 
+                gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', 
+                gap: '1.5rem',
+                marginBottom: '2rem'
+            }}>
+                <div className="card text-center" style={{ cursor: 'pointer' }} onClick={handleVenuesClick}>
+                    <h3 className="text-primary">{totalVenues}</h3>
+                    <p className="text-muted">Total Venues</p>
+                    <small className="text-primary">View Details →</small>
                 </div>
-
-                <div className="stat-card clickable-stat" onClick={handleBookingsClick}>
-                    <div className="stat-icon bookings-icon">📅</div>
-                    <div className="stat-content">
-                        <h3 className="stat-number">{totalBookings}</h3>
-                        <p className="stat-label">Total Bookings</p>
-                        <span className="stat-link">Manage Bookings →</span>
-                    </div>
+                <div className="card text-center" style={{ cursor: 'pointer' }} onClick={handleBookingsClick}>
+                    <h3 className="text-success">{totalBookings}</h3>
+                    <p className="text-muted">Total Bookings</p>
+                    <small className="text-success">Manage Bookings →</small>
                 </div>
-
-                <div className="stat-card clickable-stat" onClick={handleRevenueClick}>
-                    <div className="stat-icon revenue-icon">💰</div>
-                    <div className="stat-content">
-                        <h3 className="stat-number">${totalRevenue.toLocaleString()}</h3>
-                        <p className="stat-label">Total Revenue</p>
-                        <span className="stat-link">View Analytics →</span>
-                    </div>
+                <div className="card text-center" style={{ cursor: 'pointer' }} onClick={handleRevenueClick}>
+                    <h3 className="text-warning">${totalRevenue.toLocaleString()}</h3>
+                    <p className="text-muted">Total Revenue</p>
+                    <small className="text-warning">View Analytics →</small>
                 </div>
-
-                <div className="stat-card">
-                    <div className="stat-icon utilization-icon">📊</div>
-                    <div className="stat-content">
-                        <h3 className="stat-number">{Math.round((bookedVenues / totalVenues) * 100)}%</h3>
-                        <p className="stat-label">Utilization Rate</p>
-                    </div>
+                <div className="card text-center">
+                    <h3 className="text-danger">{Math.round((bookedVenues / totalVenues) * 100)}%</h3>
+                    <p className="text-muted">Utilization Rate</p>
                 </div>
             </div>
 
             {/* Charts Section */}
-            <div className="charts-grid">
+            <div style={{ 
+                display: 'grid', 
+                gridTemplateColumns: 'repeat(auto-fit, minmax(400px, 1fr))', 
+                gap: '2rem',
+                marginBottom: '2rem'
+            }}>
                 {/* Venue Status Pie Chart */}
-                <div className="chart-card">
-                    <h4 className="chart-title">Venue Status Distribution</h4>
+                <div className="card">
+                    <h4 className="mb-3">Venue Status Distribution</h4>
                     <ResponsiveContainer width="100%" height={300}>
                         <PieChart>
                             <Pie
@@ -117,8 +113,8 @@ const VenueOverview = () => {
                 </div>
 
                 {/* Monthly Revenue Chart */}
-                <div className="chart-card">
-                    <h4 className="chart-title">Monthly Revenue Trend</h4>
+                <div className="card">
+                    <h4 className="mb-3">Monthly Revenue Trend</h4>
                     <ResponsiveContainer width="100%" height={300}>
                         <BarChart data={monthlyRevenue}>
                             <CartesianGrid strokeDasharray="3 3" />
@@ -133,27 +129,31 @@ const VenueOverview = () => {
             </div>
 
             {/* Recent Activity */}
-            <div className="activity-section">
-                <div className="section-header">
-                    <h4 className="section-title">Recent Bookings</h4>
-                    <button className="view-all-btn" onClick={handleBookingsClick}>
+            <div className="card mb-4">
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
+                    <h4 style={{ margin: 0, color: "#2c3e50" }}>Recent Bookings</h4>
+                    <button className="btn btn-primary" onClick={handleBookingsClick}>
                         View All →
                     </button>
                 </div>
 
-                <div className="activity-grid">
+                <div style={{ 
+                    display: 'grid', 
+                    gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', 
+                    gap: '1.5rem'
+                }}>
                     {bookings.map((booking) => (
-                        <div key={booking.id} className="activity-card">
-                            <div className="activity-header">
-                                <h5 className="activity-title">{booking.event}</h5>
-                                <span className={`status-badge ${booking.status.toLowerCase()}`}>
+                        <div key={booking.id} className="card">
+                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '1rem' }}>
+                                <h5 style={{ margin: 0, color: "#2c3e50" }}>{booking.event}</h5>
+                                <span className={`status-badge status-${booking.status.toLowerCase()}`}>
                                     {booking.status}
                                 </span>
                             </div>
-                            <div className="activity-details">
-                                <p><strong>Venue:</strong> {booking.venue}</p>
-                                <p><strong>Date:</strong> {booking.date}</p>
-                                <p><strong>Revenue:</strong> ${booking.revenue.toLocaleString()}</p>
+                            <div style={{ fontSize: '0.9rem', color: '#6c757d' }}>
+                                <p style={{ margin: '0.25rem 0' }}><strong>Venue:</strong> {booking.venue}</p>
+                                <p style={{ margin: '0.25rem 0' }}><strong>Date:</strong> {booking.date}</p>
+                                <p style={{ margin: '0.25rem 0' }}><strong>Revenue:</strong> <span style={{ color: '#28a745', fontWeight: 'bold' }}>${booking.revenue.toLocaleString()}</span></p>
                             </div>
                         </div>
                     ))}
@@ -161,29 +161,38 @@ const VenueOverview = () => {
             </div>
 
             {/* Venue Quick Access */}
-            <div className="quick-access-section">
-                <h4 className="section-title">Your Venues</h4>
-                <div className="venues-grid">
+            <div className="card">
+                <h4 style={{ marginBottom: '1.5rem', color: "#2c3e50" }}>Your Venues</h4>
+                <div style={{ 
+                    display: 'grid', 
+                    gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', 
+                    gap: '1.5rem'
+                }}>
                     {venues.map((venue) => (
-                        <div key={venue.id} className="venue-quick-card">
-                            <div className="venue-header">
-                                <h5 className="venue-name">{venue.name}</h5>
-                                <span className={`venue-status ${venue.status.toLowerCase()}`}>
+                        <div key={venue.id} className="card">
+                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '1rem' }}>
+                                <h5 style={{ margin: 0, color: "#2c3e50" }}>{venue.name}</h5>
+                                <span className={`status-badge status-${venue.status.toLowerCase()}`}>
                                     {venue.status}
                                 </span>
                             </div>
-                            <div className="venue-stats">
-                                <div className="venue-stat">
-                                    <span className="stat-value">{venue.capacity}</span>
-                                    <span className="stat-name">Capacity</span>
+                            <div style={{ 
+                                display: 'grid', 
+                                gridTemplateColumns: 'repeat(3, 1fr)', 
+                                gap: '1rem',
+                                textAlign: 'center'
+                            }}>
+                                <div>
+                                    <div style={{ fontSize: '1.2rem', fontWeight: 'bold', color: '#2c3e50' }}>{venue.capacity}</div>
+                                    <div style={{ fontSize: '0.8rem', color: '#6c757d' }}>Capacity</div>
                                 </div>
-                                <div className="venue-stat">
-                                    <span className="stat-value">{venue.bookings}</span>
-                                    <span className="stat-name">Bookings</span>
+                                <div>
+                                    <div style={{ fontSize: '1.2rem', fontWeight: 'bold', color: '#2c3e50' }}>{venue.bookings}</div>
+                                    <div style={{ fontSize: '0.8rem', color: '#6c757d' }}>Bookings</div>
                                 </div>
-                                <div className="venue-stat">
-                                    <span className="stat-value">${venue.revenue.toLocaleString()}</span>
-                                    <span className="stat-name">Revenue</span>
+                                <div>
+                                    <div style={{ fontSize: '1.2rem', fontWeight: 'bold', color: '#28a745' }}>${venue.revenue.toLocaleString()}</div>
+                                    <div style={{ fontSize: '0.8rem', color: '#6c757d' }}>Revenue</div>
                                 </div>
                             </div>
                         </div>
