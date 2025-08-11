@@ -41,13 +41,19 @@ const SetAvailability = () => {
     if (!venue) return;
     
     const dateStr = date.toISOString().split("T")[0];
-    const isAvailable = venue.availability.includes(dateStr);
+    const isCurrentlyAvailable = venue.availability.includes(dateStr);
     
     const updatedVenues = venues.map(v => {
       if (String(v.id) === String(venue.id)) {
-        const newAvailability = isAvailable
-          ? v.availability.filter(d => d !== dateStr)
-          : [...v.availability, dateStr];
+        let newAvailability;
+        
+        if (isCurrentlyAvailable) {
+          // Remove from availability (make unavailable)
+          newAvailability = v.availability.filter(d => d !== dateStr);
+        } else {
+          // Add to availability (make available)
+          newAvailability = [...v.availability, dateStr];
+        }
         
         const updatedVenue = { ...v, availability: newAvailability };
         setVenue(updatedVenue); // Update local venue state
@@ -89,15 +95,16 @@ const SetAvailability = () => {
         <div className="center-calendar">
           <div style={{ marginBottom: '2rem', textAlign: 'center' }}>
             <h4 style={{ color: '#495057', marginBottom: '1rem' }}>
-              Select dates to toggle availability
+              Click dates to toggle availability
             </h4>
             <p style={{ color: '#6c757d', fontSize: '0.9rem' }}>
-              Green dates are available, click any date to toggle its availability
+              Green dates are available for booking. Click any date to toggle its availability status.
             </p>
           </div>
           
           <Calendar
             value={selectedDate}
+            onChange={setSelectedDate}
             onClickDay={handleAvailabilityChange}
             tileClassName={({ date }) => {
               const dateStr = date.toISOString().split("T")[0];
