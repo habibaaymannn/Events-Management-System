@@ -9,6 +9,7 @@ import AdminDashboard from "./components/admin/AdminDashboard";
 import SetAvailability from "./components/venue-provider/SetAvailability";
 import BookVenue from "./components/venue-provider/BookVenue";
 import VenueDetails from "./components/venue-provider/VenueDetails";
+import { initializeAllDummyData } from './utils/initializeDummyData';
 import './App.css';
 
 function App() {
@@ -24,6 +25,11 @@ function App() {
       localStorage.removeItem("currentUser");
     }
   }, [user]);
+
+  useEffect(() => {
+    // Initialize dummy data when app starts
+    initializeAllDummyData();
+  }, []);
 
   const handleLogout = () => {
     setUser(null);
