@@ -106,6 +106,21 @@ const ServiceProviderDashboard = () => {
 		return stored ? JSON.parse(stored) : [];
 	});
 
+	// New state variables
+	const [showAdd, setShowAdd] = useState(false);
+	const [editServiceId, setEditServiceId] = useState(null);
+	const [formService, setFormService] = useState({
+		name: "",
+		type: "",
+		description: "",
+		price: "",
+		priceType: "per event",
+		serviceArea: "",
+		images: [],
+		availability: [],
+		bookings: [],
+	});
+
 	// Get service booking requests
 	const serviceBookingRequests = bookingRequests.filter(req => 
 		req.type === 'service' && 

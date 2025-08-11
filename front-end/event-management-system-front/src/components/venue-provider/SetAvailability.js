@@ -2,7 +2,6 @@ import React, { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import Calendar from "react-calendar";
 import "react-calendar/dist/Calendar.css";
-import "./../admin/AdminDashboard.css";
 
 const SetAvailability = () => {
   const { id } = useParams();
@@ -83,13 +82,15 @@ const SetAvailability = () => {
   }
 
   return (
-    <main>
+    <div style={{ width: '98vw', maxWidth: '98vw', margin: "10px auto", padding: '0 10px' }}>
       <div className="card">
-        <div className="card-header">
+        <div style={{ marginBottom: '2rem' }}>
           <button onClick={() => navigate(-1)} className="btn btn-secondary mb-3">
             ← Back to Dashboard
           </button>
-          <h2 className="card-title">Set Availability for: {venue.name}</h2>
+          <h2 style={{ margin: 0, color: "#2c3e50", fontSize: "2rem", fontWeight: 700 }}>
+            Set Availability for: {venue?.name || 'Venue'}
+          </h2>
         </div>
         
         <div className="center-calendar">
@@ -108,7 +109,7 @@ const SetAvailability = () => {
             onClickDay={handleAvailabilityChange}
             tileClassName={({ date }) => {
               const dateStr = date.toISOString().split("T")[0];
-              return venue.availability.includes(dateStr) ? "calendar-available" : null;
+              return venue?.availability?.includes(dateStr) ? "calendar-available" : null;
             }}
             style={{
               background: 'white',
@@ -125,9 +126,9 @@ const SetAvailability = () => {
                 Availability Summary
               </h5>
               <p style={{ fontSize: '1.2rem', color: '#28a745', fontWeight: 'bold' }}>
-                {venue.availability?.length || 0} dates available
+                {venue?.availability?.length || 0} dates available
               </p>
-              {venue.availability && venue.availability.length > 0 && (
+              {venue?.availability && venue.availability.length > 0 && (
                 <div style={{ textAlign: 'left', maxHeight: '200px', overflowY: 'auto' }}>
                   <strong style={{ color: '#495057' }}>Available dates:</strong>
                   <ul style={{ listStyle: 'none', padding: 0, marginTop: '0.5rem' }}>
@@ -152,7 +153,7 @@ const SetAvailability = () => {
           </div>
         </div>
       </div>
-    </main>
+    </div>
   );
 };
 
