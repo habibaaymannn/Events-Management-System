@@ -1,9 +1,9 @@
 .admin-dashboard {
   min-height: calc(100vh - 80px);
   width: 100%;
-  max-width: 1400px;
+  max-width: 98vw;
   margin: 0 auto;
-  padding: 2rem 1rem;
+  padding: 0.5rem;
 }
 
 .admin-dashboard h2 {
@@ -70,11 +70,12 @@
   overflow: hidden;
   box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
   margin-bottom: 1rem;
+  font-size: 0.9rem;
 }
 
 .admin-table th,
 .admin-table td {
-  padding: 1.5rem 1rem;
+  padding: 1rem 0.75rem;
   text-align: left;
   border: none;
 }
@@ -139,6 +140,7 @@
   transform: translateX(4px);
 }
 
+/* Enhanced Button Styling */
 .admin-table button {
   margin-right: 0.75rem;
   padding: 10px 20px;
@@ -277,9 +279,9 @@
 .admin-page {
   min-height: calc(100vh - 80px);
   width: 100%;
-  max-width: 1400px;
+  max-width: 98vw;
   margin: 0 auto;
-  padding: 2rem 1rem;
+  padding: 0.5rem;
   background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
   min-height: 100vh;
 }
@@ -335,6 +337,14 @@
   overflow: hidden;
   box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
   margin-bottom: 1rem;
+  font-size: 0.9rem;
+}
+
+.admin-table th,
+.admin-table td {
+  padding: 1rem 0.75rem;
+  text-align: left;
+  border: none;
 }
 
 .admin-table th {
@@ -344,9 +354,6 @@
   font-size: 0.95rem;
   letter-spacing: 0.5px;
   text-transform: uppercase;
-  padding: 1.5rem 1rem;
-  text-align: left;
-  border: none;
   position: relative;
 }
 
@@ -538,7 +545,13 @@
 /* Responsive Design */
 @media (max-width: 768px) {
   .admin-dashboard {
-    padding: 1rem 0.5rem;
+    padding: 0.25rem;
+    max-width: 100vw;
+  }
+  
+  .admin-page {
+    padding: 0.25rem;
+    max-width: 100vw;
   }
 
   .admin-section {
