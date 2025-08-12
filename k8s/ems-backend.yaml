@@ -1,0 +1,65 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: ems-backend
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: ems-backend
+  template:
+    metadata:
+      labels:
+        app: ems-backend
+    spec:
+      containers:
+        - name: ems-backend
+          image: events-management-system-backend:latest
+          imagePullPolicy: Never
+          ports:
+            - containerPort: 8080
+          env:
+            - name: SPRING_SECURITY_OAUTH2_RESOURCESERVER_JWT_ISSUER-URI
+              valueFrom:
+                secretKeyRef:
+                  name: ems-secrets
+                  key: issuer-uri
+            - name: KEYCLOAK_RESOURCE
+              value: "spring-boot-app"
+            - name: KEYCLOAK_CREDENTIALS_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: ems-secrets
+                  key: client-secret
+            - name: KEYCLOAK_SSL-REQUIRED
+              value: "none"
+            - name: SECRET_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: ems-secrets
+                  key: secret-key
+            - name: SPRING_DATASOURCE_URL
+              value: "jdbc:postgresql://postgres:5432/Events-Management-System"
+            - name: SPRING_DATASOURCE_USERNAME
+              valueFrom:
+                secretKeyRef:
+                  name: ems-secrets
+                  key: postgres-username
+            - name: SPRING_DATASOURCE_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: ems-secrets
+                  key: postgres-password
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: ems-backend-service
+spec:
+  type: NodePort
+  selector:
+    app: ems-backend
+  ports:
+    - nodePort: 30088
+      port: 8180
+      targetPort: 8080

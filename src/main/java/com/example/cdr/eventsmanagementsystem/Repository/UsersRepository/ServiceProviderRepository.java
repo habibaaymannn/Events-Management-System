@@ -1,4 +1,4 @@
-package com.example.cdr.eventsmanagementsystem.Repository;
+package com.example.cdr.eventsmanagementsystem.Repository.UsersRepository;
 
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;

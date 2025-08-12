@@ -1,5 +1,6 @@
 package com.example.cdr.eventsmanagementsystem.Service.Auth;
 
+import com.example.cdr.eventsmanagementsystem.Repository.UsersRepository.*;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.oauth2.jwt.Jwt;
@@ -12,11 +13,6 @@ import com.example.cdr.eventsmanagementsystem.Model.User.BaseRoleEntity;
 import com.example.cdr.eventsmanagementsystem.Model.User.Organizer;
 import com.example.cdr.eventsmanagementsystem.Model.User.ServiceProvider;
 import com.example.cdr.eventsmanagementsystem.Model.User.VenueProvider;
-import com.example.cdr.eventsmanagementsystem.Repository.AdminRepository;
-import com.example.cdr.eventsmanagementsystem.Repository.AttendeeRepository;
-import com.example.cdr.eventsmanagementsystem.Repository.OrganizerRepository;
-import com.example.cdr.eventsmanagementsystem.Repository.ServiceProviderRepository;
-import com.example.cdr.eventsmanagementsystem.Repository.VenueProviderRepository;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;

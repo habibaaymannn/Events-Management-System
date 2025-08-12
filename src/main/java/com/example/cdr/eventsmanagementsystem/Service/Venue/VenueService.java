@@ -3,6 +3,7 @@ package com.example.cdr.eventsmanagementsystem.Service.Venue;
 import java.nio.file.AccessDeniedException;
 import java.util.List;
 
+import com.example.cdr.eventsmanagementsystem.Repository.UsersRepository.VenueProviderRepository;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -13,7 +14,6 @@ import com.example.cdr.eventsmanagementsystem.Model.Booking.BookingStatus;
 import com.example.cdr.eventsmanagementsystem.Model.User.VenueProvider;
 import com.example.cdr.eventsmanagementsystem.Model.Venue.Venue;
 import com.example.cdr.eventsmanagementsystem.Repository.BookingRepository;
-import com.example.cdr.eventsmanagementsystem.Repository.VenueProviderRepository;
 import com.example.cdr.eventsmanagementsystem.Repository.VenueRepository;
 import com.example.cdr.eventsmanagementsystem.Service.Auth.UserSyncService;
 import com.example.cdr.eventsmanagementsystem.Util.AuthUtil;
