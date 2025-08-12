@@ -1,4 +1,6 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
+import { getAllVenues } from "../../api/venueApi";
+import { bookVenue } from "../../api/bookingApi";
 
 const mockVenues = [
   {
@@ -119,6 +121,15 @@ const BookVenues = () => {
     specialRequests: ""
   });
 
+  useEffect(() => {
+    const fetchVenues = async () => {
+      const result = await getAllVenues();
+      setVenues(result);
+    };
+
+    fetchVenues();
+  }, []);
+
   const filteredVenues = venues.filter(venue => {
     if (filters.location && !venue.location.toLowerCase().includes(filters.location.toLowerCase())) {
       return false;
@@ -160,21 +171,41 @@ const BookVenues = () => {
     setShowBookingModal(true);
   };
 
-  const submitBooking = (e) => {
+  const submitBooking = async (e) => {
     e.preventDefault();
-    console.log("Booking venue:", selectedVenue.name, "with data:", bookingData);
-    alert(`Booking request submitted for ${selectedVenue.name}!`);
-    setShowBookingModal(false);
-    setSelectedVenue(null);
-    setBookingData({
-      eventName: "",
-      eventDate: "",
-      startTime: "",
-      endTime: "",
-      expectedGuests: "",
-      eventType: "",
-      specialRequests: ""
-    });
+    try {
+      const bookingData = {
+        startTime: `${bookingData.eventDate}T${bookingData.startTime}:00.000Z`,
+        endTime: `${bookingData.eventDate}T${bookingData.endTime}:00.000Z`,
+        venueId: parseInt(selectedVenue.id),
+        organizerId: "current-organizer-id", // You'll need to get this from auth context
+        eventId: bookingData.eventId || null // If booking for existing event
+      };
+
+      const result = await bookVenue(bookingData);
+      alert(`Venue booking confirmed! Booking ID: ${result.id}`);
+      
+      setShowBookingModal(false);
+      setSelectedVenue(null);
+      setBookingData({
+        eventName: "",
+        eventDate: "",
+        startTime: "",
+        endTime: "",
+        eventType: "",
+        expectedGuests: "",
+        specialRequests: "",
+        contactName: "",
+        contactEmail: "",
+        contactPhone: ""
+      });
+      
+      // Reload venues to update availability
+      loadVenues();
+    } catch (error) {
+      console.error("Error booking venue:", error);
+      alert("Failed to book venue. Please try again.");
+    }
   };
 
   return (

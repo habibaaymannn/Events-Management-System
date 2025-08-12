@@ -1,12 +1,53 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { getAllEvents, getEventsByType } from "../../api/eventApi";
+import { getBookingsByEventId } from "../../api/bookingApi";
 import { PieChart, Pie, Cell, ResponsiveContainer, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend } from "recharts";
 import "./EventOverview.css";
 
 const EventOverview = () => {
   const navigate = useNavigate();
   const [events, setEvents] = useState([]);
+  const [bookingsStats, setBookingsStats] = useState({
+    totalBookings: 0,
+    venueBookings: 0,
+    serviceBookings: 0,
+    pendingBookings: 0,
+    confirmedBookings: 0
+  });
+
+  const monthlyData = [
+    { month: "Jan", revenue: 15000, bookings: 12, profit: 3000 },
+    { month: "Feb", revenue: 18000, bookings: 15, profit: 4000 },
+    { month: "Mar", revenue: 22000, bookings: 18, profit: 5000 },
+    { month: "Apr", revenue: 25000, bookings: 20, profit: 6000 },
+    { month: "May", revenue: 28000, bookings: 25, profit: 7000 },
+    { month: "Jun", revenue: 32000, bookings: 30, profit: 8000 },
+  ];
+
+  const recentActivity = [
+    {
+      id: 1,
+      type: "event",
+      action: "Created new event",
+      event: "Corporate Annual Meeting",
+      timestamp: "2 hours ago"
+    },
+    {
+      id: 2,
+      type: "venue",
+      action: "Venue booking confirmed",
+      event: "Wedding Reception",
+      timestamp: "4 hours ago"
+    },
+    {
+      id: 3,
+      type: "service",
+      action: "Service provider hired",
+      event: "Birthday Party",
+      timestamp: "1 day ago"
+    }
+  ];
 
   useEffect(() => {
     loadEvents();
@@ -15,9 +56,49 @@ const EventOverview = () => {
   const loadEvents = async () => {
     try {
       const response = await getAllEvents(0, 100);
-      setEvents(response.content || []);
+      const eventsData = response.content || [];
+      setEvents(eventsData);
+      
+      // Load booking statistics for all events
+      await loadBookingsStats(eventsData);
     } catch (error) {
-      // Handle error
+      console.error("Error loading events:", error);
+    }
+  };
+
+  const loadBookingsStats = async (eventsData) => {
+    try {
+      let totalBookings = 0;
+      let venueBookings = 0;
+      let serviceBookings = 0;
+      let pendingBookings = 0;
+      let confirmedBookings = 0;
+
+      for (const event of eventsData) {
+        try {
+          const bookings = await getBookingsByEventId(event.id);
+          totalBookings += bookings.length;
+          
+          bookings.forEach(booking => {
+            if (booking.type === 'VENUE') venueBookings++;
+            if (booking.type === 'SERVICE') serviceBookings++;
+            if (booking.status === 'PENDING') pendingBookings++;
+            if (booking.status === 'ACCEPTED' || booking.status === 'CONFIRMED') confirmedBookings++;
+          });
+        } catch (error) {
+          console.error(`Error loading bookings for event ${event.id}:`, error);
+        }
+      }
+
+      setBookingsStats({
+        totalBookings,
+        venueBookings,
+        serviceBookings,
+        pendingBookings,
+        confirmedBookings
+      });
+    } catch (error) {
+      console.error("Error loading bookings stats:", error);
     }
   };
 
@@ -74,11 +155,11 @@ const EventOverview = () => {
         </div>
 
         <div className="stat-card">
-          <div className="stat-icon revenue-icon">💰</div>
+          <div className="stat-icon bookings-icon">📋</div>
           <div className="stat-content">
-            <h3 className="stat-number">${totalRevenue.toLocaleString()}</h3>
-            <p className="stat-label">Total Revenue</p>
-            <span className="stat-change positive">+${totalProfit.toLocaleString()} profit</span>
+            <h3 className="stat-number">{bookingsStats.totalBookings}</h3>
+            <p className="stat-label">Total Bookings</p>
+            <span className="stat-change positive">{bookingsStats.confirmedBookings} confirmed</span>
           </div>
         </div>
 
@@ -115,6 +196,29 @@ const EventOverview = () => {
               <Tooltip />
             </PieChart>
           </ResponsiveContainer>
+        </div>
+
+        {/* Booking Status Distribution */}
+        <div className="chart-card">
+          <h4 className="chart-title">Booking Status Overview</h4>
+          <div className="booking-stats-grid">
+            <div className="booking-stat">
+              <div className="stat-number">{bookingsStats.venueBookings}</div>
+              <div className="stat-label">Venue Bookings</div>
+            </div>
+            <div className="booking-stat">
+              <div className="stat-number">{bookingsStats.serviceBookings}</div>
+              <div className="stat-label">Service Bookings</div>
+            </div>
+            <div className="booking-stat">
+              <div className="stat-number">{bookingsStats.pendingBookings}</div>
+              <div className="stat-label">Pending</div>
+            </div>
+            <div className="booking-stat">
+              <div className="stat-number">{bookingsStats.confirmedBookings}</div>
+              <div className="stat-label">Confirmed</div>
+            </div>
+          </div>
         </div>
 
         {/* Monthly Performance */}

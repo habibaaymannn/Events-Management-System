@@ -1,10 +1,13 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { getAllUsers, updateUserRole, deactivateUser } from "../../api/adminApi";
+import { getBookingsByAttendeeId } from "../../api/bookingApi";
 
 const UserManagement = () => {
   const navigate = useNavigate();
   const [users, setUsers] = useState([]);
+  const [selectedUser, setSelectedUser] = useState(null);
+  const [userBookings, setUserBookings] = useState([]);
 
   const roles = [
     'admin',
@@ -49,6 +52,24 @@ const UserManagement = () => {
       loadUsers();
     } catch (error) {
       // Handle error
+    }
+  };
+
+  const handleViewUserDetails = async (user) => {
+    try {
+      setSelectedUser(user);
+      
+      // If user is an attendee, load their bookings
+      if (user.role === 'event-attendee') {
+        const bookings = await getBookingsByAttendeeId(user.id);
+        setUserBookings(bookings);
+      } else {
+        setUserBookings([]);
+      }
+    } catch (error) {
+      console.error("Error fetching user bookings:", error);
+      setUserBookings([]);
+      setSelectedUser(user);
     }
   };
 
@@ -119,6 +140,13 @@ const UserManagement = () => {
                     <td>
                       <div style={{ display: "flex", gap: 4, flexWrap: 'wrap' }}>
                         <button
+                          onClick={() => handleViewUserDetails(user)}
+                          className="btn btn-info"
+                          style={{ padding: "6px 12px", fontSize: "0.8rem" }}
+                        >
+                          View Details
+                        </button>
+                        <button
                           onClick={() => handleDeactivateUser(user.id)}
                           className={`btn ${user.status === 'active' ? 'btn-danger' : 'btn-success'}`}
                           style={{ padding: "6px 12px", fontSize: "0.8rem" }}
@@ -141,6 +169,78 @@ const UserManagement = () => {
           </table>
         </div>
       </div>
+
+      {/* User Details Modal */}
+      {selectedUser && (
+        <div className="modal-overlay" onClick={() => setSelectedUser(null)}>
+          <div className="modal-content" onClick={(e) => e.stopPropagation()}>
+            <div className="modal-header">
+              <h4>User Details - {selectedUser.email}</h4>
+              <button className="modal-close" onClick={() => setSelectedUser(null)}>×</button>
+            </div>
+            <div style={{ padding: '1.5rem' }}>
+              <div style={{ marginBottom: '1.5rem' }}>
+                <h5 style={{ color: '#2c3e50', marginBottom: '1rem' }}>User Information</h5>
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
+                  <div><strong>Email:</strong> {selectedUser.email}</div>
+                  <div><strong>Role:</strong> {selectedUser.role}</div>
+                  <div><strong>Status:</strong> {selectedUser.status}</div>
+                  <div><strong>Created:</strong> {new Date(selectedUser.createdAt).toLocaleDateString()}</div>
+                  {selectedUser.firstName && (
+                    <div><strong>First Name:</strong> {selectedUser.firstName}</div>
+                  )}
+                  {selectedUser.lastName && (
+                    <div><strong>Last Name:</strong> {selectedUser.lastName}</div>
+                  )}
+                  {selectedUser.phoneNumber && (
+                    <div><strong>Phone:</strong> {selectedUser.phoneNumber}</div>
+                  )}
+                </div>
+              </div>
+
+              {selectedUser.role === 'event-attendee' && (
+                <div style={{ marginBottom: '1.5rem' }}>
+                  <h5 style={{ color: '#2c3e50', marginBottom: '1rem' }}>
+                    Attendee Bookings ({userBookings.length})
+                  </h5>
+                  {userBookings.length > 0 ? (
+                    <div style={{ maxHeight: '300px', overflowY: 'auto' }}>
+                      {userBookings.map((booking, index) => (
+                        <div key={index} style={{
+                          padding: '1rem',
+                          marginBottom: '0.5rem',
+                          border: '1px solid #e9ecef',
+                          borderRadius: '6px',
+                          backgroundColor: '#f8f9fa'
+                        }}>
+                          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.5rem' }}>
+                            <span style={{ fontWeight: 'bold' }}>
+                              {booking.type === 'VENUE' ? '🏢 Venue Booking' : '🛠️ Service Booking'}
+                            </span>
+                            <span className={`status-badge status-${booking.status.toLowerCase()}`}>
+                              {booking.status}
+                            </span>
+                          </div>
+                          <div style={{ fontSize: '0.9rem', color: '#6c757d' }}>
+                            <div><strong>Start:</strong> {new Date(booking.startTime).toLocaleString()}</div>
+                            <div><strong>End:</strong> {new Date(booking.endTime).toLocaleString()}</div>
+                            {booking.venueId && <div><strong>Venue ID:</strong> {booking.venueId}</div>}
+                            {booking.serviceId && <div><strong>Service ID:</strong> {booking.serviceId}</div>}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <p style={{ color: '#6c757d', fontStyle: 'italic' }}>
+                      No bookings found for this attendee.
+                    </p>
+                  )}
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

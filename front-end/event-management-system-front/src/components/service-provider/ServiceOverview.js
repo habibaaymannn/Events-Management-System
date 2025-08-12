@@ -9,6 +9,16 @@ const ServiceOverview = () => {
     const [services, setServices] = useState([]);
     const [recentBookings, setRecentBookings] = useState([]);
 
+    // Add missing monthlyData
+    const monthlyData = [
+        { month: "Jan", revenue: 15000, bookings: 12, profit: 3000 },
+        { month: "Feb", revenue: 18000, bookings: 15, profit: 4000 },
+        { month: "Mar", revenue: 22000, bookings: 18, profit: 5000 },
+        { month: "Apr", revenue: 25000, bookings: 20, profit: 6000 },
+        { month: "May", revenue: 28000, bookings: 25, profit: 7000 },
+        { month: "Jun", revenue: 32000, bookings: 30, profit: 8000 },
+    ];
+
     useEffect(() => {
         loadData();
     }, []);
@@ -39,12 +49,13 @@ const ServiceOverview = () => {
     };
 
     const totalServices = services.length;
-    const activeServices = services.filter(s => s.status === "Active").length;
-    const totalBookings = services.reduce((sum, s) => sum + s.bookings, 0);
-    const totalRevenue = services.reduce((sum, s) => sum + s.revenue, 0);
+    const activeServices = services.filter(s => s.availability === "AVAILABLE").length;
+    const totalBookings = recentBookings.length;
+    const totalRevenue = monthlyData.reduce((sum, month) => sum + month.revenue, 0);
 
     const serviceCategories = services.reduce((acc, service) => {
-        acc[service.category] = (acc[service.category] || 0) + 1;
+        const category = service.description || "Other";
+        acc[category] = (acc[category] || 0) + 1;
         return acc;
     }, {});
 

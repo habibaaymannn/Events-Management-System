@@ -1,10 +1,12 @@
 import React, { useState, useEffect } from "react";
-import { getServiceProviderBookings, respondToBookingRequest, cancelServiceBooking } from "../../api/serviceApi";
+import { getServiceProviderBookings, updateBookingStatus } from "../../api/serviceApi";
+import { getBookingById } from "../../api/bookingApi";
 
 const ServiceBookings = () => {
     const [bookings, setBookings] = useState([]);
     const [filter, setFilter] = useState("All");
     const [selectedBooking, setSelectedBooking] = useState(null);
+    const [bookingDetails, setBookingDetails] = useState(null);
     const [notifications, setNotifications] = useState([]);
 
     useEffect(() => {
@@ -45,18 +47,31 @@ const ServiceBookings = () => {
 
     const handleStatusChange = async (bookingId, newStatus) => {
         try {
+            let statusToUpdate = newStatus;
+            
+            // Map frontend status to backend enum values
             if (newStatus === "ACCEPTED") {
-                await respondToBookingRequest(bookingId, "ACCEPTED");
-                addNotification("Booking accepted!", "client");
+                statusToUpdate = "ACCEPTED";
             } else if (newStatus === "REJECTED") {
+                statusToUpdate = "REJECTED";
                 const reason = prompt("Please provide a reason for rejection:");
+                // If using the specific service API with reason, use that instead
                 await respondToBookingRequest(bookingId, "REJECTED", reason || "No reason provided");
                 addNotification("Booking rejected!", "client");
+                loadBookings();
+                return;
             } else if (newStatus === "CANCELLED") {
+                statusToUpdate = "CANCELLED";
                 const reason = prompt("Please provide a reason for cancellation:");
                 await cancelServiceBooking(bookingId, reason || "Cancelled by service provider");
                 addNotification("Booking cancelled!", "client");
+                loadBookings();
+                return;
             }
+
+            // Use the general booking status update endpoint
+            await updateBookingStatus(bookingId, statusToUpdate);
+            addNotification(`Booking ${statusToUpdate.toLowerCase()}!`, "client");
             loadBookings();
         } catch (error) {
             console.error("Error updating booking status:", error);
@@ -74,8 +89,17 @@ const ServiceBookings = () => {
         setNotifications(prev => [notification, ...prev.slice(0, 9)]); // Keep last 10
     };
 
-    const handleViewDetails = (booking) => {
-        setSelectedBooking(booking);
+    const handleViewDetails = async (booking) => {
+        try {
+            const details = await getBookingById(booking.id);
+            setBookingDetails(details);
+            setSelectedBooking(booking);
+        } catch (error) {
+            console.error("Error fetching booking details:", error);
+            // Fallback to using booking object directly
+            setBookingDetails(booking);
+            setSelectedBooking(booking);
+        }
     };
 
     const filteredBookings = filter === "All"
@@ -256,108 +280,137 @@ const ServiceBookings = () => {
             </div>
 
             {/* Booking Details Modal */}
-            {selectedBooking && (
-                <div className="modal-overlay" onClick={() => setSelectedBooking(null)}>
+            {selectedBooking && bookingDetails && (
+                <div className="modal-overlay" onClick={() => {setSelectedBooking(null); setBookingDetails(null);}}>
                     <div className="modal-content" onClick={(e) => e.stopPropagation()}>
                         <div className="modal-header">
                             <h4>Booking Details</h4>
                             <button
                                 className="modal-close"
-                                onClick={() => setSelectedBooking(null)}
+                                onClick={() => {setSelectedBooking(null); setBookingDetails(null);}}
                             >
                                 ×
                             </button>
                         </div>
                         <div className="modal-body">
                             <div className="detail-section">
-                                <h5>Service Information</h5>
+                                <h5>Booking Information</h5>
                                 <div className="detail-grid">
                                     <div className="detail-item">
-                                        <strong>Service:</strong> {selectedBooking.serviceName}
+                                        <strong>Booking ID:</strong> {bookingDetails.id}
                                     </div>
                                     <div className="detail-item">
-                                        <strong>Status:</strong> {selectedBooking.status}
+                                        <strong>Type:</strong> {bookingDetails.type}
                                     </div>
                                     <div className="detail-item">
-                                        <strong>Start Time:</strong> {new Date(selectedBooking.startTime).toLocaleString()}
+                                        <strong>Status:</strong> {bookingDetails.status}
                                     </div>
                                     <div className="detail-item">
-                                        <strong>End Time:</strong> {new Date(selectedBooking.endTime).toLocaleString()}
-                                    </div>
-                                </div>
-                            </div>
-
-                            <div className="detail-section">
-                                <h5>Client Information</h5>
-                                <div className="detail-grid">
-                                    <div className="detail-item">
-                                        <strong>Client Name:</strong> {selectedBooking.clientName}
+                                        <strong>Start Time:</strong> {new Date(bookingDetails.startTime).toLocaleString()}
                                     </div>
                                     <div className="detail-item">
-                                        <strong>Email:</strong> {selectedBooking.clientEmail}
+                                        <strong>End Time:</strong> {new Date(bookingDetails.endTime).toLocaleString()}
                                     </div>
-                                    <div className="detail-item">
-                                        <strong>Request Date:</strong> {selectedBooking.requestDate}
-                                    </div>
-                                </div>
-                            </div>
-
-                            <div className="detail-section">
-                                <h5>Event Details</h5>
-                                <div className="detail-grid">
-                                    <div className="detail-item">
-                                        <strong>Event Type:</strong> {selectedBooking.eventType}
-                                    </div>
-                                    <div className="detail-item">
-                                        <strong>Location:</strong> {selectedBooking.eventLocation}
-                                    </div>
-                                    {selectedBooking.specialRequests && selectedBooking.specialRequests !== "None" && (
-                                        <div className="detail-item full-width">
-                                            <strong>Special Requests:</strong>
-                                            <p>{selectedBooking.specialRequests}</p>
+                                    {bookingDetails.currency && (
+                                        <div className="detail-item">
+                                            <strong>Currency:</strong> {bookingDetails.currency}
                                         </div>
                                     )}
                                 </div>
                             </div>
 
-                            <div className="detail-section">
-                                <h5>Actions</h5>
-                                <div className="modal-actions">
-                                    {selectedBooking.status === "PENDING" && (
-                                        <>
-                                            <button
-                                                className="service-btn success"
-                                                onClick={() => {
-                                                    handleStatusChange(selectedBooking.id, "ACCEPTED");
-                                                    setSelectedBooking(null);
-                                                }}
-                                            >
-                                                Accept Booking
-                                            </button>
-                                            <button
-                                                className="service-btn danger"
-                                                onClick={() => {
-                                                    handleStatusChange(selectedBooking.id, "REJECTED");
-                                                    setSelectedBooking(null);
-                                                }}
-                                            >
-                                                Reject Booking
-                                            </button>
-                                        </>
-                                    )}
-                                    {(selectedBooking.status === "ACCEPTED" || selectedBooking.status === "CONFIRMED") && (
-                                        <button
-                                            className="service-btn secondary"
-                                            onClick={() => {
-                                                handleStatusChange(selectedBooking.id, "CANCELLED");
-                                                setSelectedBooking(null);
-                                            }}
-                                        >
-                                            Cancel Booking
-                                        </button>
-                                    )}
+                            {bookingDetails.organizerBooker && (
+                                <div className="detail-section">
+                                    <h5>Organizer Information</h5>
+                                    <div className="detail-grid">
+                                        <div className="detail-item">
+                                            <strong>Name:</strong> {bookingDetails.organizerBooker.firstName} {bookingDetails.organizerBooker.lastName}
+                                        </div>
+                                        <div className="detail-item">
+                                            <strong>Email:</strong> {bookingDetails.organizerBooker.email}
+                                        </div>
+                                        <div className="detail-item">
+                                            <strong>Phone:</strong> {bookingDetails.organizerBooker.phoneNumber}
+                                        </div>
+                                    </div>
                                 </div>
-                            </div>
+                            )}
+
+                            {bookingDetails.attendeeBooker && (
+                                <div className="detail-section">
+                                    <h5>Attendee Information</h5>
+                                    <div className="detail-grid">
+                                        <div className="detail-item">
+                                            <strong>Name:</strong> {bookingDetails.attendeeBooker.firstName} {bookingDetails.attendeeBooker.lastName}
+                                        </div>
+                                        <div className="detail-item">
+                                            <strong>Email:</strong> {bookingDetails.attendeeBooker.email}
+                                        </div>
+                                        <div className="detail-item">
+                                            <strong>Phone:</strong> {bookingDetails.attendeeBooker.phoneNumber}
+                                        </div>
+                                    </div>
+                                </div>
+                            )}
+
+                            {bookingDetails.venueId && (
+                                <div className="detail-section">
+                                    <h5>Venue Information</h5>
+                                    <div className="detail-grid">
+                                        <div className="detail-item">
+                                            <strong>Venue ID:</strong> {bookingDetails.venueId}
+                                        </div>
+                                    </div>
+                                </div>
+                            )}
+
+                            {bookingDetails.serviceId && (
+                                <div className="detail-section">
+                                    <h5>Service Information</h5>
+                                    <div className="detail-grid">
+                                        <div className="detail-item">
+                                            <strong>Service ID:</strong> {bookingDetails.serviceId}
+                                        </div>
+                                    </div>
+                                </div>
+                            )}
+
+                            {(bookingDetails.createdAt || bookingDetails.updatedAt) && (
+                                <div className="detail-section">
+                                    <h5>Timestamps</h5>
+                                    <div className="detail-grid">
+                                        {bookingDetails.createdAt && (
+                                            <div className="detail-item">
+                                                <strong>Created:</strong> {new Date(bookingDetails.createdAt).toLocaleString()}
+                                            </div>
+                                        )}
+                                        {bookingDetails.updatedAt && (
+                                            <div className="detail-item">
+                                                <strong>Updated:</strong> {new Date(bookingDetails.updatedAt).toLocaleString()}
+                                            </div>
+                                        )}
+                                    </div>
+                                </div>
+                            )}
+
+                            {(bookingDetails.cancellationReason || bookingDetails.stripePaymentId) && (
+                                <div className="detail-section">
+                                    <h5>Additional Information</h5>
+                                    <div className="detail-grid">
+                                        {bookingDetails.cancellationReason && (
+                                            <div className="detail-item full-width">
+                                                <strong>Cancellation Reason:</strong>
+                                                <p>{bookingDetails.cancellationReason}</p>
+                                            </div>
+                                        )}
+                                        {bookingDetails.stripePaymentId && (
+                                            <div className="detail-item">
+                                                <strong>Payment ID:</strong> {bookingDetails.stripePaymentId}
+                                            </div>
+                                        )}
+                                    </div>
+                                </div>
+                            )}
                         </div>
                     </div>
                 </div>

@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import Calendar from "react-calendar";
 import "react-calendar/dist/Calendar.css";
 import { getAllVenues, createVenue, updateVenue, deleteVenue } from "../../api/venueApi";
+import { updateBookingStatus } from "../../api/bookingApi";
 
 const initialVenues = [];
 
@@ -40,30 +41,23 @@ const VenueProviderDashboard = () => {
   }, [bookingRequests]);
 
   // Handle booking request approval/rejection
-  const handleBookingRequest = (requestId, action) => {
-    const updatedRequests = bookingRequests.map(req => {
-      if (req.id === requestId) {
-        const newStatus = action === 'approve' ? 'confirmed' : 'rejected';
-        
-        // If approved, add booking to venue
-        if (action === 'approve') {
-          const venue = venues.find(v => v.id.toString() === req.itemId.toString());
-          if (venue) {
-            const updatedVenues = venues.map(v => 
-              v.id === venue.id 
-                ? { ...v, bookings: [...(v.bookings || []), { date: req.date, user: req.organizerEmail, eventName: req.eventName }] }
-                : v
-            );
-            setVenues(updatedVenues);
-          }
-        }
-        
-        return { ...req, status: newStatus, updatedAt: new Date().toISOString() };
+  const handleBookingRequest = async (requestId, action) => {
+    try {
+      if (action === 'approve') {
+        await updateBookingStatus(requestId, "ACCEPTED");
+      } else {
+        await updateBookingStatus(requestId, "REJECTED");
       }
-      return req;
-    });
-    
-    setBookingRequests(updatedRequests);
+      
+      // Remove from local booking requests since it's now handled by backend
+      const updatedRequests = bookingRequests.filter(req => req.id !== requestId);
+      setBookingRequests(updatedRequests);
+      
+      // Reload venues to get updated booking data
+      loadVenues();
+    } catch (error) {
+      console.error("Error handling booking request:", error);
+    }
   };
 
   const [showAdd, setShowAdd] = useState(false);
