@@ -7,8 +7,6 @@ import java.util.Map;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
-import com.example.cdr.eventsmanagementsystem.DTO.Payment.ConfirmPaymentRequest;
-import com.example.cdr.eventsmanagementsystem.DTO.Payment.CreatePaymentIntentRequest;
 import com.stripe.Stripe;
 import com.stripe.exception.StripeException;
 import com.stripe.model.Customer;
@@ -26,6 +24,9 @@ public class StripeService implements IStripeService {
     
     @Value("${spring.stripe.api-key}")
     private String stripeApiKey;
+    
+    @Value("${app.payment.return-url}")
+    private String paymentReturnUrl;
     
     @PostConstruct
     public void init() {
@@ -61,7 +62,7 @@ public class StripeService implements IStripeService {
             
             PaymentIntentConfirmParams confirmParams = PaymentIntentConfirmParams.builder()
                     .setPaymentMethod(paymentMethodId)
-                    .setReturnUrl("http://localhost:3000/booking-success")
+                    .setReturnUrl(paymentReturnUrl)
                     .build();
 
             return intent.confirm(confirmParams);
@@ -131,35 +132,8 @@ public class StripeService implements IStripeService {
         return "requested_by_customer";
     }
 
-    @Override
-    public PaymentIntent createPaymentIntent(CreatePaymentIntentRequest request) {
-        String customerId = ensureCustomerId(request);
-        return createPaymentIntent(
-            request.getAmount(),
-            request.getCurrency(),
-            customerId,
-            request.getDescription()
-        );
-    }
-
-    @Override
-    public PaymentIntent confirmPayment(ConfirmPaymentRequest request) {
-        return confirmPaymentIntent(request.getPaymentIntentId(), request.getPaymentMethodId());
-    }
 
     private long toCents(BigDecimal amount) {
         return amount.multiply(new BigDecimal("100")).longValue();
-    }
-
-    private String ensureCustomerId(CreatePaymentIntentRequest request) {
-        if (request.getCustomerEmail() == null) {
-            return null;
-        }
-        Customer customer = createCustomer(
-            request.getCustomerEmail(),
-            request.getCustomerName(),
-            request.getCustomerPhone()
-        );
-        return customer.getId();
     }
 }

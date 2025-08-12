@@ -4,21 +4,12 @@ import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.stream.Collectors;
-import com.example.cdr.eventsmanagementsystem.NotificationEvent.BookingCancellation.EventBookingCancelled;
-import com.example.cdr.eventsmanagementsystem.NotificationEvent.BookingCancellation.ServiceBookingCancelled;
-import com.example.cdr.eventsmanagementsystem.NotificationEvent.BookingCancellation.VenueBookingCancelled;
-import com.example.cdr.eventsmanagementsystem.NotificationEvent.BookingConfirmation.EventBookingConfirmed;
-import com.example.cdr.eventsmanagementsystem.NotificationEvent.BookingConfirmation.ServiceBookingConfirmed;
-import com.example.cdr.eventsmanagementsystem.NotificationEvent.BookingConfirmation.VenueBookingConfirmed;
-import com.example.cdr.eventsmanagementsystem.NotificationEvent.BookingCreation.VenueBookingCreated;
-import com.example.cdr.eventsmanagementsystem.NotificationEvent.BookingCreation.EventBookingCreated;
-import com.example.cdr.eventsmanagementsystem.NotificationEvent.BookingCreation.ServiceBookingCreated;
-import com.example.cdr.eventsmanagementsystem.NotificationEvent.Payment.BookingPaymentFailed;
-import com.example.cdr.eventsmanagementsystem.Service.Notifications.NotificationService;
-import com.example.cdr.eventsmanagementsystem.Util.AuthUtil;
+
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+
 import com.example.cdr.eventsmanagementsystem.DTO.Booking.Request.CancelBookingRequest;
 import com.example.cdr.eventsmanagementsystem.DTO.Booking.Request.CombinedBookingRequest;
 import com.example.cdr.eventsmanagementsystem.DTO.Booking.Request.EventBookingRequest;
@@ -36,15 +27,25 @@ import com.example.cdr.eventsmanagementsystem.Model.Event.Event;
 import com.example.cdr.eventsmanagementsystem.Model.User.Attendee;
 import com.example.cdr.eventsmanagementsystem.Model.User.Organizer;
 import com.example.cdr.eventsmanagementsystem.Model.Venue.Venue;
-import com.example.cdr.eventsmanagementsystem.Repository.UsersRepository.AttendeeRepository;
+import com.example.cdr.eventsmanagementsystem.NotificationEvent.BookingCancellation.EventBookingCancelled;
+import com.example.cdr.eventsmanagementsystem.NotificationEvent.BookingCancellation.ServiceBookingCancelled;
+import com.example.cdr.eventsmanagementsystem.NotificationEvent.BookingCancellation.VenueBookingCancelled;
+import com.example.cdr.eventsmanagementsystem.NotificationEvent.BookingConfirmation.EventBookingConfirmed;
+import com.example.cdr.eventsmanagementsystem.NotificationEvent.BookingConfirmation.ServiceBookingConfirmed;
+import com.example.cdr.eventsmanagementsystem.NotificationEvent.BookingConfirmation.VenueBookingConfirmed;
+import com.example.cdr.eventsmanagementsystem.NotificationEvent.BookingCreation.EventBookingCreated;
+import com.example.cdr.eventsmanagementsystem.NotificationEvent.BookingCreation.ServiceBookingCreated;
+import com.example.cdr.eventsmanagementsystem.NotificationEvent.BookingCreation.VenueBookingCreated;
+import com.example.cdr.eventsmanagementsystem.NotificationEvent.Payment.BookingPaymentFailed;
 import com.example.cdr.eventsmanagementsystem.Repository.BookingRepository;
 import com.example.cdr.eventsmanagementsystem.Repository.EventRepository;
-import com.example.cdr.eventsmanagementsystem.Repository.UsersRepository.OrganizerRepository;
 import com.example.cdr.eventsmanagementsystem.Repository.ServiceRepository;
 import com.example.cdr.eventsmanagementsystem.Repository.VenueRepository;
 import com.example.cdr.eventsmanagementsystem.Service.Auth.UserSyncService;
+import com.example.cdr.eventsmanagementsystem.Util.AuthUtil;
 import com.stripe.model.Customer;
 import com.stripe.model.PaymentIntent;
+
 import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -58,13 +59,13 @@ public class BookingService implements IBookingService {
     private final EventRepository eventRepository;
     private final VenueRepository venueRepository;
     private final ServiceRepository serviceRepository;
-    private final AttendeeRepository attendeeRepository;
-    private final OrganizerRepository organizerRepository;  
     private final BookingMapper bookingMapper;
-    private final StripeService stripeService;
-    private final NotificationService notificationService;
+    private final IStripeService stripeService;
     private final UserSyncService userSyncService;
     private final ApplicationEventPublisher eventPublisher;
+    
+    @Value("${app.payment.page-url:http://localhost:8080/payment-page}")
+    private String paymentPageUrl;
 
     @Override
     @Transactional
@@ -103,7 +104,7 @@ public class BookingService implements IBookingService {
         Booking savedBooking = bookingRepository.save(booking);
 
         eventPublisher.publishEvent(new EventBookingCreated(savedBooking));
-        //notificationService.sendPaymentRequestEmail(savedBooking, paymentIntent.getClientSecret());
+        
         
         EventBookingResponse response = bookingMapper.toEventBookingResponse(savedBooking);
         response.setPaymentUrl(buildPaymentUrl(savedBooking.getId(), paymentIntent.getClientSecret()));
@@ -151,7 +152,7 @@ public class BookingService implements IBookingService {
         Booking savedBooking = bookingRepository.save(booking);
 
         eventPublisher.publishEvent(new VenueBookingCreated(savedBooking));
-        //notificationService.sendPaymentRequestEmail(savedBooking, paymentIntent.getClientSecret());
+        
 
         VenueBookingResponse response = bookingMapper.toVenueBookingResponse(savedBooking);
         response.setPaymentUrl(buildPaymentUrl(savedBooking.getId(), paymentIntent.getClientSecret()));
@@ -198,13 +199,14 @@ public class BookingService implements IBookingService {
         Booking savedBooking = bookingRepository.save(booking);
 
         eventPublisher.publishEvent(new ServiceBookingCreated(savedBooking));
-        //notificationService.sendPaymentRequestEmail(savedBooking, paymentIntent.getClientSecret());
+        
         
         ServiceBookingResponse response = bookingMapper.toServiceBookingResponse(savedBooking);
         response.setPaymentUrl(buildPaymentUrl(savedBooking.getId(), paymentIntent.getClientSecret()));
         return response;
     }
 
+    @Override
     @Transactional
     public BookingDetailsResponse completePayment(Long bookingId, String paymentMethodId) {
         Booking booking = bookingRepository.findById(bookingId)
@@ -234,23 +236,20 @@ public class BookingService implements IBookingService {
                     eventPublisher.publishEvent(new EventBookingConfirmed(savedBooking));
 
                 }
-                //notificationService.sendBookingConfirmationEmail(savedBooking);
                 
                 return bookingMapper.toBookingDetailsResponse(savedBooking);
             } else {
                 eventPublisher.publishEvent(new BookingPaymentFailed(booking,"Payment was not successful. Status: " + confirmedPayment.getStatus()));
-                //notificationService.sendPaymentFailureEmail(booking, "Payment was not successful. Status: " + confirmedPayment.getStatus());
                 throw new RuntimeException("Payment was not successful. Status: " + confirmedPayment.getStatus());
             }
         } catch (Exception e) {
             eventPublisher.publishEvent(new BookingPaymentFailed(booking,"Payment failed: " + e.getMessage()));
-            //notificationService.sendPaymentFailureEmail(booking, e.getMessage());
             throw new RuntimeException("Payment failed: " + e.getMessage(), e);
         }
     }
 
     private String buildPaymentUrl(Long bookingId, String clientSecret) {
-        return String.format("http://localhost:8080/payment-page?booking_id=%d&client_secret=%s", 
+        return String.format("%s?booking_id=%d&client_secret=%s", paymentPageUrl,
                             bookingId, clientSecret);
     }
 
@@ -326,7 +325,7 @@ public class BookingService implements IBookingService {
         } else if (savedBooking.getEvent() != null) {
             eventPublisher.publishEvent(new EventBookingCancelled(savedBooking, request.getReason()));
         }
-        //notificationService.sendBookingCancellationEmail(savedBooking);
+        
     }
 
     @Override
@@ -343,7 +342,7 @@ public class BookingService implements IBookingService {
 
         return bookings.stream()
                 .map(bookingMapper::toBookingDetailsResponse)
-                .collect(Collectors.toList());
+                .toList();
     }
 
     @Override
@@ -352,7 +351,7 @@ public class BookingService implements IBookingService {
 
         return bookings.stream()
                 .map(bookingMapper::toBookingDetailsResponse)
-                .collect(Collectors.toList());
+                .toList();
     }
 
     @Override
@@ -365,8 +364,13 @@ public class BookingService implements IBookingService {
         booking.setStatus(status);
         
         if (oldStatus == BookingStatus.PENDING && status == BookingStatus.BOOKED) {
-            eventPublisher.publishEvent(new EventBookingConfirmed(booking));
-            //notificationService.sendBookingConfirmationEmail(booking);
+            if (booking.getVenue() != null) {
+                eventPublisher.publishEvent(new VenueBookingConfirmed(booking));
+            } else if (booking.getService() != null) {
+                eventPublisher.publishEvent(new ServiceBookingConfirmed(booking));
+            } else {
+                eventPublisher.publishEvent(new EventBookingConfirmed(booking));
+            }
         }
 
         Booking savedBooking = bookingRepository.save(booking);

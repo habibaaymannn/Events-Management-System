@@ -1,14 +1,13 @@
 package com.example.cdr.eventsmanagementsystem.Service.Notifications;
 
-import com.example.cdr.eventsmanagementsystem.Model.Booking.BookerType;
-import com.example.cdr.eventsmanagementsystem.Model.User.ServiceProvider;
-import com.example.cdr.eventsmanagementsystem.Model.User.VenueProvider;
 import org.springframework.mail.SimpleMailMessage;
 import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.stereotype.Service;
 
 import com.example.cdr.eventsmanagementsystem.Model.Booking.Booking;
 import com.example.cdr.eventsmanagementsystem.Model.User.BaseRoleEntity;
+import com.example.cdr.eventsmanagementsystem.Model.User.ServiceProvider;
+import com.example.cdr.eventsmanagementsystem.Model.User.VenueProvider;
 import com.example.cdr.eventsmanagementsystem.Service.Auth.UserSyncService;
 
 import lombok.RequiredArgsConstructor;
@@ -52,7 +51,7 @@ public class EmailNotificationService implements NotificationService {
 
     @Override
     public void sendEventBookingConfirmationEmail(Booking booking) {
-        BaseRoleEntity booker = userSyncService.findExistingUser(booking.getBookerId(), booking.getBookerType().toString());
+        BaseRoleEntity booker = userSyncService.findUserById(booking.getBookerId());
         if (booker == null) {
             log.error("User not found for confirmation email: booking {}", booking.getId());
             return;
@@ -71,7 +70,7 @@ public class EmailNotificationService implements NotificationService {
     @Override
     public void sendVenueBookingConfirmationEmail(Booking booking) {
         VenueProvider venueProvider = booking.getVenue().getVenueProvider();
-        BaseRoleEntity booker = userSyncService.findExistingUser(booking.getBookerId(), booking.getBookerType().toString());
+        BaseRoleEntity booker = userSyncService.findUserById(booking.getBookerId());
         if (booker == null) {
             log.error("User not found for confirmation email: booking {}", booking.getId());
             return;
@@ -90,7 +89,7 @@ public class EmailNotificationService implements NotificationService {
     @Override
     public void sendServiceBookingConfirmationEmail(Booking booking) {
         ServiceProvider serviceProvider = booking.getService().getServiceProvider();
-        BaseRoleEntity booker = userSyncService.findExistingUser(booking.getBookerId(), booking.getBookerType().toString());
+        BaseRoleEntity booker = userSyncService.findUserById(booking.getBookerId());
         if (booker == null) {
             log.error("User not found for confirmation email: booking {}", booking.getId());
             return;
@@ -109,7 +108,7 @@ public class EmailNotificationService implements NotificationService {
 
     @Override
     public void sendBookingCancellationEmail(Booking booking) {
-        BaseRoleEntity booker = userSyncService.findExistingUser(booking.getBookerId(), booking.getBookerType().toString());
+        BaseRoleEntity booker = userSyncService.findUserById(booking.getBookerId());
         if (booker == null) {
             log.error("User not found for confirmation email: booking {}", booking.getId());
             return;
@@ -127,7 +126,7 @@ public class EmailNotificationService implements NotificationService {
 
     @Override
     public void sendPaymentFailureEmail(Booking booking, String failureReason) {
-        BaseRoleEntity booker = userSyncService.findExistingUser(booking.getBookerId(), booking.getBookerType().toString());
+        BaseRoleEntity booker = userSyncService.findUserById(booking.getBookerId());
         if (booker == null) {
             return;
         }
@@ -146,7 +145,7 @@ public class EmailNotificationService implements NotificationService {
     }
     @Override
     public void sendVenueBookingEmail(Booking booking) {
-        BaseRoleEntity booker = userSyncService.findExistingUser(booking.getBookerId(), booking.getBookerType().toString());
+        BaseRoleEntity booker = userSyncService.findUserById(booking.getBookerId());
         VenueProvider venueProvider = booking.getVenue().getVenueProvider();
         String content = String.format(
                 "Hello %s,\n\n" +
@@ -207,7 +206,7 @@ public class EmailNotificationService implements NotificationService {
                 booking.getEndTime(),
                 booker.getFirstName()
         );
-        sendEmail(serviceProvider.getEmail(), "New Booking Request for Your Venue", content);
+        sendEmail(serviceProvider.getEmail(), "New Booking Request for Your Service", content);
     }
     @Override
     public void sendServiceCancellationEmail(Booking booking,String reason) {

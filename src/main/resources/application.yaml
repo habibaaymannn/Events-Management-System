@@ -43,3 +43,6 @@ server:
     include-message: always
     include-binding-errors: always
     include-stacktrace: never
+app:
+  payment:
+    return-url: http://localhost:3000/booking-success

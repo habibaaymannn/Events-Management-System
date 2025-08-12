@@ -1,10 +1,7 @@
 package com.example.cdr.eventsmanagementsystem.Service.Notifications;
 
 import com.example.cdr.eventsmanagementsystem.Model.Booking.Booking;
-import com.example.cdr.eventsmanagementsystem.Model.Venue.Venue;
-import org.springframework.stereotype.Service;
 
-@Service
 public interface NotificationService {
     void sendPaymentRequestEmail(Booking booking, String clientSecret);
     void sendEventBookingConfirmationEmail(Booking booking);
