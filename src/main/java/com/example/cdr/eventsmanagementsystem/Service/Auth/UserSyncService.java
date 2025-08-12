@@ -15,7 +15,6 @@ import com.example.cdr.eventsmanagementsystem.Model.User.VenueProvider;
 import com.example.cdr.eventsmanagementsystem.Repository.UsersRepository.AttendeeRepository;
 import com.example.cdr.eventsmanagementsystem.Repository.UsersRepository.OrganizerRepository;
 import com.example.cdr.eventsmanagementsystem.Repository.UsersRepository.ServiceProviderRepository;
-
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
