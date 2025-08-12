@@ -1,87 +1,59 @@
-import React, { useState } from "react";
-
-const mockBookings = [
-    {
-        id: 1,
-        eventName: "Tech Conference 2024",
-        venue: "Grand Ballroom",
-        organizer: "TechCorp Inc.",
-        date: "2024-02-15",
-        startTime: "09:00",
-        endTime: "17:00",
-        status: "Confirmed",
-        revenue: 5000,
-        attendees: 350,
-        contact: "john@techcorp.com",
-        specialRequests: "Extra microphones, livestream setup"
-    },
-    {
-        id: 2,
-        eventName: "Wedding Reception",
-        venue: "Garden Pavilion",
-        organizer: "Sarah & Mike",
-        date: "2024-02-20",
-        startTime: "18:00",
-        endTime: "23:00",
-        status: "Pending",
-        revenue: 3500,
-        attendees: 120,
-        contact: "sarah.mike@email.com",
-        specialRequests: "Floral decorations, dance floor"
-    },
-    {
-        id: 3,
-        eventName: "Corporate Meeting",
-        venue: "Conference Center",
-        organizer: "BusinessSolutions Ltd",
-        date: "2024-02-25",
-        startTime: "10:00",
-        endTime: "16:00",
-        status: "Confirmed",
-        revenue: 2000,
-        attendees: 80,
-        contact: "meetings@bizsolv.com",
-        specialRequests: "Video conferencing equipment"
-    },
-    {
-        id: 4,
-        eventName: "Product Launch",
-        venue: "Rooftop Terrace",
-        organizer: "StartupXYZ",
-        date: "2024-03-01",
-        startTime: "19:00",
-        endTime: "22:00",
-        status: "Pending",
-        revenue: 4200,
-        attendees: 90,
-        contact: "events@startupxyz.com",
-        specialRequests: "Photography setup, cocktail service"
-    },
-    {
-        id: 5,
-        eventName: "Charity Gala",
-        venue: "Grand Ballroom",
-        organizer: "Hope Foundation",
-        date: "2024-03-10",
-        startTime: "18:30",
-        endTime: "23:30",
-        status: "Confirmed",
-        revenue: 6000,
-        attendees: 400,
-        contact: "gala@hopefoundation.org",
-        specialRequests: "Auction setup, VIP area"
-    }
-];
+import React, { useState, useEffect } from "react";
+import { cancelVenueBooking, getAllVenues } from "../../api/venueApi";
 
 const Bookings = () => {
-    const [bookings, setBookings] = useState(mockBookings);
+    const [bookings, setBookings] = useState([]);
     const [filter, setFilter] = useState("All");
     const [selectedBooking, setSelectedBooking] = useState(null);
 
-    const handleStatusChange = (bookingId, newStatus) => {
-        setBookings(bookings.map(booking =>
-            booking.id === bookingId ? { ...booking, status: newStatus } : booking
-        ));
+    useEffect(() => {
+        loadBookings();
+    }, []);
+
+    const loadBookings = async () => {
+        try {
+            // Get all venues and extract bookings from them
+            const venues = await getAllVenues();
+            const allBookings = [];
+            
+            venues.forEach(venue => {
+                if (venue.bookings) {
+                    venue.bookings.forEach(booking => {
+                        allBookings.push({
+                            ...booking,
+                            venue: venue.name,
+                            eventName: `Event at ${venue.name}`,
+                            organizer: `${booking.organizerBooker?.firstName || ''} ${booking.organizerBooker?.lastName || ''}`.trim(),
+                            contact: booking.organizerBooker?.email,
+                            date: new Date(booking.startTime).toLocaleDateString(),
+                            startTime: new Date(booking.startTime).toLocaleTimeString(),
+                            endTime: new Date(booking.endTime).toLocaleTimeString(),
+                            revenue: 0, // You may need to calculate this based on venue pricing
+                            attendees: 'N/A', // This info may not be available in venue bookings
+                            specialRequests: booking.cancellationReason || 'None'
+                        });
+                    });
+                }
+            });
+            
+            setBookings(allBookings);
+        } catch (error) {
+            console.error("Error loading bookings:", error);
+        }
+    };
+
+    const handleStatusChange = async (bookingId, newStatus) => {
+        if (newStatus === "Cancelled") {
+            try {
+                await cancelVenueBooking(bookingId);
+                loadBookings();
+            } catch (error) {
+                console.error("Error cancelling booking:", error);
+            }
+        } else {
+            // Implement confirm logic if backend supports it
+            console.log("Confirm booking not implemented yet");
+        }
     };
 
     const handleViewDetails = (booking) => {
