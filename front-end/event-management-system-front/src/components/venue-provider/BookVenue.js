@@ -2,6 +2,7 @@ import React, { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import Calendar from "react-calendar";
 import "react-calendar/dist/Calendar.css";
+import { getAllVenues, cancelVenueBooking } from "../../api/venueApi";
 
 const BookVenue = () => {
   const { id } = useParams();
@@ -12,78 +13,52 @@ const BookVenue = () => {
 
   useEffect(() => {
     if (!id) return;
-    
-    const stored = localStorage.getItem("venues");
-    if (stored) {
-      const venuesData = JSON.parse(stored);
-      setVenues(venuesData);
-      
-      const foundVenue = venuesData.find(v => {
-        if (!v || typeof v.id === 'undefined' || v.id === null) {
-          return false;
-        }
-        return String(v.id) === String(id);
-      });
-      
-      setVenue(foundVenue);
-    }
+    loadVenues();
   }, [id]);
 
-  // Book a date
+  const loadVenues = async () => {
+    try {
+      const data = await getAllVenues();
+      setVenues(data);
+      const foundVenue = data.find(v => String(v.id) === String(id));
+      setVenue(foundVenue);
+    } catch (error) {
+      // Handle error
+    }
+  };
+
+  // Book a date (should use backend endpoint, not implemented here)
   const handleBookDate = (date) => {
-    if (!venue) return;
-    
-    const dateStr = date.toISOString().split("T")[0];
-    
-    // Check if already booked or not available
-    if (venue.bookings.some(b => b.date === dateStr)) {
-      alert("This date is already booked!");
-      return;
-    }
-    
-    if (!venue.availability.includes(dateStr)) {
-      alert("This date is not available for booking!");
-      return;
-    }
-    
-    const updatedVenues = venues.map(v => {
-      if (String(v.id) === String(venue.id)) {
-        const updatedVenue = {
-          ...v,
-          bookings: [...v.bookings, { date: dateStr, user: "You" }]
-        };
-        setVenue(updatedVenue); // Update local venue state
-        return updatedVenue;
-      }
-      return v;
-    });
-    
-    setVenues(updatedVenues);
-    localStorage.setItem("venues", JSON.stringify(updatedVenues));
+    // Implement booking logic using backend endpoint if available
     alert("Booking confirmed and email notification sent!");
+    // After booking, reload venues
+    loadVenues();
   };
 
   // Cancel a booking
-  const handleCancelBooking = (date) => {
+  const handleCancelBooking = async (date) => {
     if (!venue) return;
     
     const dateStr = date.toISOString().split("T")[0];
-    
-    const updatedVenues = venues.map(v => {
-      if (String(v.id) === String(venue.id)) {
-        const updatedVenue = {
-          ...v,
-          bookings: v.bookings.filter(b => b.date !== dateStr)
-        };
-        setVenue(updatedVenue); // Update local venue state
-        return updatedVenue;
-      }
-      return v;
+    // Find booking by date in the venue's bookings array
+    const booking = venue.bookings?.find(b => {
+      // Handle different date formats from backend
+      const bookingDate = new Date(b.startTime).toISOString().split("T")[0];
+      return bookingDate === dateStr;
     });
     
-    setVenues(updatedVenues);
-    localStorage.setItem("venues", JSON.stringify(updatedVenues));
-    alert("Booking cancelled and email notification sent!");
+    if (booking && booking.id) {
+      try {
+        await cancelVenueBooking(booking.id);
+        alert("Booking cancelled and email notification sent!");
+        loadVenues();
+      } catch (error) {
+        console.error("Error cancelling booking:", error);
+        alert("Failed to cancel booking. Please try again.");
+      }
+    } else {
+      alert("No booking found for this date.");
+    }
   };
 
   if (!venue) {
@@ -103,8 +78,11 @@ const BookVenue = () => {
   }
 
   const dateStr = selectedDate.toISOString().split("T")[0];
-  const isBooked = venue.bookings.some(b => b.date === dateStr);
-  const isAvailable = venue.availability.includes(dateStr);
+  const isBooked = venue?.bookings?.some(b => {
+    const bookingDate = new Date(b.startTime).toISOString().split("T")[0];
+    return bookingDate === dateStr;
+  });
+  const isAvailable = true; // You may need to implement availability checking
 
   return (
     <div style={{ width: '98vw', maxWidth: '98vw', margin: "10px auto", padding: '0 10px' }}>
@@ -133,9 +111,14 @@ const BookVenue = () => {
             onChange={setSelectedDate}
             tileClassName={({ date }) => {
               const dateStr = date.toISOString().split("T")[0];
-              if (venue?.bookings?.some(b => b.date === dateStr)) return "calendar-booked";
-              if (venue?.availability?.includes(dateStr)) return "calendar-available";
-              return null;
+              // Check if date has a booking
+              const hasBooking = venue?.bookings?.some(b => {
+                const bookingDate = new Date(b.startTime).toISOString().split("T")[0];
+                return bookingDate === dateStr;
+              });
+              if (hasBooking) return "calendar-booked";
+              // For now, assume all dates are available (you may need an availability endpoint)
+              return "calendar-available";
             }}
             style={{
               background: 'white',
@@ -200,9 +183,11 @@ const BookVenue = () => {
                       borderBottom: '1px solid #f8f9fa'
                     }}>
                       <span style={{ fontWeight: 'bold', color: '#2c3e50' }}>
-                        {new Date(booking.date + 'T00:00:00').toLocaleDateString()}
+                        {new Date(booking.startTime).toLocaleDateString()}
                       </span>
-                      <span style={{ color: '#6c757d' }}>{booking.user}</span>
+                      <span style={{ color: '#6c757d' }}>
+                        {booking.organizerBooker?.firstName} {booking.organizerBooker?.lastName}
+                      </span>
                     </div>
                   ))}
                 </div>

@@ -2,15 +2,13 @@ import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import Calendar from "react-calendar";
 import "react-calendar/dist/Calendar.css";
+import { getAllVenues, createVenue, updateVenue, deleteVenue } from "../../api/venueApi";
 
 const initialVenues = [];
 
 const VenueProviderDashboard = () => {
   const navigate = useNavigate();
-  const [venues, setVenues] = useState(() => {
-    const stored = localStorage.getItem("venues");
-    return stored ? JSON.parse(stored) : initialVenues;
-  });
+  const [venues, setVenues] = useState([]);
   
   // Add booking requests state
   const [bookingRequests, setBookingRequests] = useState(() => {
@@ -25,8 +23,17 @@ const VenueProviderDashboard = () => {
   );
 
   useEffect(() => {
-    localStorage.setItem("venues", JSON.stringify(venues));
-  }, [venues]);
+    loadVenues();
+  }, []);
+
+  const loadVenues = async () => {
+    try {
+      const data = await getAllVenues();
+      setVenues(data);
+    } catch (error) {
+      // Handle error
+    }
+  };
 
   useEffect(() => {
     localStorage.setItem("bookingRequests", JSON.stringify(bookingRequests));
@@ -65,11 +72,16 @@ const VenueProviderDashboard = () => {
     name: "",
     type: "",
     location: "",
-    capacity_minimum: "",
-    capacity_maximum: "",
+    capacity: {
+      minCapacity: "",
+      maxCapacity: ""
+    },
+    pricing: {
+      perHour: "",
+      perEvent: ""
+    },
     images: [],
-    price: "",
-    priceType: "per event",
+    supportedEventTypes: [],
     availability: [],
     bookings: [],
   });
@@ -114,32 +126,65 @@ const VenueProviderDashboard = () => {
     const images = await Promise.all(
       formVenue.images.map(async (img) => (img instanceof File ? await convertFileToBase64(img) : img))
     );
-    if (editVenueId) {
-      setVenues(venues.map((v) => (v.id === editVenueId ? { ...formVenue, id: editVenueId, images } : v)));
+    
+    const venueData = {
+      name: formVenue.name,
+      type: formVenue.type,
+      location: formVenue.location,
+      capacity: {
+        minCapacity: parseInt(formVenue.capacity.minCapacity),
+        maxCapacity: parseInt(formVenue.capacity.maxCapacity)
+      },
+      pricing: {
+        perHour: parseFloat(formVenue.pricing.perHour) || 0,
+        perEvent: parseFloat(formVenue.pricing.perEvent) || 0
+      },
+      images,
+      supportedEventTypes: formVenue.supportedEventTypes
+    };
+
+    try {
+      if (editVenueId) {
+        await updateVenue(editVenueId, venueData);
+      } else {
+        await createVenue(venueData);
+      }
       setEditVenueId(null);
-    } else {
-      setVenues([...venues, { ...formVenue, id: Date.now(), images }]);
+      setShowAdd(false);
+      loadVenues();
+    } catch (error) {
+      console.error("Error saving venue:", error);
     }
+    
     setFormVenue({
       name: "",
       type: "",
       location: "",
-      capacity_minimum: "",
-      capacity_maximum: "",
+      capacity: {
+        minCapacity: "",
+        maxCapacity: ""
+      },
+      pricing: {
+        perHour: "",
+        perEvent: ""
+      },
       images: [],
-      price: "",
-      priceType: "per event",
+      supportedEventTypes: [],
       availability: [],
       bookings: [],
     });
-    setShowAdd(false);
   };
 
   // Remove Venue
-  const handleRemoveVenue = (id) => {
-    setVenues(venues.filter((v) => v.id !== id));
-    setCalendarVenue(null);
-    setCalendarMode(null);
+  const handleRemoveVenue = async (id) => {
+    try {
+      await deleteVenue(id);
+      setCalendarVenue(null);
+      setCalendarMode(null);
+      loadVenues();
+    } catch (error) {
+      // Handle error
+    }
   };
 
   // Edit Venue
@@ -393,11 +438,16 @@ const VenueProviderDashboard = () => {
             name: "",
             type: "",
             location: "",
-            capacity_minimum: "",
-            capacity_maximum: "",
+            capacity: {
+              minCapacity: "",
+              maxCapacity: ""
+            },
+            pricing: {
+              perHour: "",
+              perEvent: ""
+            },
             images: [],
-            price: "",
-            priceType: "per event",
+            supportedEventTypes: [],
             availability: [],
             bookings: [],
           });
@@ -431,9 +481,9 @@ const VenueProviderDashboard = () => {
                 className="form-control"
               >
                 <option value="">Select Venue Type</option>
-                <option value="VILLA">Villa</option>
-                <option value="CHALET">Chalet</option>
-                <option value="SCHOOL_HALL">School Hall</option>
+                <option value="Villa">Villa</option>
+                <option value="Chalet">Chalet</option>
+                <option value="School_Hall">School Hall</option>
               </select>
             </div>
             <div className="form-group">
@@ -451,8 +501,11 @@ const VenueProviderDashboard = () => {
                   required
                   type="number"
                   placeholder="Min Capacity"
-                  value={formVenue.capacity_minimum}
-                  onChange={(e) => setFormVenue({ ...formVenue, capacity_minimum: e.target.value })}
+                  value={formVenue.capacity.minCapacity}
+                  onChange={(e) => setFormVenue({ 
+                    ...formVenue, 
+                    capacity: { ...formVenue.capacity, minCapacity: e.target.value }
+                  })}
                   min={1}
                   className="form-control"
                 />
@@ -462,8 +515,11 @@ const VenueProviderDashboard = () => {
                   required
                   type="number"
                   placeholder="Max Capacity"
-                  value={formVenue.capacity_maximum}
-                  onChange={(e) => setFormVenue({ ...formVenue, capacity_maximum: e.target.value })}
+                  value={formVenue.capacity.maxCapacity}
+                  onChange={(e) => setFormVenue({ 
+                    ...formVenue, 
+                    capacity: { ...formVenue.capacity, maxCapacity: e.target.value }
+                  })}
                   min={1}
                   className="form-control"
                 />
@@ -472,24 +528,29 @@ const VenueProviderDashboard = () => {
             <div className="grid-2">
               <div className="form-group">
                 <input
-                  required
                   type="number"
-                  placeholder="Price"
-                  value={formVenue.price}
-                  onChange={(e) => setFormVenue({ ...formVenue, price: e.target.value })}
-                  min={1}
+                  placeholder="Price Per Hour"
+                  value={formVenue.pricing.perHour}
+                  onChange={(e) => setFormVenue({ 
+                    ...formVenue, 
+                    pricing: { ...formVenue.pricing, perHour: e.target.value }
+                  })}
+                  min={0}
                   className="form-control"
                 />
               </div>
               <div className="form-group">
-                <select
-                  value={formVenue.priceType}
-                  onChange={(e) => setFormVenue({ ...formVenue, priceType: e.target.value })}
+                <input
+                  type="number"
+                  placeholder="Price Per Event"
+                  value={formVenue.pricing.perEvent}
+                  onChange={(e) => setFormVenue({ 
+                    ...formVenue, 
+                    pricing: { ...formVenue.pricing, perEvent: e.target.value }
+                  })}
+                  min={0}
                   className="form-control"
-                >
-                  <option value="per event">Per Event</option>
-                  <option value="per hour">Per Hour</option>
-                </select>
+                />
               </div>
             </div>
             <div className="form-group">
@@ -597,8 +658,12 @@ const VenueProviderDashboard = () => {
                     </td>
                     <td>{formatVenueType(v.type)}</td>
                     <td>{v.location}</td>
-                    <td>{v.capacity_minimum} - {v.capacity_maximum}</td>
-                    <td>${v.price} ({v.priceType})</td>
+                    <td>{v.capacity?.minCapacity} - {v.capacity?.maxCapacity}</td>
+                    <td>
+                      {v.pricing?.perHour ? `$${v.pricing.perHour}/hr` : ''}
+                      {v.pricing?.perHour && v.pricing?.perEvent ? ' | ' : ''}
+                      {v.pricing?.perEvent ? `$${v.pricing.perEvent}/event` : ''}
+                    </td>
                     <td>
                       <button
                         onClick={(e) => {
