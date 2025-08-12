@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { getAllEvents, deleteEvent, updateEvent, createEvent } from "../../api/eventApi";
+import { getBookingById, getBookingsByEventId } from "../../api/bookingApi";
 
 const MyEvents = () => {
   const navigate = useNavigate();
@@ -9,6 +10,8 @@ const MyEvents = () => {
   const [selectedEvent, setSelectedEvent] = useState(null);
   const [showCancelModal, setShowCancelModal] = useState(false);
   const [cancelReason, setCancelReason] = useState("");
+  const [selectedBookingDetails, setSelectedBookingDetails] = useState(null);
+  const [eventBookings, setEventBookings] = useState({});
 
   useEffect(() => {
     loadEvents();
@@ -53,8 +56,29 @@ const MyEvents = () => {
     }
   };
 
-  const handleViewDetails = (event) => {
-    setSelectedEvent(event);
+  const handleViewDetails = async (event) => {
+    try {
+      // Load bookings for this specific event
+      const bookings = await getBookingsByEventId(event.id);
+      setEventBookings(prev => ({
+        ...prev,
+        [event.id]: bookings
+      }));
+      setSelectedEvent(event);
+    } catch (error) {
+      console.error("Error fetching event bookings:", error);
+      setSelectedEvent(event);
+    }
+  };
+
+  const handleViewBookingDetails = async (bookingId) => {
+    try {
+      const details = await getBookingById(bookingId);
+      setSelectedBookingDetails(details);
+    } catch (error) {
+      console.error("Error fetching booking details:", error);
+      alert("Failed to load booking details");
+    }
   };
 
   const isWithinFreeCancellation = (event) => {
@@ -312,6 +336,50 @@ const MyEvents = () => {
                 </div>
               )}
 
+              {eventBookings[selectedEvent.id] && eventBookings[selectedEvent.id].length > 0 && (
+                <div className="detail-section">
+                  <h5>Event Bookings ({eventBookings[selectedEvent.id].length})</h5>
+                  <div className="bookings-list">
+                    {eventBookings[selectedEvent.id].map((booking, index) => (
+                      <div key={index} className="booking-detail">
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.5rem' }}>
+                          <div>
+                            <span className="booking-type">
+                              {booking.type === 'VENUE' ? '🏢 Venue Booking' : '🛠️ Service Booking'}
+                            </span>
+                            <span className={`booking-status status-${booking.status.toLowerCase()}`}>
+                              {booking.status}
+                            </span>
+                          </div>
+                          <button
+                            className="event-btn secondary"
+                            onClick={() => handleViewBookingDetails(booking.id)}
+                          >
+                            View Details
+                          </button>
+                        </div>
+                        <div className="booking-info">
+                          <p><strong>Start:</strong> {new Date(booking.startTime).toLocaleString()}</p>
+                          <p><strong>End:</strong> {new Date(booking.endTime).toLocaleString()}</p>
+                          {booking.venueId && <p><strong>Venue ID:</strong> {booking.venueId}</p>}
+                          {booking.serviceId && <p><strong>Service ID:</strong> {booking.serviceId}</p>}
+                          {booking.currency && <p><strong>Currency:</strong> {booking.currency}</p>}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {(!eventBookings[selectedEvent.id] || eventBookings[selectedEvent.id].length === 0) && (
+                <div className="detail-section">
+                  <h5>Event Bookings</h5>
+                  <p style={{ color: '#6c757d', fontStyle: 'italic' }}>
+                    No bookings found for this event.
+                  </p>
+                </div>
+              )}
+
               <div className="detail-section">
                 <h5>Financial Summary</h5>
                 <div className="financial-summary">
@@ -329,6 +397,67 @@ const MyEvents = () => {
                   </div>
                 </div>
               </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Booking Details Modal */}
+      {selectedBookingDetails && (
+        <div className="modal-overlay" onClick={() => setSelectedBookingDetails(null)}>
+          <div className="modal-content" onClick={(e) => e.stopPropagation()}>
+            <div className="modal-header">
+              <h4>Booking Details</h4>
+              <button
+                className="modal-close"
+                onClick={() => setSelectedBookingDetails(null)}
+              >
+                ×
+              </button>
+            </div>
+            <div className="modal-body">
+              <div className="detail-section">
+                <h5>Booking Information</h5>
+                <div className="detail-grid">
+                  <div className="detail-item">
+                    <strong>Booking ID:</strong> {selectedBookingDetails.id}
+                  </div>
+                  <div className="detail-item">
+                    <strong>Type:</strong> {selectedBookingDetails.type}
+                  </div>
+                  <div className="detail-item">
+                    <strong>Status:</strong> {selectedBookingDetails.status}
+                  </div>
+                  <div className="detail-item">
+                    <strong>Start Time:</strong> {new Date(selectedBookingDetails.startTime).toLocaleString()}
+                  </div>
+                  <div className="detail-item">
+                    <strong>End Time:</strong> {new Date(selectedBookingDetails.endTime).toLocaleString()}
+                  </div>
+                </div>
+              </div>
+
+              {selectedBookingDetails.venueId && (
+                <div className="detail-section">
+                  <h5>Venue Information</h5>
+                  <div className="detail-grid">
+                    <div className="detail-item">
+                      <strong>Venue ID:</strong> {selectedBookingDetails.venueId}
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {selectedBookingDetails.serviceId && (
+                <div className="detail-section">
+                  <h5>Service Information</h5>
+                  <div className="detail-grid">
+                    <div className="detail-item">
+                      <strong>Service ID:</strong> {selectedBookingDetails.serviceId}
+                    </div>
+                  </div>
+                </div>
+              )}
             </div>
           </div>
         </div>

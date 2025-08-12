@@ -1,10 +1,13 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { getAllEvents, flagEvent, cancelEvent } from "../../api/adminApi";
+import { getBookingsByEventId } from "../../api/bookingApi";
 
 const EventMonitoring = () => {
   const navigate = useNavigate();
   const [events, setEvents] = useState([]);
+  const [selectedEvent, setSelectedEvent] = useState(null);
+  const [eventBookings, setEventBookings] = useState([]);
 
   useEffect(() => {
     loadEvents();
@@ -39,6 +42,18 @@ const EventMonitoring = () => {
       } catch (error) {
         // Handle error
       }
+    }
+  };
+
+  const handleViewEventDetails = async (event) => {
+    try {
+      const bookings = await getBookingsByEventId(event.id);
+      setEventBookings(bookings);
+      setSelectedEvent(event);
+    } catch (error) {
+      console.error("Error fetching event bookings:", error);
+      setEventBookings([]);
+      setSelectedEvent(event);
     }
   };
 
@@ -85,7 +100,7 @@ const EventMonitoring = () => {
             <tbody>
               {events.length === 0 ? (
                 <tr>
-                  <td colSpan="8" style={{ textAlign: "center", color: "#6c757d", padding: "2rem" }}>
+                  <td colSpan="9" style={{ textAlign: "center", color: "#6c757d", padding: "2rem" }}>
                     No events found.
                   </td>
                 </tr>
@@ -134,6 +149,13 @@ const EventMonitoring = () => {
                     </td>
                     <td>
                       <div style={{ display: "flex", gap: 4, flexWrap: 'wrap' }}>
+                        <button
+                          onClick={() => handleViewEventDetails(event)}
+                          className="btn btn-info"
+                          style={{ padding: "6px 12px", fontSize: "0.8rem" }}
+                        >
+                          View Details
+                        </button>
                         {!event.flagged && (
                           <button
                             onClick={() => handleFlagEvent(event.id)}
@@ -161,6 +183,78 @@ const EventMonitoring = () => {
           </table>
         </div>
       </div>
+
+      {/* Event Details Modal */}
+      {selectedEvent && (
+        <div className="modal-overlay" onClick={() => setSelectedEvent(null)}>
+          <div className="modal-content" onClick={(e) => e.stopPropagation()}>
+            <div className="modal-header">
+              <h4>Event Details - {selectedEvent.name}</h4>
+              <button className="modal-close" onClick={() => setSelectedEvent(null)}>×</button>
+            </div>
+            <div style={{ padding: '1.5rem' }}>
+              <div style={{ marginBottom: '1.5rem' }}>
+                <h5 style={{ color: '#2c3e50', marginBottom: '1rem' }}>Event Information</h5>
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
+                  <div><strong>Name:</strong> {selectedEvent.name}</div>
+                  <div><strong>Type:</strong> {selectedEvent.type}</div>
+                  <div><strong>Status:</strong> {selectedEvent.status}</div>
+                  <div><strong>Organizer:</strong> {selectedEvent.organizer || 'N/A'}</div>
+                  <div><strong>Start Time:</strong> {selectedEvent.startTime ? new Date(selectedEvent.startTime).toLocaleString() : 'N/A'}</div>
+                  <div><strong>End Time:</strong> {selectedEvent.endTime ? new Date(selectedEvent.endTime).toLocaleString() : 'N/A'}</div>
+                </div>
+                {selectedEvent.description && (
+                  <div style={{ marginTop: '1rem' }}>
+                    <strong>Description:</strong>
+                    <p style={{ marginTop: '0.5rem' }}>{selectedEvent.description}</p>
+                  </div>
+                )}
+              </div>
+
+              <div style={{ marginBottom: '1.5rem' }}>
+                <h5 style={{ color: '#2c3e50', marginBottom: '1rem' }}>
+                  Event Bookings ({eventBookings.length})
+                </h5>
+                {eventBookings.length > 0 ? (
+                  <div style={{ maxHeight: '300px', overflowY: 'auto' }}>
+                    {eventBookings.map((booking, index) => (
+                      <div key={index} style={{
+                        padding: '1rem',
+                        marginBottom: '0.5rem',
+                        border: '1px solid #e9ecef',
+                        borderRadius: '6px',
+                        backgroundColor: '#f8f9fa'
+                      }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.5rem' }}>
+                          <span style={{ fontWeight: 'bold' }}>
+                            {booking.type === 'VENUE' ? '🏢 Venue Booking' : '🛠️ Service Booking'}
+                          </span>
+                          <span className={`status-badge status-${booking.status.toLowerCase()}`}>
+                            {booking.status}
+                          </span>
+                        </div>
+                        <div style={{ fontSize: '0.9rem', color: '#6c757d' }}>
+                          <div><strong>Start:</strong> {new Date(booking.startTime).toLocaleString()}</div>
+                          <div><strong>End:</strong> {new Date(booking.endTime).toLocaleString()}</div>
+                          {booking.venueId && <div><strong>Venue ID:</strong> {booking.venueId}</div>}
+                          {booking.serviceId && <div><strong>Service ID:</strong> {booking.serviceId}</div>}
+                          {booking.organizerBooker && (
+                            <div><strong>Booked by:</strong> {booking.organizerBooker.firstName} {booking.organizerBooker.lastName}</div>
+                          )}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <p style={{ color: '#6c757d', fontStyle: 'italic' }}>
+                    No bookings found for this event.
+                  </p>
+                )}
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

@@ -1,4 +1,6 @@
 import React, { useState } from "react";
+import { getMyServices } from "../../api/serviceApi";
+import { bookService } from "../../api/bookingApi";
 
 const mockServices = [
   {
@@ -258,23 +260,37 @@ const BookServices = () => {
     return cart.reduce((total, item) => total + item.totalCost, 0);
   };
 
-  const submitBooking = (e) => {
+  const submitBooking = async (e) => {
     e.preventDefault();
-    const totalCost = selectedService.price * parseInt(bookingData.quantity);
-    console.log("Booking service:", selectedService.name, "with data:", bookingData, "Total cost:", totalCost);
-    alert(`Booking request submitted for ${selectedService.name}! Total cost: $${totalCost.toLocaleString()}`);
-    setShowBookingModal(false);
-    setSelectedService(null);
-    setBookingData({
-      eventName: "",
-      eventDate: "",
-      eventType: "",
-      quantity: "",
-      specialRequests: "",
-      contactName: "",
-      contactEmail: "",
-      contactPhone: ""
-    });
+    try {
+      const serviceBookingData = {
+        startTime: `${bookingData.eventDate}T09:00:00.000Z`, // Default start time
+        endTime: `${bookingData.eventDate}T18:00:00.000Z`,   // Default end time
+        currency: "USD", // Default currency
+        serviceId: parseInt(selectedService.id),
+        organizerId: "current-organizer-id", // You'll need to get this from auth context
+        eventId: bookingData.eventId || null // If booking for existing event
+      };
+
+      const result = await bookService(serviceBookingData);
+      alert(`Service booking confirmed! Booking ID: ${result.id}`);
+      
+      setShowBookingModal(false);
+      setSelectedService(null);
+      setBookingData({
+        eventName: "",
+        eventDate: "",
+        eventType: "",
+        quantity: "",
+        specialRequests: "",
+        contactName: "",
+        contactEmail: "",
+        contactPhone: ""
+      });
+    } catch (error) {
+      console.error("Error booking service:", error);
+      alert("Failed to book service. Please try again.");
+    }
   };
 
   return (

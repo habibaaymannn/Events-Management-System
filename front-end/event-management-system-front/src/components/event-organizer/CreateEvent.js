@@ -1,10 +1,15 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { createEvent } from "../../api/eventApi";
+import { bookCombinedResources } from "../../api/bookingApi";
+import { getAllVenues } from "../../api/venueApi";
+import { getMyServices } from "../../api/serviceApi";
 
 const CreateEvent = () => {
   const navigate = useNavigate();
   const [currentStep, setCurrentStep] = useState(1);
+  const [venues, setVenues] = useState([]);
+  const [services, setServices] = useState([]);
   const [eventData, setEventData] = useState({
     // Basic Information - matching backend API
     name: "",
@@ -12,7 +17,11 @@ const CreateEvent = () => {
     type: "WEDDING", // Backend expects enum values
     startTime: "",
     endTime: "",
-    retailPrice: ""
+    retailPrice: "",
+    // Booking Information
+    venueId: "",
+    serviceIds: [],
+    bookCombined: false // New option for combined booking
   });
 
   const eventTypes = [
@@ -36,6 +45,23 @@ const CreateEvent = () => {
     { value: "FUNDRAISER", label: "Fundraiser" }
   ];
 
+  useEffect(() => {
+    loadVenuesAndServices();
+  }, []);
+
+  const loadVenuesAndServices = async () => {
+    try {
+      const [venuesData, servicesData] = await Promise.all([
+        getAllVenues(),
+        getMyServices()
+      ]);
+      setVenues(venuesData);
+      setServices(servicesData);
+    } catch (error) {
+      console.error("Error loading venues and services:", error);
+    }
+  };
+
   const handleInputChange = (e) => {
     const { name, value } = e.target;
     setEventData(prev => ({
@@ -47,7 +73,7 @@ const CreateEvent = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
-      // Format data according to backend API
+      // Create the event first
       const apiEventData = {
         name: eventData.name,
         description: eventData.description,
@@ -57,8 +83,31 @@ const CreateEvent = () => {
         retailPrice: parseFloat(eventData.retailPrice) || 0
       };
 
-      await createEvent(apiEventData);
-      alert("Event created successfully!");
+      const createdEvent = await createEvent(apiEventData);
+
+      // Book resources if selected
+      if ((eventData.venueId || eventData.serviceIds.length > 0) && eventData.bookCombined) {
+        // Use combined booking if both venue and services are selected
+        if (eventData.venueId && eventData.serviceIds.length > 0) {
+          const combinedBookingData = {
+            startTime: eventData.startTime + ":00.000Z",
+            endTime: eventData.endTime + ":00.000Z",
+            currency: "USD",
+            organizerId: "current-organizer-id", // Get from auth context
+            eventId: createdEvent.id,
+            venueId: parseInt(eventData.venueId),
+            serviceIds: eventData.serviceIds.map(id => parseInt(id))
+          };
+          
+          await bookCombinedResources(combinedBookingData);
+          alert("Event created and combined resources booked successfully!");
+        } else {
+          alert("Event created successfully! You can book venues and services separately from the dashboard.");
+        }
+      } else {
+        alert("Event created successfully!");
+      }
+      
       navigate('/event-organizer/my-events');
     } catch (error) {
       console.error("Error creating event:", error);
@@ -67,7 +116,7 @@ const CreateEvent = () => {
   };
 
   const nextStep = () => {
-    if (currentStep < 3) setCurrentStep(currentStep + 1);
+    if (currentStep < 4) setCurrentStep(currentStep + 1);
   };
 
   const prevStep = () => {
@@ -97,13 +146,14 @@ const CreateEvent = () => {
       {/* Progress Indicator */}
       <div className="progress-container">
         <div className="progress-steps">
-          {[1, 2, 3].map(step => (
+          {[1, 2, 3, 4].map(step => (
             <div key={step} className={`progress-step ${step <= currentStep ? 'active' : ''}`}>
               <div className="step-number">{step}</div>
               <div className="step-label">
                 {step === 1 && "Basic Info"}
                 {step === 2 && "Details"}
-                {step === 3 && "Review"}
+                {step === 3 && "Resources"}
+                {step === 4 && "Review"}
               </div>
             </div>
           ))}
@@ -111,7 +161,7 @@ const CreateEvent = () => {
         <div className="progress-bar">
           <div
             className="progress-fill"
-            style={{ width: `${(currentStep / 3) * 100}%` }}
+            style={{ width: `${(currentStep / 4) * 100}%` }}
           />
         </div>
       </div>
@@ -218,8 +268,89 @@ const CreateEvent = () => {
           </div>
         )}
 
-        {/* Step 3: Review */}
+        {/* Step 3: Resource Booking (New Step) */}
         {currentStep === 3 && (
+          <div className="form-step">
+            <h4 className="step-title">🏢 Resource Booking (Optional)</h4>
+            <div className="form-grid">
+              <div className="form-group">
+                <label className="form-label">Select Venue</label>
+                <select
+                  name="venueId"
+                  value={eventData.venueId}
+                  onChange={handleInputChange}
+                  className="form-control"
+                >
+                  <option value="">No venue</option>
+                  {venues.map(venue => (
+                    <option key={venue.id} value={venue.id}>
+                      {venue.name} - {venue.location} (${venue.pricing?.perEvent || venue.pricing?.perHour}/event)
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <div className="form-group">
+                <label className="form-label">Select Services</label>
+                <div className="services-selection">
+                  {services.map(service => (
+                    <label key={service.id} className="checkbox-label">
+                      <input
+                        type="checkbox"
+                        checked={eventData.serviceIds.includes(String(service.id))}
+                        onChange={(e) => {
+                          const serviceId = String(service.id);
+                          if (e.target.checked) {
+                            setEventData(prev => ({
+                              ...prev,
+                              serviceIds: [...prev.serviceIds, serviceId]
+                            }));
+                          } else {
+                            setEventData(prev => ({
+                              ...prev,
+                              serviceIds: prev.serviceIds.filter(id => id !== serviceId)
+                            }));
+                          }
+                        }}
+                      />
+                      {service.name} - ${service.price}
+                    </label>
+                  ))}
+                </div>
+              </div>
+
+              {(eventData.venueId || eventData.serviceIds.length > 0) && (
+                <div className="form-group full-width">
+                  <label className="checkbox-label">
+                    <input
+                      type="checkbox"
+                      checked={eventData.bookCombined}
+                      onChange={(e) => setEventData(prev => ({
+                        ...prev,
+                        bookCombined: e.target.checked
+                      }))}
+                    />
+                    Book resources immediately with combined booking
+                  </label>
+                  <small className="form-hint">
+                    {eventData.venueId && eventData.serviceIds.length > 0 
+                      ? "This will use the combined booking API for better coordination"
+                      : "Individual bookings will be created separately"
+                    }
+                  </small>
+                </div>
+              )}
+            </div>
+
+            <div className="info-box">
+              <h5>💡 Tip</h5>
+              <p>You can also book venues and services later from your dashboard if you prefer to create the event first.</p>
+            </div>
+          </div>
+        )}
+
+        {/* Step 4: Review (Updated) */}
+        {currentStep === 4 && (
           <div className="form-step">
             <h4 className="step-title">📋 Review & Confirm</h4>
             <div className="review-section">
@@ -236,9 +367,15 @@ const CreateEvent = () => {
                 </div>
 
                 <div className="review-card">
-                  <h5>Description</h5>
+                  <h5>Resource Booking</h5>
                   <div className="review-details">
-                    <p>{eventData.description}</p>
+                    <p><strong>Venue:</strong> {eventData.venueId ? venues.find(v => v.id === parseInt(eventData.venueId))?.name : "None selected"}</p>
+                    <p><strong>Services:</strong> {eventData.serviceIds.length > 0 ? eventData.serviceIds.length + " selected" : "None selected"}</p>
+                    <p><strong>Booking Type:</strong> {
+                      eventData.bookCombined 
+                        ? (eventData.venueId && eventData.serviceIds.length > 0 ? "Combined booking" : "Individual booking")
+                        : "Book separately later"
+                    }</p>
                   </div>
                 </div>
 
@@ -269,7 +406,7 @@ const CreateEvent = () => {
 
           <div className="nav-spacer"></div>
 
-          {currentStep < 3 ? (
+          {currentStep < 4 ? (
             <button
               type="button"
               onClick={nextStep}
@@ -280,7 +417,7 @@ const CreateEvent = () => {
             </button>
           ) : (
             <button type="submit" className="event-btn success">
-              Create Event 🎉
+              Create Event {eventData.bookCombined && (eventData.venueId || eventData.serviceIds.length > 0) ? "& Book Resources" : ""} 🎉
             </button>
           )}
         </div>

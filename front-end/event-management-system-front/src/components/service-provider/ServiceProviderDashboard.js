@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { addNewService, getMyServices, respondToBookingRequest } from "../../api/serviceApi";
+import { updateBookingStatus } from "../../api/bookingApi";
 
 // Enum values for ServiceDescription and Availability
 const SERVICE_DESCRIPTIONS = [
@@ -146,10 +147,10 @@ const ServiceProviderDashboard = () => {
 	const handleBookingRequest = async (requestId, action) => {
 		try {
 			if (action === 'approve') {
-				await respondToBookingRequest(requestId, "ACCEPTED");
+				await updateBookingStatus(requestId, "ACCEPTED");
 			} else {
 				const reason = prompt("Please provide a reason for rejection:");
-				await respondToBookingRequest(requestId, "REJECTED", reason || "Rejected by service provider");
+				await updateBookingStatus(requestId, "REJECTED");
 			}
 			
 			// Remove from local booking requests since it's now handled by backend

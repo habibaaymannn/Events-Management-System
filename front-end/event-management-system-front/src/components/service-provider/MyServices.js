@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import { addNewService, getMyServices, updateServiceAvailability } from "../../api/serviceApi";
 
 const serviceCategories = [
@@ -9,6 +10,7 @@ const serviceCategories = [
 ];
 
 const MyServices = () => {
+    const navigate = useNavigate();
     const [services, setServices] = useState([]);
     const [showAddForm, setShowAddForm] = useState(false);
     const [editingService, setEditingService] = useState(null);
@@ -112,7 +114,7 @@ const MyServices = () => {
         <div className="service-page">
             <div className="service-page-header">
                 <h3 className="service-page-title">My Services</h3>
-                <p className="service-page-subtitle">Manage your service offerings and pricing</p>
+                <p className="service-page-subtitle">Manage your service offerings</p>
             </div>
 
             <div className="service-section">
@@ -132,78 +134,61 @@ const MyServices = () => {
                         <form onSubmit={handleSubmit}>
                             <div className="form-grid">
                                 <div className="form-group">
-                                    <label className="form-label">Service Name *</label>
-                                    <input
-                                        type="text"
+                                    <label className="form-label">Service Name</label>
+                                    <input 
+                                        type="text" 
                                         name="name"
-                                        value={formData.name}
-                                        onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                                        className="form-control"
+                                        className="form-control" 
                                         placeholder="Enter service name"
+                                        value={formData.name}
+                                        onChange={handleInputChange}
                                         required
                                     />
                                 </div>
-
                                 <div className="form-group">
-                                    <label className="form-label">Category *</label>
-                                    <select
+                                    <label className="form-label">Category</label>
+                                    <select 
                                         name="description"
-                                        value={formData.description}
-                                        onChange={(e) => setFormData({ ...formData, description: e.target.value })}
                                         className="form-control"
+                                        value={formData.description}
+                                        onChange={handleInputChange}
                                         required
                                     >
-                                        <option value="">Select category</option>
-                                        {serviceCategories.map(cat => (
-                                            <option key={cat.value} value={cat.value}>{cat.label}</option>
+                                        {serviceCategories.map(category => (
+                                            <option key={category.value} value={category.value}>
+                                                {category.label}
+                                            </option>
                                         ))}
                                     </select>
                                 </div>
-
                                 <div className="form-group">
-                                    <label className="form-label">Price *</label>
-                                    <input
-                                        type="number"
+                                    <label className="form-label">Price</label>
+                                    <input 
+                                        type="number" 
                                         name="price"
-                                        value={formData.price}
-                                        onChange={(e) => setFormData({ ...formData, price: e.target.value })}
-                                        className="form-control"
+                                        className="form-control" 
                                         placeholder="Enter price"
+                                        value={formData.price}
+                                        onChange={handleInputChange}
                                         required
                                     />
                                 </div>
-
                                 <div className="form-group">
-                                    <label className="form-label">Location *</label>
-                                    <input
-                                        type="text"
+                                    <label className="form-label">Location</label>
+                                    <input 
+                                        type="text" 
                                         name="location"
-                                        value={formData.location}
-                                        onChange={(e) => setFormData({ ...formData, location: e.target.value })}
-                                        className="form-control"
+                                        className="form-control" 
                                         placeholder="Enter location"
+                                        value={formData.location}
+                                        onChange={handleInputChange}
                                         required
                                     />
-                                </div>
-
-                                <div className="form-group">
-                                    <label className="form-label">Availability *</label>
-                                    <select
-                                        name="availability"
-                                        value={formData.availability}
-                                        onChange={(e) => setFormData({ ...formData, availability: e.target.value })}
-                                        className="form-control"
-                                        required
-                                    >
-                                        <option value="AVAILABLE">Available</option>
-                                        <option value="UNAVAILABLE">Unavailable</option>
-                                    </select>
                                 </div>
                             </div>
-
                             <div className="form-actions">
-                                <button type="submit" className="service-btn">
-                                    {editingService ? "Update Service" : "Create Service"}
+                                <button type="submit" className="service-btn success">
+                                    {editingService ? "Update Service" : "Add Service"}
                                 </button>
                                 <button type="button" className="service-btn secondary" onClick={resetForm}>
                                     Cancel
@@ -218,82 +203,28 @@ const MyServices = () => {
                         <div key={service.id} className="service-card">
                             <div className="service-card-header">
                                 <h5 className="service-card-title">{service.name}</h5>
-                                <span className={`status-badge status-${service.availability.toLowerCase()}`}>
+                                <span className={`status-badge ${service.availability === "AVAILABLE" ? "status-confirmed" : "status-pending"}`}>
                                     {service.availability}
                                 </span>
                             </div>
-
                             <div className="service-card-content">
-                                <p className="service-category">📁 {service.description}</p>
-                                <p className="service-price">💰 ${service.price} {service.unit}</p>
-                                <p className="service-description">{service.description}</p>
-
-                                <div className="service-details-grid">
-                                    <div className="detail-item">
-                                        <span className="detail-label">Min Order:</span>
-                                        <span className="detail-value">{service.minOrder}</span>
-                                    </div>
-                                    <div className="detail-item">
-                                        <span className="detail-label">Max Order:</span>
-                                        <span className="detail-value">{service.maxOrder}</span>
-                                    </div>
-                                    <div className="detail-item">
-                                        <span className="detail-label">Rating:</span>
-                                        <span className="detail-value">⭐ {service.rating}</span>
-                                    </div>
-                                    <div className="detail-item">
-                                        <span className="detail-label">Availability:</span>
-                                        <span className="detail-value">{service.availability}</span>
-                                    </div>
-                                </div>
-
-                                <div className="service-areas">
-                                    <strong>Service Areas:</strong>
-                                    <div className="areas-tags">
-                                        {service.serviceAreas.map((area, index) => (
-                                            <span key={index} className="area-tag">{area}</span>
-                                        ))}
-                                    </div>
-                                </div>
-
-                                <div className="service-features">
-                                    <strong>Features:</strong>
-                                    <div className="features-tags">
-                                        {service.features.map((feature, index) => (
-                                            <span key={index} className="feature-tag">{feature}</span>
-                                        ))}
-                                    </div>
-                                </div>
-
-                                <div className="service-stats">
-                                    <div className="stat-item">
-                                        <span className="stat-number">{service.bookings}</span>
-                                        <span className="stat-label">Bookings</span>
-                                    </div>
-                                    <div className="stat-item">
-                                        <span className="stat-number">${service.revenue.toLocaleString()}</span>
-                                        <span className="stat-label">Revenue</span>
-                                    </div>
-                                </div>
+                                <p className="service-category">
+                                    {serviceCategories.find(cat => cat.value === service.description)?.label || service.description}
+                                </p>
+                                <p className="service-price">💰 ${service.price}</p>
+                                <p className="service-location">📍 {service.location}</p>
                             </div>
-
                             <div className="service-card-actions">
-                                <button
-                                    className="service-btn"
-                                    onClick={() => handleEdit(service)}
-                                >
+                                <button className="service-btn" onClick={() => handleEdit(service)}>
                                     Edit
                                 </button>
-                                <button
-                                    className={`service-btn ${service.availability === "AVAILABLE" ? "secondary" : "success"}`}
+                                <button 
+                                    className="service-btn secondary" 
                                     onClick={() => handleToggleStatus(service.id)}
                                 >
-                                    {service.availability === "AVAILABLE" ? "Deactivate" : "Activate"}
+                                    Toggle Status
                                 </button>
-                                <button
-                                    className="service-btn danger"
-                                    onClick={() => handleDelete(service.id)}
-                                >
+                                <button className="service-btn danger" onClick={() => handleDelete(service.id)}>
                                     Delete
                                 </button>
                             </div>

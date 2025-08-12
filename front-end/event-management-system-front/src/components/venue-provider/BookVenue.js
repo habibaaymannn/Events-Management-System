@@ -3,6 +3,7 @@ import { useParams, useNavigate } from "react-router-dom";
 import Calendar from "react-calendar";
 import "react-calendar/dist/Calendar.css";
 import { getAllVenues, cancelVenueBooking } from "../../api/venueApi";
+import { bookVenue } from "../../api/bookingApi";
 
 const BookVenue = () => {
   const { id } = useParams();
@@ -27,12 +28,29 @@ const BookVenue = () => {
     }
   };
 
-  // Book a date (should use backend endpoint, not implemented here)
-  const handleBookDate = (date) => {
-    // Implement booking logic using backend endpoint if available
-    alert("Booking confirmed and email notification sent!");
-    // After booking, reload venues
-    loadVenues();
+  // Book a date using the booking API
+  const handleBookDate = async (date) => {
+    if (!venue) return;
+    
+    try {
+      const startTime = `${date.toISOString().split('T')[0]}T09:00:00.000Z`;
+      const endTime = `${date.toISOString().split('T')[0]}T17:00:00.000Z`;
+      
+      const bookingData = {
+        startTime: startTime,
+        endTime: endTime,
+        venueId: parseInt(venue.id),
+        organizerId: "current-organizer-id", // Get from auth context
+        eventId: null // Manual booking without specific event
+      };
+      
+      await bookVenue(bookingData);
+      alert("Booking confirmed and email notification sent!");
+      loadVenues();
+    } catch (error) {
+      console.error("Error booking venue:", error);
+      alert("Failed to book venue. Please try again.");
+    }
   };
 
   // Cancel a booking
