@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from "react";
+import { addNewService, getMyServices, respondToBookingRequest } from "../../api/serviceApi";
 
 // Enum values for ServiceDescription and Availability
 const SERVICE_DESCRIPTIONS = [
@@ -95,10 +96,7 @@ const initialServices = [
 ];
 
 const ServiceProviderDashboard = () => {
-	const [services, setServices] = useState(() => {
-		const stored = localStorage.getItem("services");
-		return stored ? JSON.parse(stored) : initialServices;
-	});
+	const [services, setServices] = useState([]);
 	
 	// Add booking requests state
 	const [bookingRequests, setBookingRequests] = useState(() => {
@@ -128,66 +126,85 @@ const ServiceProviderDashboard = () => {
 	);
 
 	useEffect(() => {
-		localStorage.setItem("services", JSON.stringify(services));
-	}, [services]);
+		loadServices();
+	}, []);
+
+	const loadServices = async () => {
+		try {
+			const data = await getMyServices();
+			setServices(data);
+		} catch (error) {
+			console.error("Error loading services:", error);
+		}
+	};
 
 	useEffect(() => {
 		localStorage.setItem("bookingRequests", JSON.stringify(bookingRequests));
 	}, [bookingRequests]);
 
 	// Handle booking request approval/rejection
-	const handleBookingRequest = (requestId, action) => {
-		const updatedRequests = bookingRequests.map(req => {
-			if (req.id === requestId) {
-				const newStatus = action === 'approve' ? 'confirmed' : 'rejected';
-				
-				// If approved, add booking to service
-				if (action === 'approve') {
-					const service = services.find(s => s.id.toString() === req.itemId.toString());
-					if (service) {
-						const updatedServices = services.map(s => 
-							s.id === service.id 
-								? { ...s, bookings: [...(s.bookings || []), { date: req.date, user: req.organizerEmail, eventName: req.eventName }] }
-								: s
-						);
-						setServices(updatedServices);
-					}
-				}
-				
-				return { ...req, status: newStatus, updatedAt: new Date().toISOString() };
+	const handleBookingRequest = async (requestId, action) => {
+		try {
+			if (action === 'approve') {
+				await respondToBookingRequest(requestId, "ACCEPTED");
+			} else {
+				const reason = prompt("Please provide a reason for rejection:");
+				await respondToBookingRequest(requestId, "REJECTED", reason || "Rejected by service provider");
 			}
-			return req;
-		});
-		
-		setBookingRequests(updatedRequests);
+			
+			// Remove from local booking requests since it's now handled by backend
+			const updatedRequests = bookingRequests.filter(req => req.id !== requestId);
+			setBookingRequests(updatedRequests);
+			
+			// Reload services to get updated booking data
+			loadServices();
+		} catch (error) {
+			console.error("Error handling booking request:", error);
+		}
 	};
 
 	// Add or Edit Service
-	const handleServiceFormSubmit = (e) => {
+	const handleServiceFormSubmit = async (e) => {
 		e.preventDefault();
-		if (editServiceId) {
-			setServices(
-				services.map((s) =>
-					s.id === editServiceId ? { ...formService, id: editServiceId } : s
-				)
-			);
+		try {
+			const serviceData = {
+				name: formService.name,
+				description: formService.description,
+				price: parseFloat(formService.price),
+				location: formService.location,
+				availability: formService.availability
+			};
+
+			if (editServiceId) {
+				// Update service logic would go here if endpoint exists
+				console.log("Update service not implemented yet");
+			} else {
+				await addNewService(serviceData);
+			}
+			
+			setFormService({
+				name: "",
+				description: "",
+				price: "",
+				location: "",
+				availability: "AVAILABLE",
+			});
+			setShowAdd(false);
 			setEditServiceId(null);
-		} else {
-			setServices([...services, { ...formService, id: Date.now() }]);
+			loadServices();
+		} catch (error) {
+			console.error("Error saving service:", error);
 		}
-		setFormService({
-			name: "",
-			description: "",
-			price: "",
-			location: "",
-			availability: "AVAILABLE",
-		});
-		setShowAdd(false);
 	};
 
 	// Remove Service
-	const handleRemoveService = (id) => {
-		setServices(services.filter((s) => s.id !== id));
+	const handleRemoveService = async (id) => {
+		try {
+			// Delete service logic would go here if endpoint exists
+			setServices(services.filter((s) => s.id !== id));
+		} catch (error) {
+			console.error("Error removing service:", error);
+		}
 	};
 
 	// Edit Service

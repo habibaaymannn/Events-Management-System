@@ -1,146 +1,36 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-
-const mockEvents = [
-  {
-    id: 1,
-    name: "Tech Conference 2024",
-    type: "Corporate",
-    date: "2024-02-15",
-    startTime: "09:00",
-    endTime: "17:00",
-    status: "Upcoming",
-    attendees: 350,
-    ticketPrice: 50,
-    venue: {
-      name: "Grand Ballroom",
-      location: "Downtown Convention Center",
-      cost: 2000
-    },
-    services: [
-      { name: "Premium Catering", cost: 17500 },
-      { name: "AV Equipment", cost: 800 }
-    ],
-    totalCost: 20300,
-    totalRevenue: 17500,
-    createdDate: "2024-01-10",
-    cancellationDeadline: "2024-02-08",
-    notes: "Annual tech conference with industry leaders"
-  },
-  {
-    id: 2,
-    name: "Summer Wedding",
-    type: "Wedding",
-    date: "2024-06-20",
-    startTime: "18:00",
-    endTime: "23:00",
-    status: "Planning",
-    attendees: 120,
-    ticketPrice: 200,
-    venue: {
-      name: "Garden Pavilion",
-      location: "City Park",
-      cost: 1200
-    },
-    services: [
-      { name: "Wedding Catering", cost: 6000 },
-      { name: "Photography", cost: 1500 },
-      { name: "Floral Decorations", cost: 900 }
-    ],
-    totalCost: 9600,
-    totalRevenue: 24000,
-    createdDate: "2024-01-20",
-    cancellationDeadline: "2024-06-13",
-    notes: "Elegant outdoor wedding ceremony and reception"
-  },
-  {
-    id: 3,
-    name: "Product Launch",
-    type: "Corporate",
-    date: "2024-01-15",
-    startTime: "19:00",
-    endTime: "22:00",
-    status: "Completed",
-    attendees: 200,
-    ticketPrice: 75,
-    venue: {
-      name: "Rooftop Terrace",
-      location: "Downtown Skyline",
-      cost: 1800
-    },
-    services: [
-      { name: "Cocktail Catering", cost: 4000 },
-      { name: "Photography", cost: 1500 }
-    ],
-    totalCost: 7300,
-    totalRevenue: 15000,
-    createdDate: "2023-12-20",
-    cancellationDeadline: "2024-01-08",
-    notes: "Successful product launch with great turnout"
-  },
-  {
-    id: 4,
-    name: "Charity Gala",
-    type: "Charity",
-    date: "2024-03-10",
-    startTime: "18:30",
-    endTime: "23:30",
-    status: "Upcoming",
-    attendees: 400,
-    ticketPrice: 100,
-    venue: {
-      name: "Grand Ballroom",
-      location: "Downtown Convention Center",
-      cost: 2000
-    },
-    services: [
-      { name: "Gala Catering", cost: 20000 },
-      { name: "Live Entertainment", cost: 3000 },
-      { name: "Professional Photography", cost: 1500 }
-    ],
-    totalCost: 26500,
-    totalRevenue: 40000,
-    createdDate: "2024-01-05",
-    cancellationDeadline: "2024-03-03",
-    notes: "Annual charity fundraising event"
-  },
-  {
-    id: 5,
-    name: "Birthday Celebration",
-    type: "Private",
-    date: "2024-01-05",
-    startTime: "20:00",
-    endTime: "02:00",
-    status: "Cancelled",
-    attendees: 50,
-    ticketPrice: 0,
-    venue: null,
-    services: [],
-    totalCost: 500,
-    totalRevenue: 0,
-    createdDate: "2023-12-28",
-    cancellationDeadline: "2023-12-29",
-    notes: "Cancelled due to personal reasons",
-    cancellationReason: "Personal emergency",
-    cancellationFee: 100
-  }
-];
+import { getAllEvents, deleteEvent, updateEvent, createEvent } from "../../api/eventApi";
 
 const MyEvents = () => {
   const navigate = useNavigate();
-  const [events, setEvents] = useState(mockEvents);
+  const [events, setEvents] = useState([]);
   const [filter, setFilter] = useState("All");
   const [selectedEvent, setSelectedEvent] = useState(null);
   const [showCancelModal, setShowCancelModal] = useState(false);
   const [cancelReason, setCancelReason] = useState("");
 
+  useEffect(() => {
+    loadEvents();
+  }, []);
+
+  const loadEvents = async () => {
+    try {
+      const response = await getAllEvents(0, 100); // adjust page/size as needed
+      setEvents(response.content || []);
+    } catch (error) {
+      // Handle error
+    }
+  };
+
   const filteredEvents = filter === "All"
     ? events
     : events.filter(event => event.status === filter);
 
-  const handleEditEvent = (eventId) => {
-    console.log("Edit event:", eventId);
-    // Navigate to edit page or open edit modal
+  const handleEditEvent = async (eventId) => {
+    // Implement edit logic using updateEvent
+    // Example: await updateEvent(eventId, updatedEventData); then reload
+    // loadEvents();
   };
 
   const handleCancelEvent = (event) => {
@@ -148,38 +38,18 @@ const MyEvents = () => {
     setShowCancelModal(true);
   };
 
-  const confirmCancellation = () => {
+  const confirmCancellation = async () => {
     if (!selectedEvent) return;
 
-    const today = new Date();
-    const eventDate = new Date(selectedEvent.date);
-    const cancellationDeadline = new Date(selectedEvent.cancellationDeadline);
-
-    let cancellationFee = 0;
-    if (today > cancellationDeadline) {
-      // Calculate penalty (e.g., 20% of total cost)
-      cancellationFee = Math.round(selectedEvent.totalCost * 0.2);
-    }
-
-    setEvents(events.map(event =>
-      event.id === selectedEvent.id
-        ? {
-          ...event,
-          status: "Cancelled",
-          cancellationReason: cancelReason,
-          cancellationFee: cancellationFee
-        }
-        : event
-    ));
-
-    setShowCancelModal(false);
-    setSelectedEvent(null);
-    setCancelReason("");
-
-    if (cancellationFee > 0) {
-      alert(`Event cancelled with penalty fee: $${cancellationFee}`);
-    } else {
-      alert("Event cancelled successfully with no penalty.");
+    // You may want to call updateEvent or deleteEvent depending on backend logic
+    try {
+      await updateEvent(selectedEvent.id, { ...selectedEvent, status: "Cancelled", cancellationReason: cancelReason });
+      setShowCancelModal(false);
+      setSelectedEvent(null);
+      setCancelReason("");
+      loadEvents();
+    } catch (error) {
+      // Handle error
     }
   };
 

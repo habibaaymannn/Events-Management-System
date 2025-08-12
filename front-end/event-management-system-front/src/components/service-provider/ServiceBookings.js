@@ -1,119 +1,66 @@
-import React, { useState } from "react";
-
-const mockBookings = [
-    {
-        id: 1,
-        serviceId: 1,
-        serviceName: "Premium Wedding Catering",
-        clientName: "Sarah & Mike Wedding",
-        clientEmail: "sarah.mike@email.com",
-        clientPhone: "+1 234-567-8900",
-        eventDate: "2024-02-20",
-        eventTime: "18:00",
-        eventLocation: "Garden Pavilion, City Park",
-        quantity: 120,
-        unitPrice: 50,
-        totalAmount: 6000,
-        status: "Pending",
-        requestDate: "2024-01-15",
-        eventType: "Wedding",
-        specialRequests: "Vegetarian options for 20 guests, gluten-free desserts",
-        notes: "High-profile wedding, ensure premium service"
-    },
-    {
-        id: 2,
-        serviceId: 2,
-        serviceName: "Professional Event Photography",
-        clientName: "TechCorp Inc.",
-        clientEmail: "events@techcorp.com",
-        clientPhone: "+1 234-567-8901",
-        eventDate: "2024-02-15",
-        eventTime: "09:00",
-        eventLocation: "Grand Ballroom, Convention Center",
-        quantity: 1,
-        unitPrice: 1500,
-        totalAmount: 1500,
-        status: "Confirmed",
-        requestDate: "2024-01-10",
-        eventType: "Corporate Conference",
-        specialRequests: "Focus on keynote speakers and networking sessions",
-        notes: "Annual tech conference with 300+ attendees"
-    },
-    {
-        id: 3,
-        serviceId: 3,
-        serviceName: "Complete AV Solution",
-        clientName: "BusinessSolutions Ltd",
-        clientEmail: "meetings@bizsolv.com",
-        clientPhone: "+1 234-567-8902",
-        eventDate: "2024-02-25",
-        eventTime: "10:00",
-        eventLocation: "Conference Center, Business District",
-        quantity: 2,
-        unitPrice: 800,
-        totalAmount: 1600,
-        status: "Confirmed",
-        requestDate: "2024-01-12",
-        eventType: "Corporate Meeting",
-        specialRequests: "Video conferencing setup for international participants",
-        notes: "Board meeting with remote attendees"
-    },
-    {
-        id: 4,
-        serviceId: 1,
-        serviceName: "Premium Wedding Catering",
-        clientName: "Hope Foundation",
-        clientEmail: "gala@hopefoundation.org",
-        clientPhone: "+1 234-567-8903",
-        eventDate: "2024-03-10",
-        eventTime: "19:00",
-        eventLocation: "Grand Ballroom, Downtown",
-        quantity: 200,
-        unitPrice: 50,
-        totalAmount: 10000,
-        status: "Pending",
-        requestDate: "2024-01-20",
-        eventType: "Charity Gala",
-        specialRequests: "Elegant presentation, dietary restrictions accommodated",
-        notes: "Annual charity fundraising event"
-    },
-    {
-        id: 5,
-        serviceId: 2,
-        serviceName: "Professional Event Photography",
-        clientName: "StartupXYZ",
-        clientEmail: "events@startupxyz.com",
-        clientPhone: "+1 234-567-8904",
-        eventDate: "2024-03-01",
-        eventTime: "19:00",
-        eventLocation: "Rooftop Terrace, Downtown",
-        quantity: 1,
-        unitPrice: 1500,
-        totalAmount: 1500,
-        status: "Cancelled",
-        requestDate: "2024-01-18",
-        eventType: "Product Launch",
-        specialRequests: "Action shots and product photography",
-        notes: "Event postponed due to scheduling conflicts"
-    }
-];
+import React, { useState, useEffect } from "react";
+import { getServiceProviderBookings, respondToBookingRequest, cancelServiceBooking } from "../../api/serviceApi";
 
 const ServiceBookings = () => {
-    const [bookings, setBookings] = useState(mockBookings);
+    const [bookings, setBookings] = useState([]);
     const [filter, setFilter] = useState("All");
     const [selectedBooking, setSelectedBooking] = useState(null);
     const [notifications, setNotifications] = useState([]);
 
-    const handleStatusChange = (bookingId, newStatus) => {
-        setBookings(bookings.map(booking => {
-            if (booking.id === bookingId) {
-                // Add notification
-                const updatedBooking = { ...booking, status: newStatus };
-                addNotification(`Booking #${bookingId} ${newStatus.toLowerCase()}`, updatedBooking.clientName);
-                return updatedBooking;
+    useEffect(() => {
+        loadBookings();
+    }, []);
+
+    const loadBookings = async () => {
+        try {
+            const response = await getServiceProviderBookings(0, 100);
+            // Map the backend response to expected frontend format
+            const mappedBookings = (response || []).map(booking => ({
+                id: booking.id,
+                serviceName: "Service", // You may need to get this from a separate endpoint
+                clientName: booking.organizerBooker?.fullName || `${booking.organizerBooker?.firstName || ''} ${booking.organizerBooker?.lastName || ''}`.trim(),
+                clientEmail: booking.organizerBooker?.email || booking.attendeeBooker?.email,
+                clientPhone: "N/A", // Phone not in response
+                eventDate: new Date(booking.startTime).toLocaleDateString(),
+                eventTime: new Date(booking.startTime).toLocaleTimeString(),
+                eventLocation: booking.organizerBooker?.events?.[0]?.venue?.location || "TBD",
+                quantity: 1, // Default since not in response
+                unitPrice: 0, // You may need to calculate this
+                totalAmount: 0, // You may need to calculate this
+                status: booking.status,
+                requestDate: new Date(booking.createdAt).toLocaleDateString(),
+                eventType: booking.organizerBooker?.events?.[0]?.type || "Unknown",
+                specialRequests: booking.cancellationReason || "None",
+                notes: "Booking request",
+                organizerBooker: booking.organizerBooker,
+                attendeeBooker: booking.attendeeBooker,
+                startTime: booking.startTime,
+                endTime: booking.endTime
+            }));
+            setBookings(mappedBookings);
+        } catch (error) {
+            console.error("Error loading bookings:", error);
+        }
+    };
+
+    const handleStatusChange = async (bookingId, newStatus) => {
+        try {
+            if (newStatus === "ACCEPTED") {
+                await respondToBookingRequest(bookingId, "ACCEPTED");
+                addNotification("Booking accepted!", "client");
+            } else if (newStatus === "REJECTED") {
+                const reason = prompt("Please provide a reason for rejection:");
+                await respondToBookingRequest(bookingId, "REJECTED", reason || "No reason provided");
+                addNotification("Booking rejected!", "client");
+            } else if (newStatus === "CANCELLED") {
+                const reason = prompt("Please provide a reason for cancellation:");
+                await cancelServiceBooking(bookingId, reason || "Cancelled by service provider");
+                addNotification("Booking cancelled!", "client");
             }
-            return booking;
-        }));
+            loadBookings();
+        } catch (error) {
+            console.error("Error updating booking status:", error);
+        }
     };
 
     const addNotification = (message, client) => {
@@ -137,15 +84,15 @@ const ServiceBookings = () => {
 
     const stats = {
         total: bookings.length,
-        pending: bookings.filter(b => b.status === "Pending").length,
-        confirmed: bookings.filter(b => b.status === "Confirmed").length,
-        cancelled: bookings.filter(b => b.status === "Cancelled").length,
+        pending: bookings.filter(b => b.status === "PENDING").length,
+        confirmed: bookings.filter(b => b.status === "ACCEPTED" || b.status === "CONFIRMED").length,
+        cancelled: bookings.filter(b => b.status === "CANCELLED").length,
         totalRevenue: bookings
-            .filter(b => b.status === "Confirmed")
-            .reduce((sum, b) => sum + b.totalAmount, 0),
+            .filter(b => b.status === "ACCEPTED" || b.status === "CONFIRMED")
+            .reduce((sum, b) => sum + (b.totalAmount || 0), 0),
         pendingRevenue: bookings
-            .filter(b => b.status === "Pending")
-            .reduce((sum, b) => sum + b.totalAmount, 0)
+            .filter(b => b.status === "PENDING")
+            .reduce((sum, b) => sum + (b.totalAmount || 0), 0)
     };
 
     return (
@@ -221,9 +168,9 @@ const ServiceBookings = () => {
                             style={{ width: "150px" }}
                         >
                             <option value="All">All Bookings</option>
-                            <option value="Pending">Pending</option>
-                            <option value="Confirmed">Confirmed</option>
-                            <option value="Cancelled">Cancelled</option>
+                            <option value="PENDING">Pending</option>
+                            <option value="ACCEPTED">Accepted</option>
+                            <option value="CANCELLED">Cancelled</option>
                         </select>
                     </div>
                 </div>
@@ -255,12 +202,8 @@ const ServiceBookings = () => {
                                     <span className="detail-value">{booking.eventLocation}</span>
                                 </div>
                                 <div className="detail-row">
-                                    <span className="detail-label">Quantity:</span>
-                                    <span className="detail-value">{booking.quantity}</span>
-                                </div>
-                                <div className="detail-row">
-                                    <span className="detail-label">Total Amount:</span>
-                                    <span className="detail-value revenue">${booking.totalAmount.toLocaleString()}</span>
+                                    <span className="detail-label">Client Email:</span>
+                                    <span className="detail-value">{booking.clientEmail}</span>
                                 </div>
                                 <div className="detail-row">
                                     <span className="detail-label">Requested:</span>
@@ -268,7 +211,7 @@ const ServiceBookings = () => {
                                 </div>
                             </div>
 
-                            {booking.specialRequests && (
+                            {booking.specialRequests && booking.specialRequests !== "None" && (
                                 <div className="special-requests">
                                     <strong>Special Requests:</strong>
                                     <p>{booking.specialRequests}</p>
@@ -282,26 +225,26 @@ const ServiceBookings = () => {
                                 >
                                     View Details
                                 </button>
-                                {booking.status === "Pending" && (
+                                {booking.status === "PENDING" && (
                                     <>
                                         <button
                                             className="service-btn success"
-                                            onClick={() => handleStatusChange(booking.id, "Confirmed")}
+                                            onClick={() => handleStatusChange(booking.id, "ACCEPTED")}
                                         >
                                             Accept
                                         </button>
                                         <button
                                             className="service-btn danger"
-                                            onClick={() => handleStatusChange(booking.id, "Cancelled")}
+                                            onClick={() => handleStatusChange(booking.id, "REJECTED")}
                                         >
                                             Reject
                                         </button>
                                     </>
                                 )}
-                                {booking.status === "Confirmed" && (
+                                {(booking.status === "ACCEPTED" || booking.status === "CONFIRMED") && (
                                     <button
                                         className="service-btn secondary"
-                                        onClick={() => handleStatusChange(booking.id, "Cancelled")}
+                                        onClick={() => handleStatusChange(booking.id, "CANCELLED")}
                                     >
                                         Cancel
                                     </button>
@@ -333,13 +276,13 @@ const ServiceBookings = () => {
                                         <strong>Service:</strong> {selectedBooking.serviceName}
                                     </div>
                                     <div className="detail-item">
-                                        <strong>Unit Price:</strong> ${selectedBooking.unitPrice}
+                                        <strong>Status:</strong> {selectedBooking.status}
                                     </div>
                                     <div className="detail-item">
-                                        <strong>Quantity:</strong> {selectedBooking.quantity}
+                                        <strong>Start Time:</strong> {new Date(selectedBooking.startTime).toLocaleString()}
                                     </div>
                                     <div className="detail-item">
-                                        <strong>Total Amount:</strong> ${selectedBooking.totalAmount.toLocaleString()}
+                                        <strong>End Time:</strong> {new Date(selectedBooking.endTime).toLocaleString()}
                                     </div>
                                 </div>
                             </div>
@@ -354,9 +297,6 @@ const ServiceBookings = () => {
                                         <strong>Email:</strong> {selectedBooking.clientEmail}
                                     </div>
                                     <div className="detail-item">
-                                        <strong>Phone:</strong> {selectedBooking.clientPhone}
-                                    </div>
-                                    <div className="detail-item">
                                         <strong>Request Date:</strong> {selectedBooking.requestDate}
                                     </div>
                                 </div>
@@ -369,24 +309,12 @@ const ServiceBookings = () => {
                                         <strong>Event Type:</strong> {selectedBooking.eventType}
                                     </div>
                                     <div className="detail-item">
-                                        <strong>Date:</strong> {selectedBooking.eventDate}
-                                    </div>
-                                    <div className="detail-item">
-                                        <strong>Time:</strong> {selectedBooking.eventTime}
-                                    </div>
-                                    <div className="detail-item full-width">
                                         <strong>Location:</strong> {selectedBooking.eventLocation}
                                     </div>
-                                    {selectedBooking.specialRequests && (
+                                    {selectedBooking.specialRequests && selectedBooking.specialRequests !== "None" && (
                                         <div className="detail-item full-width">
                                             <strong>Special Requests:</strong>
                                             <p>{selectedBooking.specialRequests}</p>
-                                        </div>
-                                    )}
-                                    {selectedBooking.notes && (
-                                        <div className="detail-item full-width">
-                                            <strong>Notes:</strong>
-                                            <p>{selectedBooking.notes}</p>
                                         </div>
                                     )}
                                 </div>
@@ -395,12 +323,12 @@ const ServiceBookings = () => {
                             <div className="detail-section">
                                 <h5>Actions</h5>
                                 <div className="modal-actions">
-                                    {selectedBooking.status === "Pending" && (
+                                    {selectedBooking.status === "PENDING" && (
                                         <>
                                             <button
                                                 className="service-btn success"
                                                 onClick={() => {
-                                                    handleStatusChange(selectedBooking.id, "Confirmed");
+                                                    handleStatusChange(selectedBooking.id, "ACCEPTED");
                                                     setSelectedBooking(null);
                                                 }}
                                             >
@@ -409,7 +337,7 @@ const ServiceBookings = () => {
                                             <button
                                                 className="service-btn danger"
                                                 onClick={() => {
-                                                    handleStatusChange(selectedBooking.id, "Cancelled");
+                                                    handleStatusChange(selectedBooking.id, "REJECTED");
                                                     setSelectedBooking(null);
                                                 }}
                                             >
@@ -417,11 +345,11 @@ const ServiceBookings = () => {
                                             </button>
                                         </>
                                     )}
-                                    {selectedBooking.status === "Confirmed" && (
+                                    {(selectedBooking.status === "ACCEPTED" || selectedBooking.status === "CONFIRMED") && (
                                         <button
                                             className="service-btn secondary"
                                             onClick={() => {
-                                                handleStatusChange(selectedBooking.id, "Cancelled");
+                                                handleStatusChange(selectedBooking.id, "CANCELLED");
                                                 setSelectedBooking(null);
                                             }}
                                         >
