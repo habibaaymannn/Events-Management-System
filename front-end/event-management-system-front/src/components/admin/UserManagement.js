@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
+import { getAllUsers, updateUserRole, deactivateUser } from "../../api/adminApi";
 
 const UserManagement = () => {
   const navigate = useNavigate();
@@ -17,38 +18,22 @@ const UserManagement = () => {
     loadUsers();
   }, []);
 
-  const loadUsers = () => {
-    // Load from localStorage or create initial admin user
-    const storedUsers = localStorage.getItem("systemUsers");
-    if (storedUsers) {
-      setUsers(JSON.parse(storedUsers));
-    } else {
-      const initialUsers = [
-        {
-          id: 1,
-          email: "admin@demo.com",
-          role: "admin",
-          status: "active",
-          createdAt: new Date().toISOString()
-        }
-      ];
-      setUsers(initialUsers);
-      localStorage.setItem("systemUsers", JSON.stringify(initialUsers));
+  const loadUsers = async () => {
+    try {
+      const response = await getAllUsers(0, 100); // adjust page/size as needed
+      setUsers(response.content || []);
+    } catch (error) {
+      // Handle error
     }
   };
 
-  const saveUsers = (updatedUsers) => {
-    setUsers(updatedUsers);
-    localStorage.setItem("systemUsers", JSON.stringify(updatedUsers));
-  };
-
-  const handleDeactivateUser = (userId) => {
-    const updatedUsers = users.map(user => 
-      user.id === userId 
-        ? { ...user, status: user.status === 'active' ? 'deactivated' : 'active' }
-        : user
-    );
-    saveUsers(updatedUsers);
+  const handleDeactivateUser = async (userId) => {
+    try {
+      await deactivateUser(userId);
+      loadUsers();
+    } catch (error) {
+      // Handle error
+    }
   };
 
   const handleResetPassword = (userId) => {
@@ -58,11 +43,13 @@ const UserManagement = () => {
     }
   };
 
-  const handleAssignRole = (userId, newRole) => {
-    const updatedUsers = users.map(user => 
-      user.id === userId ? { ...user, role: newRole } : user
-    );
-    saveUsers(updatedUsers);
+  const handleAssignRole = async (userId, newRole) => {
+    try {
+      await updateUserRole(userId, newRole);
+      loadUsers();
+    } catch (error) {
+      // Handle error
+    }
   };
 
   return (
