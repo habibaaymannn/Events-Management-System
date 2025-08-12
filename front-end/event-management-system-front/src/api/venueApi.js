@@ -133,3 +133,36 @@ export async function cancelVenueBooking(bookingId) {
     throw new Error(`Failed to cancel booking: ${response.statusText}`);
   }
 }
+
+/**
+ * Accept or reject a venue booking request.
+ * @param {number|string} bookingId - Booking request ID.
+ * @param {string} status - Status to set ("ACCEPTED" or "REJECTED").
+ * @param {string} [reason] - Optional reason for rejection.
+ * @returns {Promise<object>} - Updated booking object.
+ */
+export async function respondToVenueBookingRequest(bookingId, status, reason = "") {
+  const url = `http://localhost:8080/v1/venues/bookings/${bookingId}/status`;
+  const requestBody = { status };
+  
+  // Add reason if provided and status is REJECTED
+  if (status === "REJECTED" && reason) {
+    requestBody.cancellationReason = reason;
+  }
+
+  const response = await fetch(url, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      // Add Authorization header if needed:
+      // "Authorization": `Bearer ${yourToken}`,
+    },
+    body: JSON.stringify(requestBody),
+  });
+
+  if (!response.ok) {
+    throw new Error(`Failed to ${status.toLowerCase()} venue booking: ${response.statusText}`);
+  }
+
+  return await response.json();
+}

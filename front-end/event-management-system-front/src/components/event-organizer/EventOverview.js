@@ -1,35 +1,25 @@
-import React from "react";
+import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
+import { getAllEvents, getEventsByType } from "../../api/eventApi";
 import { PieChart, Pie, Cell, ResponsiveContainer, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend } from "recharts";
 import "./EventOverview.css";
 
-// Mock data
-const events = [
-  { id: 1, name: "Tech Conference 2024", date: "2024-02-15", status: "Upcoming", type: "Corporate", attendees: 350, revenue: 17500, expenses: 12000 },
-  { id: 2, name: "Summer Wedding", date: "2024-06-20", status: "Upcoming", type: "Wedding", attendees: 120, revenue: 24000, expenses: 18000 },
-  { id: 3, name: "Product Launch", date: "2024-01-15", status: "Completed", type: "Corporate", attendees: 200, revenue: 15000, expenses: 10000 },
-  { id: 4, name: "Charity Gala", date: "2024-03-10", status: "Planning", type: "Charity", attendees: 400, revenue: 40000, expenses: 25000 },
-  { id: 5, name: "Birthday Party", date: "2024-01-05", status: "Cancelled", type: "Private", attendees: 50, revenue: 0, expenses: 500 },
-];
-
-const recentActivity = [
-  { id: 1, action: "Venue booked", event: "Tech Conference 2024", timestamp: "2 hours ago", type: "venue" },
-  { id: 2, action: "Catering confirmed", event: "Summer Wedding", timestamp: "5 hours ago", type: "service" },
-  { id: 3, action: "Event created", event: "Charity Gala", timestamp: "1 day ago", type: "event" },
-  { id: 4, action: "Photography booked", event: "Product Launch", timestamp: "2 days ago", type: "service" },
-];
-
-const monthlyData = [
-  { month: "Jan", events: 3, revenue: 25000, profit: 12000 },
-  { month: "Feb", events: 5, revenue: 42000, profit: 18000 },
-  { month: "Mar", events: 4, revenue: 35000, profit: 15000 },
-  { month: "Apr", events: 6, revenue: 55000, profit: 22000 },
-  { month: "May", events: 8, revenue: 68000, profit: 28000 },
-  { month: "Jun", events: 7, revenue: 61000, profit: 25000 },
-];
-
 const EventOverview = () => {
   const navigate = useNavigate();
+  const [events, setEvents] = useState([]);
+
+  useEffect(() => {
+    loadEvents();
+  }, []);
+
+  const loadEvents = async () => {
+    try {
+      const response = await getAllEvents(0, 100);
+      setEvents(response.content || []);
+    } catch (error) {
+      // Handle error
+    }
+  };
 
   const totalEvents = events.length;
   const upcomingEvents = events.filter(e => e.status === "Upcoming").length;

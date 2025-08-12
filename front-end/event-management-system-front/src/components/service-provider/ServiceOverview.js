@@ -1,34 +1,42 @@
-import React from "react";
+import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { PieChart, Pie, Cell, ResponsiveContainer, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend } from "recharts";
+import { getMyServices, getServiceProviderBookings } from "../../api/serviceApi";
 import "./ServiceOverview.css";
-
-// Mock data
-const services = [
-    { id: 1, name: "Premium Catering", category: "Food Catering", price: 50, unit: "per person", status: "Active", bookings: 12, revenue: 18000 },
-    { id: 2, name: "Wedding Photography", category: "Photography", price: 1500, unit: "per event", status: "Active", bookings: 8, revenue: 12000 },
-    { id: 3, name: "Audio Visual Setup", category: "AV Equipment", price: 800, unit: "per day", status: "Active", bookings: 15, revenue: 12000 },
-    { id: 4, name: "Floral Decorations", category: "Decorations", price: 300, unit: "per arrangement", status: "Inactive", bookings: 5, revenue: 1500 },
-    { id: 5, name: "Furniture Rental", category: "Furniture", price: 25, unit: "per item", status: "Active", bookings: 20, revenue: 10000 },
-];
-
-const recentBookings = [
-    { id: 1, service: "Premium Catering", client: "Tech Conference 2024", date: "2024-02-15", status: "Confirmed", revenue: 2500 },
-    { id: 2, service: "Wedding Photography", client: "Sarah & Mike Wedding", date: "2024-02-20", status: "Pending", revenue: 1500 },
-    { id: 3, service: "Audio Visual Setup", client: "Corporate Meeting", date: "2024-02-25", status: "Confirmed", revenue: 800 },
-];
-
-const monthlyData = [
-    { month: "Jan", revenue: 15000, bookings: 18 },
-    { month: "Feb", revenue: 22000, bookings: 25 },
-    { month: "Mar", revenue: 28000, bookings: 32 },
-    { month: "Apr", revenue: 25000, bookings: 28 },
-    { month: "May", revenue: 35000, bookings: 38 },
-    { month: "Jun", revenue: 42000, bookings: 45 },
-];
 
 const ServiceOverview = () => {
     const navigate = useNavigate();
+    const [services, setServices] = useState([]);
+    const [recentBookings, setRecentBookings] = useState([]);
+
+    useEffect(() => {
+        loadData();
+    }, []);
+
+    const loadData = async () => {
+        try {
+            const [servicesData, bookingsResponse] = await Promise.all([
+                getMyServices(),
+                getServiceProviderBookings(0, 10)
+            ]);
+            
+            setServices(servicesData);
+            
+            // Map bookings to expected format
+            const mappedBookings = (bookingsResponse || []).map(booking => ({
+                id: booking.id,
+                service: "Service", // You may need service name from another endpoint
+                client: booking.organizerBooker?.fullName || booking.attendeeBooker?.fullName || "Unknown Client",
+                date: new Date(booking.startTime).toLocaleDateString(),
+                status: booking.status,
+                revenue: 0 // Calculate if pricing info available
+            }));
+            
+            setRecentBookings(mappedBookings);
+        } catch (error) {
+            console.error("Error loading data:", error);
+        }
+    };
 
     const totalServices = services.length;
     const activeServices = services.filter(s => s.status === "Active").length;
