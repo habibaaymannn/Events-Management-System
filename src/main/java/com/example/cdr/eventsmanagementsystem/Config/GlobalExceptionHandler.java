@@ -113,7 +113,7 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(DataIntegrityViolationException.class)
     public ResponseEntity<Map<String, Object>> handleConflict(DataIntegrityViolationException ex, HttpServletRequest req) {
         Map<String, Object> body = base(HttpStatus.CONFLICT, req,
-                "Conflict", ex.getMessage());
+                "Conflict", "A data integrity violation occurred");
         return ResponseEntity.status(HttpStatus.CONFLICT).body(body);
     }
 

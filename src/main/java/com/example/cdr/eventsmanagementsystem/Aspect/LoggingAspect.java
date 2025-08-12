@@ -46,7 +46,7 @@ public class LoggingAspect {
         long start = System.currentTimeMillis();
         log.info("ENTER layer={} method={}", layer, shortSig);
         if (log.isDebugEnabled()) {
-            log.debug("args={}", Arrays.toString(pjp.getArgs()));
+            log.debug("args={}", getSafeArguments(sig, pjp.getArgs()));
         }
 
         try {
@@ -61,5 +61,23 @@ public class LoggingAspect {
                     layer, shortSig, took, ex.getClass().getSimpleName(), ex.getMessage(), ex);
             throw ex;
         }
+    }
+
+    private String getSafeArguments(MethodSignature sig, Object[] args) {
+        String[] paramNames = sig.getParameterNames();
+        StringBuilder sb = new StringBuilder();
+        for (int i = 0; i < args.length; i++) {
+            if (i > 0) sb.append(", ");
+            sb.append(paramNames[i]).append("=");
+            sb.append(getSafeValue(args[i]));
+        }
+        return sb.toString();
+    }
+
+    private String getSafeValue(Object value) {
+        if (value == null) return "null";
+        if (value instanceof String) return "\"" + value + "\"";
+        if (value instanceof Number || value instanceof Boolean) return value.toString();
+        return "\"" + value.getClass().getSimpleName() + "\"";
     }
 }
