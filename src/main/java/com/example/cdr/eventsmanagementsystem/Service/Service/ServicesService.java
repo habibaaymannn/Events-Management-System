@@ -5,7 +5,7 @@ import com.example.cdr.eventsmanagementsystem.Model.Booking.BookingStatus;
 import com.example.cdr.eventsmanagementsystem.Model.Service.Availability;
 import com.example.cdr.eventsmanagementsystem.Model.User.ServiceProvider;
 import com.example.cdr.eventsmanagementsystem.Repository.BookingRepository;
-import com.example.cdr.eventsmanagementsystem.Repository.ServiceProviderRepository;
+import com.example.cdr.eventsmanagementsystem.Repository.UsersRepository.ServiceProviderRepository;
 import com.example.cdr.eventsmanagementsystem.Repository.ServiceRepository;
 import com.example.cdr.eventsmanagementsystem.Model.Service.Services;
 import com.example.cdr.eventsmanagementsystem.Service.Auth.UserSyncService;

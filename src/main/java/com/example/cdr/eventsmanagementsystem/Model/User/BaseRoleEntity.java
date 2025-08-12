@@ -16,7 +16,7 @@ import lombok.EqualsAndHashCode;
 import lombok.Getter;
 import lombok.Setter;
 
-@MappedSuperclass 
+@MappedSuperclass
 @Getter
 @Setter
 @EqualsAndHashCode(onlyExplicitlyIncluded = true)
@@ -24,7 +24,7 @@ import lombok.Setter;
 public abstract class BaseRoleEntity {
     @Id
     @EqualsAndHashCode.Include
-    private String id; // Keycloak ID 
+    private String id; // Keycloak ID
 
     @Column(nullable = false)
     private String firstName;

@@ -13,7 +13,6 @@ import org.springframework.data.annotation.CreatedDate;
 import org.springframework.data.annotation.LastModifiedBy;
 import org.springframework.data.annotation.LastModifiedDate;
 import org.springframework.data.jpa.domain.support.AuditingEntityListener;
-
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
@@ -37,6 +36,10 @@ public class Venue {
     @Column(nullable = false)
     private Type type;
 
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false)
+    private Availability availability;
+
     @Column(nullable = false)
     private String location;
 
@@ -45,6 +48,7 @@ public class Venue {
 
     @Embedded
     private Pricing pricing;
+
 
     @ElementCollection
     private List<String> images;

@@ -1,0 +1,65 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: ems-keycloak
+spec:
+  replicas: 1 # dev mode
+  selector:
+    matchLabels:
+      app: ems-keycloak
+  template:
+    metadata:
+      labels:
+        app: ems-keycloak
+    spec:
+      containers:
+        - name: keycloak
+          image: events-management-system-keycloak:latest
+          imagePullPolicy: Never
+          ports:
+            - containerPort: 8080
+          args:
+            - start-dev
+            - --import-realm
+            - --features=scripts,admin-fine-grained-authz
+          env:
+            - name: KC_HOSTNAME
+              value: "keycloak"
+            - name: KC_HOSTNAME_PORT
+              value: "8080"
+            - name: KC_HOSTNAME_STRICT
+              value: "false"
+            - name: KC_HOSTNAME_ADMIN_URL
+              value: "http://keycloak:8080"
+            - name: KEYCLOAK_ADMIN
+              valueFrom:
+                secretKeyRef:
+                  key: keycloak-username
+                  name: ems-secrets
+            - name: KEYCLOAK_ADMIN_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  key: keycloak-password
+                  name: ems-secrets
+          volumeMounts:
+            - name: realm-import
+              mountPath: /opt/keycloak/data/import
+      volumes:
+        - name: realm-import
+          configMap:
+            name: ems-realm-config
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: keycloak
+spec:
+  selector:
+    app: ems-keycloak
+  ports:
+    - protocol: TCP
+      port: 8080
+      targetPort: 8080
+      nodePort: 30080
+  type: NodePort
+
