@@ -33,6 +33,11 @@ build/
 ### VS Code ###
 .vscode/
 
+
 **/secret.yaml
 **/secrets/
 *.secret.*
+
+## Node Modules ##
+node_modules/
+
