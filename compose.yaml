@@ -20,5 +20,3 @@ services:
       - KC_HOSTNAME_URL=http://localhost:8180
       - KC_HOSTNAME_ADMIN_URL=http://localhost:8180
       - KC_FEATURES=scripts
-    volumes:
-      - C:/IntelliJ IDEA 2024.2.4/Keycloak-role-spi/target/Keycloak-role-spi-0.0.1-SNAPSHOT.jar:/opt/keycloak/providers/Keycloak-role-spi-0.0.1-SNAPSHOT.jar

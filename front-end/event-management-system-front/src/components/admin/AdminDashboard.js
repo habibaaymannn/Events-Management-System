@@ -4,6 +4,7 @@ import UserManagement from "./UserManagement";
 import EventMonitoring from "./EventMonitoring";
 import { PieChart, Pie, Cell, ResponsiveContainer, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend } from "recharts";
 import "./AdminDashboard.css";
+import { getAdminDashboard } from "../../api/adminApi";
 
 const AdminDashboard = () => {
   const navigate = useNavigate();
@@ -36,81 +37,13 @@ const AdminDashboard = () => {
     loadDashboardData();
   }, []);
 
-  const loadDashboardData = () => {
-    // Load all data
-    const venues = JSON.parse(localStorage.getItem("venues") || "[]");
-    const services = JSON.parse(localStorage.getItem("services") || "[]");
-    const organizerEvents = JSON.parse(localStorage.getItem("organizerEvents") || "[]");
-    const attendeeEvents = JSON.parse(localStorage.getItem("myEvents") || "[]");
-    const users = JSON.parse(localStorage.getItem("systemUsers") || "[]");
-    const bookingRequests = JSON.parse(localStorage.getItem("bookingRequests") || "[]");
-
-    // Combine all events
-    const allEvents = [...organizerEvents, ...attendeeEvents];
-
-    // Calculate event stats
-    const now = new Date();
-    const eventStats = {
-      upcoming: allEvents.filter(e => new Date(e.startTime || e.date) > now && e.status !== "CANCELLED").length,
-      ongoing: allEvents.filter(e => {
-        const start = new Date(e.startTime || e.date);
-        const end = new Date(e.endTime || e.date);
-        return start <= now && end >= now && e.status !== "CANCELLED";
-      }).length,
-      completed: allEvents.filter(e => new Date(e.endTime || e.date) < now && e.status !== "CANCELLED").length,
-      cancelled: allEvents.filter(e => e.status === "CANCELLED").length
-    };
-
-    // Calculate user stats
-    const userStats = {
-      admins: users.filter(u => u.role === 'admin').length || 1,
-      eventOrganizers: users.filter(u => u.role === 'event-organizer').length,
-      eventAttendees: users.filter(u => u.role === 'event-attendee').length,
-      serviceProviders: users.filter(u => u.role === 'service-provider').length,
-      venueProviders: users.filter(u => u.role === 'venue-provider').length
-    };
-
-    // Calculate event type distribution - fix null reference
-    const eventTypes = {};
-    allEvents.forEach(event => {
-      if (event && event.type) {
-        eventTypes[event.type] = (eventTypes[event.type] || 0) + 1;
-      }
-    });
-
-    // Calculate daily stats (today)
-    const today = new Date().toISOString().split('T')[0];
-    const todayBookings = bookingRequests.filter(req => 
-      req.createdAt && req.createdAt.startsWith(today)
-    ).length;
-    const todayCancellations = allEvents.filter(e => 
-      e.cancelledAt && e.cancelledAt.startsWith(today)
-    ).length;
-
-    // Calculate revenue by organizer - fix null reference
-    const revenueByOrganizer = {};
-    organizerEvents.forEach(event => {
-      if (event && event.retailPrice) {
-        const organizer = event.organizer || 'Event Organizer';
-        revenueByOrganizer[organizer] = (revenueByOrganizer[organizer] || 0) + (parseFloat(event.retailPrice) || 0);
-      }
-    });
-
-    setDashboardData({
-      users: userStats,
-      events: eventStats,
-      venues,
-      services,
-      eventTypes,
-      dailyStats: {
-        bookings: todayBookings,
-        cancellations: todayCancellations
-      },
-      revenueByOrganizer: Object.entries(revenueByOrganizer || {}).map(([name, revenue]) => ({
-        name,
-        revenue
-      }))
-    });
+  const loadDashboardData = async () => {
+    try {
+      const data = await getAdminDashboard();
+      setDashboardData(data);
+    } catch (error) {
+      // Handle error (show notification, etc.)
+    }
   };
 
   // Calculate utilization rates

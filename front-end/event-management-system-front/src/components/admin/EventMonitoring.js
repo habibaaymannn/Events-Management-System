@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
+import { getAllEvents, flagEvent, cancelEvent } from "../../api/adminApi";
 
 const EventMonitoring = () => {
   const navigate = useNavigate();
@@ -9,72 +10,42 @@ const EventMonitoring = () => {
     loadEvents();
   }, []);
 
-  const loadEvents = () => {
-    // Load events from organizer events
-    const organizerEvents = JSON.parse(localStorage.getItem("organizerEvents") || "[]");
-    // Load events from attendee events  
-    const attendeeEvents = JSON.parse(localStorage.getItem("myEvents") || "[]");
-    
-    // Combine all events
-    const allEvents = [
-      ...organizerEvents.map(e => ({ ...e, source: 'organizer' })),
-      ...attendeeEvents.map(e => ({ ...e, source: 'attendee' }))
-    ];
-    
-    setEvents(allEvents);
-  };
-
-  const handleFlagEvent = (eventId) => {
-    const reason = prompt("Enter reason for flagging this event:");
-    if (reason) {
-      const updatedEvents = events.map(event => 
-        event.id === eventId 
-          ? { ...event, flagged: true, flagReason: reason, flaggedBy: 'admin' }
-          : event
-      );
-      setEvents(updatedEvents);
-      
-      // Update in localStorage
-      const organizerEvents = updatedEvents.filter(e => e.source === 'organizer');
-      const attendeeEvents = updatedEvents.filter(e => e.source === 'attendee');
-      localStorage.setItem("organizerEvents", JSON.stringify(organizerEvents));
-      localStorage.setItem("myEvents", JSON.stringify(attendeeEvents));
+  const loadEvents = async () => {
+    try {
+      const response = await getAllEvents(0, 100); // adjust page/size as needed
+      setEvents(response.content || []);
+    } catch (error) {
+      // Handle error
     }
   };
 
-  const handleCancelEvent = (eventId) => {
+  const handleFlagEvent = async (eventId) => {
+    const reason = prompt("Enter reason for flagging this event:");
+    if (reason) {
+      try {
+        await flagEvent(eventId, reason);
+        loadEvents();
+      } catch (error) {
+        // Handle error
+      }
+    }
+  };
+
+  const handleCancelEvent = async (eventId) => {
     if (window.confirm("Are you sure you want to cancel this event?")) {
-      const updatedEvents = events.map(event => 
-        event.id === eventId 
-          ? { ...event, status: "CANCELLED", cancelledBy: 'admin' }
-          : event
-      );
-      setEvents(updatedEvents);
-      
-      // Update in localStorage
-      const organizerEvents = updatedEvents.filter(e => e.source === 'organizer');
-      const attendeeEvents = updatedEvents.filter(e => e.source === 'attendee');
-      localStorage.setItem("organizerEvents", JSON.stringify(organizerEvents));
-      localStorage.setItem("myEvents", JSON.stringify(attendeeEvents));
+      try {
+        await cancelEvent(eventId);
+        loadEvents();
+      } catch (error) {
+        // Handle error
+      }
     }
   };
 
   const getApprovalStatus = (event) => {
-    // Check booking requests for this event
-    const bookingRequests = JSON.parse(localStorage.getItem("bookingRequests") || "[]");
-    const eventRequests = bookingRequests.filter(req => req.eventId === event.id);
-    
-    if (eventRequests.length === 0) return "No bookings";
-    
-    const allConfirmed = eventRequests.every(req => req.status === 'confirmed');
-    const anyRejected = eventRequests.some(req => req.status === 'rejected');
-    const anyPending = eventRequests.some(req => req.status === 'pending');
-    
-    if (allConfirmed) return "Approved";
-    if (anyRejected) return "Partially Rejected";
-    if (anyPending) return "Pending Approval";
-    
-    return "Unknown";
+    // You may need to fetch booking requests via an endpoint if available
+    // For now, return event.approvalStatus or similar property if present
+    return event.approvalStatus || "Unknown";
   };
 
   return (
