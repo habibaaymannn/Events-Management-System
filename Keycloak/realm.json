@@ -1,6 +1,10 @@
 {
   "realm": "EMS-realm",
   "enabled": true,
+  "attributes": {
+    "userProfileEnabled": "true",
+    "userProfileMetadata": "{\"attributes\":[{\"name\":\"userType\",\"displayName\":\"User type\",\"required\":true,\"permissions\":{\"view\":[\"admin\",\"user\"],\"edit\":[\"admin\",\"user\"]},\"annotations\":{\"inputType\":\"select\",\"options\":\"admin,venue provider,service provider,organizer,attendee\"}}]}"
+  },
   "roles": {
     "realm": [
       {"name": "admin"},
@@ -30,9 +34,5 @@
   "eventsListeners": ["role-assignment-listener","jboss-logging"],
   "eventsEnabled": true,
   "adminEventsEnabled": true,
-  "adminEventsDetailsEnabled": true,
-  "attributes": {
-    "userProfileEnabled": "true",
-    "customUserProfile": "{\"attributes\":[{\"name\":\"userType\",\"displayName\":\"User Type\",\"required\":true,\"permissions\":{\"edit\":[\"User\",\"Admin\"],\"view\":[\"User\",\"Admin\"]},\"annotations\":{\"inputType\":\"select\",\"options\":[{\"value\":\"admin\",\"label\":\"Admin\"},{\"value\":\"venue provider\",\"label\":\"Venue Provider\"},{\"value\":\"service provider\",\"label\":\"Service Provider\"},{\"value\":\"organizer\",\"label\":\"Organizer\"},{\"value\":\"attendee\",\"label\":\"Attendee\"}]}}]}"
-  }
+  "adminEventsDetailsEnabled": true
 }

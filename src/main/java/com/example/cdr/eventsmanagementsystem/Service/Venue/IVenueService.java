@@ -6,7 +6,8 @@ import com.example.cdr.eventsmanagementsystem.Model.Venue.Venue;
 import java.nio.file.AccessDeniedException;
 
 public interface IVenueService {
-    Venue addVenue(VenueDTO dto);
-    Venue updateVenue(Long id, VenueDTO dto) throws AccessDeniedException;
-    void deleteVenue(Long id);
+    VenueDTO addVenue(VenueDTO dto);
+    VenueDTO updateVenue(Long id, VenueDTO dto) throws AccessDeniedException;
+    void deleteVenue(Long id) throws AccessDeniedException;
+    void cancelBooking(Long bookingId) throws AccessDeniedException;
 }
