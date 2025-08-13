@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { getAllUsers, updateUserRole, deactivateUser } from "../../api/adminApi";
+import { getAllUsers, updateUserRole, deactivateUser, createUser } from "../../api/adminApi";
 import { getBookingsByAttendeeId } from "../../api/bookingApi";
 
 const UserManagement = () => {
@@ -8,13 +8,22 @@ const UserManagement = () => {
   const [users, setUsers] = useState([]);
   const [selectedUser, setSelectedUser] = useState(null);
   const [userBookings, setUserBookings] = useState([]);
+  const [showCreateForm, setShowCreateForm] = useState(false);
+  const [createFormData, setCreateFormData] = useState({
+    firstName: '',
+    lastName: '',
+    email: '',
+    role: 'attendee' // Default role fixed to 'attendee'
+  });
+  const [createLoading, setCreateLoading] = useState(false);
+  const [createError, setCreateError] = useState('');
 
   const roles = [
-    'admin',
-    'event-organizer', 
-    'event-attendee',
-    'service-provider',
-    'venue-provider'
+    { value: 'admin', label: 'Admin' },
+    { value: 'organizer', label: 'Event Organizer' },
+    { value: 'attendee', label: 'Event Attendee' },
+    { value: 'service_provider', label: 'Service Provider' }, // Fixed: underscore instead of dash
+    { value: 'venue_provider', label: 'Venue Provider' }     // Fixed: underscore instead of dash
   ];
 
   useEffect(() => {
@@ -42,16 +51,41 @@ const UserManagement = () => {
   const handleResetPassword = (userId) => {
     if (window.confirm("Are you sure you want to reset this user's password?")) {
       alert("Password reset email sent to user!");
-      // In real implementation, this would trigger a password reset email
     }
+  };
+
+  // Helper function to map frontend roles to backend roles
+  const mapFrontendRoleToBackend = (frontendRole) => {
+    const roleMapping = {
+      'admin': 'admin',
+      'organizer': 'organizer',
+      'attendee': 'attendee', 
+      'service_provider': 'service_provider',
+      'venue_provider': 'venue_provider'
+    };
+    return roleMapping[frontendRole] || 'attendee';
+  };
+
+  // Helper function to map backend roles to frontend roles for login
+  const mapBackendRoleToFrontend = (backendRole) => {
+    const roleMapping = {
+      'admin': 'admin',
+      'organizer': 'event-organizer',
+      'attendee': 'event-attendee',
+      'service_provider': 'service-provider',
+      'venue_provider': 'venue-provider'
+    };
+    return roleMapping[backendRole] || 'event-attendee';
   };
 
   const handleAssignRole = async (userId, newRole) => {
     try {
-      await updateUserRole(userId, newRole);
+      // Map frontend role to backend role before sending
+      const backendRole = mapFrontendRoleToBackend(newRole);
+      await updateUserRole(userId, backendRole);
       loadUsers();
     } catch (error) {
-      // Handle error
+      console.error("Error updating user role:", error);
     }
   };
 
@@ -73,6 +107,64 @@ const UserManagement = () => {
     }
   };
 
+  const handleCreateUser = async (e) => {
+    e.preventDefault();
+    setCreateLoading(true);
+    setCreateError('');
+
+    try {
+      // Map frontend role to backend role format
+      const backendRole = mapFrontendRoleToBackend(createFormData.role);
+      
+      const userDataForBackend = {
+        ...createFormData,
+        role: backendRole // Use backend-compatible role format
+      };
+
+      const newUser = await createUser(userDataForBackend);
+      
+      // Also store user in localStorage for login functionality
+      // Map backend role back to frontend format for login
+      const frontendRole = mapBackendRoleToFrontend(newUser.role);
+      
+      const existingUsers = JSON.parse(localStorage.getItem('createdUsers') || '[]');
+      const userForLogin = {
+        id: newUser.id,
+        email: newUser.email,
+        password: 'password123', // Default password for testing
+        role: frontendRole, // Use frontend role format for login
+        firstName: newUser.firstName,
+        lastName: newUser.lastName,
+        createdAt: new Date().toISOString()
+      };
+      existingUsers.push(userForLogin);
+      localStorage.setItem('createdUsers', JSON.stringify(existingUsers));
+
+      setShowCreateForm(false);
+      setCreateFormData({
+        firstName: '',
+        lastName: '',
+        email: '',
+        role: 'attendee' // Reset to default
+      });
+      loadUsers();
+      
+      alert(`User created successfully! You can now login with:\nEmail: ${newUser.email}\nPassword: password123`);
+    } catch (error) {
+      setCreateError(error.message);
+    } finally {
+      setCreateLoading(false);
+    }
+  };
+
+  const handleCreateFormChange = (e) => {
+    setCreateFormData({
+      ...createFormData,
+      [e.target.name]: e.target.value
+    });
+    setCreateError('');
+  };
+
   return (
     <div style={{ width: '98vw', maxWidth: '98vw', margin: "10px auto", padding: '0 10px' }}>
       <div style={{ marginBottom: '2rem' }}>
@@ -82,13 +174,146 @@ const UserManagement = () => {
         >
           ← Back to Dashboard
         </button>
-        <h2 style={{ margin: 0, color: "#2c3e50", fontSize: "2.5rem", fontWeight: 700 }}>
-          User Management
-        </h2>
-        <p style={{ color: "#6c757d", fontSize: "1.1rem", marginTop: "0.5rem" }}>
-          Manage all system users, assign roles, deactivate, or reset passwords
-        </p>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
+          <div>
+            <h2 style={{ margin: 0, color: "#2c3e50", fontSize: "2.5rem", fontWeight: 700 }}>
+              User Management
+            </h2>
+            <p style={{ color: "#6c757d", fontSize: "1.1rem", marginTop: "0.5rem" }}>
+              Manage all system users, assign roles, deactivate, or reset passwords
+            </p>
+          </div>
+          <button
+            onClick={() => setShowCreateForm(true)}
+            className="btn btn-primary"
+            style={{ padding: '0.75rem 1.5rem', fontSize: '1rem' }}
+          >
+            + Create New User
+          </button>
+        </div>
       </div>
+
+      {/* Create User Modal */}
+      {showCreateForm && (
+        <div className="modal-overlay" onClick={() => setShowCreateForm(false)}>
+          <div className="modal-content" onClick={(e) => e.stopPropagation()}>
+            <div className="modal-header">
+              <h4>Create New User</h4>
+              <button className="modal-close" onClick={() => setShowCreateForm(false)}>×</button>
+            </div>
+            <form onSubmit={handleCreateUser} style={{ padding: '1.5rem' }}>
+              {createError && (
+                <div style={{ 
+                  backgroundColor: '#f8d7da', 
+                  color: '#721c24', 
+                  padding: '0.75rem', 
+                  borderRadius: '4px', 
+                  marginBottom: '1rem' 
+                }}>
+                  {createError}
+                </div>
+              )}
+
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem', marginBottom: '1rem' }}>
+                <div>
+                  <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: 'bold' }}>
+                    First Name *
+                  </label>
+                  <input
+                    type="text"
+                    name="firstName"
+                    value={createFormData.firstName}
+                    onChange={handleCreateFormChange}
+                    className="form-control"
+                    required
+                    style={{ width: '100%', padding: '0.5rem', border: '1px solid #ccc', borderRadius: '4px' }}
+                  />
+                </div>
+                <div>
+                  <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: 'bold' }}>
+                    Last Name *
+                  </label>
+                  <input
+                    type="text"
+                    name="lastName"
+                    value={createFormData.lastName}
+                    onChange={handleCreateFormChange}
+                    className="form-control"
+                    required
+                    style={{ width: '100%', padding: '0.5rem', border: '1px solid #ccc', borderRadius: '4px' }}
+                  />
+                </div>
+              </div>
+
+              <div style={{ marginBottom: '1rem' }}>
+                <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: 'bold' }}>
+                  Email *
+                </label>
+                <input
+                  type="email"
+                  name="email"
+                  value={createFormData.email}
+                  onChange={handleCreateFormChange}
+                  className="form-control"
+                  required
+                  style={{ width: '100%', padding: '0.5rem', border: '1px solid #ccc', borderRadius: '4px' }}
+                />
+              </div>
+
+              <div style={{ marginBottom: '1.5rem' }}>
+                <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: 'bold' }}>
+                  Role *
+                </label>
+                <select
+                  name="role"
+                  value={createFormData.role}
+                  onChange={handleCreateFormChange}
+                  className="form-control"
+                  required
+                  style={{ width: '100%', padding: '0.5rem', border: '1px solid #ccc', borderRadius: '4px' }}
+                >
+                  {roles.map(role => (
+                    <option key={role.value} value={role.value}>
+                      {role.label}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <div style={{ 
+                backgroundColor: '#d1ecf1', 
+                color: '#0c5460', 
+                padding: '0.75rem', 
+                borderRadius: '4px', 
+                marginBottom: '1.5rem',
+                fontSize: '0.9rem'
+              }}>
+                <strong>Note:</strong> The user will be created with default password "password123". 
+                They can change it after first login.
+              </div>
+
+              <div style={{ display: 'flex', gap: '1rem', justifyContent: 'flex-end' }}>
+                <button
+                  type="button"
+                  onClick={() => setShowCreateForm(false)}
+                  className="btn btn-secondary"
+                  style={{ padding: '0.5rem 1rem' }}
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={createLoading}
+                  className="btn btn-primary"
+                  style={{ padding: '0.5rem 1rem' }}
+                >
+                  {createLoading ? 'Creating...' : 'Create User'}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
 
       {/* Users List */}
       <div className="card" style={{ width: '100%', padding: '1.5rem' }}>
@@ -97,6 +322,7 @@ const UserManagement = () => {
           <table className="table" style={{ minWidth: '1000px', width: '100%' }}>
             <thead>
               <tr>
+                <th>Name</th>
                 <th>Email</th>
                 <th>Role</th>
                 <th>Status</th>
@@ -107,36 +333,39 @@ const UserManagement = () => {
             <tbody>
               {users.length === 0 ? (
                 <tr>
-                  <td colSpan="5" style={{ textAlign: "center", color: "#6c757d", padding: "2rem" }}>
-                    No users found.
+                  <td colSpan="6" style={{ textAlign: "center", color: "#6c757d", padding: "2rem" }}>
+                    No users found. Create some users to get started!
                   </td>
                 </tr>
               ) : (
                 users.map(user => (
                   <tr key={user.id}>
-                    <td style={{ fontWeight: 600 }}>{user.email}</td>
+                    <td style={{ fontWeight: 600 }}>
+                      {user.firstName && user.lastName 
+                        ? `${user.firstName} ${user.lastName}` 
+                        : user.email}
+                    </td>
+                    <td>{user.email}</td>
                     <td>
                       <select
-                        value={user.role}
+                        value={mapBackendRoleToFrontendSelect(user.role)}
                         onChange={(e) => handleAssignRole(user.id, e.target.value)}
                         className="form-control"
                         style={{ minWidth: '150px' }}
                       >
                         {roles.map(role => (
-                          <option key={role} value={role}>
-                            {role.split('-').map(word => 
-                              word.charAt(0).toUpperCase() + word.slice(1)
-                            ).join(' ')}
+                          <option key={role.value} value={role.value}>
+                            {role.label}
                           </option>
                         ))}
                       </select>
                     </td>
                     <td>
-                      <span className={`status-badge ${user.status === 'active' ? 'status-confirmed' : 'status-cancelled'}`}>
-                        {user.status}
+                      <span className={`status-badge ${user.enabled !== false ? 'status-confirmed' : 'status-cancelled'}`}>
+                        {user.enabled !== false ? 'Active' : 'Inactive'}
                       </span>
                     </td>
-                    <td>{new Date(user.createdAt).toLocaleDateString()}</td>
+                    <td>{user.createdAt ? new Date(user.createdAt).toLocaleDateString() : 'N/A'}</td>
                     <td>
                       <div style={{ display: "flex", gap: 4, flexWrap: 'wrap' }}>
                         <button
@@ -148,10 +377,10 @@ const UserManagement = () => {
                         </button>
                         <button
                           onClick={() => handleDeactivateUser(user.id)}
-                          className={`btn ${user.status === 'active' ? 'btn-danger' : 'btn-success'}`}
+                          className={`btn ${user.enabled !== false ? 'btn-danger' : 'btn-success'}`}
                           style={{ padding: "6px 12px", fontSize: "0.8rem" }}
                         >
-                          {user.status === 'active' ? 'Deactivate' : 'Activate'}
+                          {user.enabled !== false ? 'Deactivate' : 'Activate'}
                         </button>
                         <button
                           onClick={() => handleResetPassword(user.id)}
@@ -184,8 +413,8 @@ const UserManagement = () => {
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
                   <div><strong>Email:</strong> {selectedUser.email}</div>
                   <div><strong>Role:</strong> {selectedUser.role}</div>
-                  <div><strong>Status:</strong> {selectedUser.status}</div>
-                  <div><strong>Created:</strong> {new Date(selectedUser.createdAt).toLocaleDateString()}</div>
+                  <div><strong>Status:</strong> {selectedUser.enabled !== false ? 'Active' : 'Inactive'}</div>
+                  <div><strong>Created:</strong> {selectedUser.createdAt ? new Date(selectedUser.createdAt).toLocaleDateString() : 'N/A'}</div>
                   {selectedUser.firstName && (
                     <div><strong>First Name:</strong> {selectedUser.firstName}</div>
                   )}
@@ -243,6 +472,18 @@ const UserManagement = () => {
       )}
     </div>
   );
+
+  // Helper to map backend role to frontend select value
+  function mapBackendRoleToFrontendSelect(backendRole) {
+    const roleMapping = {
+      'admin': 'admin',
+      'organizer': 'organizer',
+      'attendee': 'attendee',
+      'service_provider': 'service_provider',
+      'venue_provider': 'venue_provider'
+    };
+    return roleMapping[backendRole] || 'attendee';
+  }
 };
 
 export default UserManagement;

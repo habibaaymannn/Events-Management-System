@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { getAllUsers } from '../../api/adminApi';
 import './AuthPage.css';
 
 const AuthPage = ({ setUser }) => {
@@ -13,12 +14,36 @@ const AuthPage = ({ setUser }) => {
   const [loading, setLoading] = useState(false);
 
   const roles = [
-    { value: 'event-attendee', label: 'Event Attendee', description: 'Browse and join events' },
-    { value: 'event-organizer', label: 'Event Organizer', description: 'Create and manage events' },
-    { value: 'venue-provider', label: 'Venue Provider', description: 'Manage venues for events' },
-    { value: 'service-provider', label: 'Service Provider', description: 'Provide event services' },
+    { value: 'attendee', label: 'Event Attendee', description: 'Browse and join events' },
+    { value: 'organizer', label: 'Event Organizer', description: 'Create and manage events' },
+    { value: 'venue_provider', label: 'Venue Provider', description: 'Manage venues for events' }, // Fixed
+    { value: 'service_provider', label: 'Service Provider', description: 'Provide event services' }, // Fixed
     { value: 'admin', label: 'System Admin', description: 'System administration' }
   ];
+
+  
+  const mapBackendRoleToFrontend = (backendRole) => {
+    const roleMapping = {
+      'admin': 'admin',
+      'organizer': 'event-organizer',
+      'attendee': 'event-attendee',
+      'service_provider': 'service-provider',
+      'venue_provider': 'venue-provider'
+    };
+    return roleMapping[backendRole] || 'event-attendee';
+  };
+
+  
+  const mapRegistrationRoleToFrontend = (regRole) => {
+    const roleMapping = {
+      'attendee': 'event-attendee',
+      'organizer': 'event-organizer',
+      'venue_provider': 'venue-provider',
+      'service_provider': 'service-provider',
+      'admin': 'admin'
+    };
+    return roleMapping[regRole] || 'event-attendee';
+  };
 
   const handleInputChange = (e) => {
     setFormData({
@@ -62,11 +87,56 @@ const AuthPage = ({ setUser }) => {
     setError('');
 
     try {
-      // Simulate API call delay
       await new Promise(resolve => setTimeout(resolve, 1000));
 
       if (isLogin) {
-        // Handle Login - Check demo credentials first
+        // First check if user exists in backend via getAllUsers endpoint
+        try {
+          const response = await getAllUsers(0, 1000); // Get large page to find user
+          const backendUsers = response.content || [];
+          
+          // Find user by email in backend
+          const backendUser = backendUsers.find(u => u.email === formData.email);
+          
+          if (backendUser) {
+            // For backend users, we'll use a simple password check (in production, this would be proper authentication)
+            // For now, assume password is 'password123' for all backend users
+            if (formData.password === 'password123') {
+              console.log("Backend user found:", backendUser);
+              const frontendRole = mapBackendRoleToFrontend(backendUser.role);
+              setUser({
+                id: backendUser.id,
+                email: backendUser.email,
+                role: frontendRole,
+                firstName: backendUser.firstName,
+                lastName: backendUser.lastName,
+                userType: frontendRole // Ensure userType is set
+              });
+              return;
+            }
+          }
+        } catch (error) {
+          console.log("Backend check failed, falling back to local users:", error);
+        }
+
+        // Then check created users in localStorage
+        const createdUsers = JSON.parse(localStorage.getItem('createdUsers') || '[]');
+        const createdUser = createdUsers.find(u => u.email === formData.email && u.password === formData.password);
+        
+        if (createdUser) {
+          console.log("Created user found:", createdUser);
+          setUser({
+            id: createdUser.id,
+            email: createdUser.email,
+            role: createdUser.role,
+            firstName: createdUser.firstName,
+            lastName: createdUser.lastName,
+            userType: createdUser.role // Ensure userType is set
+          });
+          return;
+        }
+
+        // Then check demo credentials
         const demoCredentials = [
           { email: 'admin@demo.com', password: 'admin123', role: 'admin' },
           { email: 'venue@demo.com', password: 'venue123', role: 'venue-provider' },
@@ -78,23 +148,27 @@ const AuthPage = ({ setUser }) => {
         const demoUser = demoCredentials.find(u => u.email === formData.email && u.password === formData.password);
         
         if (demoUser) {
+          console.log("Demo user found:", demoUser);
           setUser({
             id: Date.now(),
             email: demoUser.email,
-            role: demoUser.role
+            role: demoUser.role,
+            userType: demoUser.role // Ensure userType is set
           });
           return;
         }
 
-        // Check registered users
+        // Finally check registered users (local registration)
         const users = JSON.parse(localStorage.getItem('users') || '[]');
         const user = users.find(u => u.email === formData.email && u.password === formData.password);
         
         if (user) {
+          console.log("Registered user found:", user);
           setUser({
             id: user.id,
             email: user.email,
-            role: user.role
+            role: user.role,
+            userType: user.role // Ensure userType is set
           });
         } else {
           setError('Invalid email or password');
@@ -109,12 +183,14 @@ const AuthPage = ({ setUser }) => {
           return;
         }
 
-        // Create new user
+        // Create new user with frontend role format
+        const frontendRole = mapRegistrationRoleToFrontend(formData.role);
         const newUser = {
           id: Date.now(),
           email: formData.email,
           password: formData.password,
-          role: formData.role,
+          role: frontendRole, // Use frontend role format
+          userType: frontendRole, // Ensure userType is set
           createdAt: new Date().toISOString()
         };
 
@@ -125,7 +201,8 @@ const AuthPage = ({ setUser }) => {
         setUser({
           id: newUser.id,
           email: newUser.email,
-          role: newUser.role
+          role: newUser.role,
+          userType: newUser.role // Ensure userType is set
         });
       }
     } catch (err) {
@@ -316,6 +393,11 @@ const AuthPage = ({ setUser }) => {
                       Event Attendee
                       <span>attendee@demo.com / attendee123</span>
                     </button>
+                  </div>
+                  <div style={{ marginTop: '1rem', fontSize: '0.85rem', color: '#6c757d', textAlign: 'center' }}>
+                    <strong>Backend users: Use password "password123"</strong>
+                    <br />
+                    <strong>Or use created users with their assigned passwords</strong>
                   </div>
                 </div>
               </div>

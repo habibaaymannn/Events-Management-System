@@ -42,7 +42,7 @@ services:
       context: .
       dockerfile: Dockerfile
     ports:
-      - "8180:8080"
+      - "8081:8081"
     environment:
       ISSUER_URI: 'http://keycloak:8080/realms/EMS-realm'
       #      - SPRING_CLOUD_CONFIG_URI=http://config-server:8888

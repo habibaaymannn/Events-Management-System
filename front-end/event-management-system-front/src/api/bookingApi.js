@@ -1,3 +1,5 @@
+import { buildApiUrl, getAuthHeaders } from '../config/apiConfig';
+
 /**
  * Update the status of a booking.
  * @param {number|string} bookingId - Booking ID.
@@ -5,14 +7,10 @@
  * @returns {Promise<object>} - Updated booking object.
  */
 export async function updateBookingStatus(bookingId, status) {
-  const url = `http://localhost:8080/v1/bookings/${bookingId}/status/${status}`;
+  const url = buildApiUrl(`/v1/bookings/${bookingId}/status/${status}`);
   const response = await fetch(url, {
     method: "PUT",
-    headers: {
-      "Content-Type": "application/json",
-      // Add Authorization header if needed:
-      // "Authorization": `Bearer ${yourToken}`,
-    },
+    headers: getAuthHeaders(),
   });
 
   if (!response.ok) {
@@ -28,14 +26,10 @@ export async function updateBookingStatus(bookingId, status) {
  * @returns {Promise<object>} - Created booking object.
  */
 export async function bookVenue(bookingData) {
-  const url = `http://localhost:8080/v1/bookings/venues`;
+  const url = buildApiUrl("/v1/bookings/venues");
   const response = await fetch(url, {
     method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      // Add Authorization header if needed:
-      // "Authorization": `Bearer ${yourToken}`,
-    },
+    headers: getAuthHeaders(),
     body: JSON.stringify(bookingData),
   });
 
@@ -52,14 +46,10 @@ export async function bookVenue(bookingData) {
  * @returns {Promise<object>} - Created booking object.
  */
 export async function bookService(bookingData) {
-  const url = `http://localhost:8080/v1/bookings/services`;
+  const url = buildApiUrl("/v1/bookings/services");
   const response = await fetch(url, {
     method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      // Add Authorization header if needed:
-      // "Authorization": `Bearer ${yourToken}`,
-    },
+    headers: getAuthHeaders(),
     body: JSON.stringify(bookingData),
   });
 
@@ -76,14 +66,10 @@ export async function bookService(bookingData) {
  * @returns {Promise<object>} - Created booking objects.
  */
 export async function bookCombinedResources(bookingData) {
-  const url = `http://localhost:8080/v1/bookings/combined`;
+  const url = buildApiUrl("/v1/bookings/combined");
   const response = await fetch(url, {
     method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      // Add Authorization header if needed:
-      // "Authorization": `Bearer ${yourToken}`,
-    },
+    headers: getAuthHeaders(),
     body: JSON.stringify(bookingData),
   });
 
@@ -100,14 +86,10 @@ export async function bookCombinedResources(bookingData) {
  * @returns {Promise<object>} - Booking details object.
  */
 export async function getBookingById(bookingId) {
-  const url = `http://localhost:8080/v1/bookings/${bookingId}`;
+  const url = buildApiUrl(`/v1/bookings/${bookingId}`);
   const response = await fetch(url, {
     method: "GET",
-    headers: {
-      "Content-Type": "application/json",
-      // Add Authorization header if needed:
-      // "Authorization": `Bearer ${yourToken}`,
-    },
+    headers: getAuthHeaders(),
   });
 
   if (!response.ok) {
@@ -123,14 +105,10 @@ export async function getBookingById(bookingId) {
  * @returns {Promise<Array>} - Array of booking objects for the event.
  */
 export async function getBookingsByEventId(eventId) {
-  const url = `http://localhost:8080/v1/bookings/event/${eventId}`;
+  const url = buildApiUrl(`/v1/bookings/event/${eventId}`);
   const response = await fetch(url, {
     method: "GET",
-    headers: {
-      "Content-Type": "application/json",
-      // Add Authorization header if needed:
-      // "Authorization": `Bearer ${yourToken}`,
-    },
+    headers: getAuthHeaders(),
   });
 
   if (!response.ok) {
@@ -146,14 +124,10 @@ export async function getBookingsByEventId(eventId) {
  * @returns {Promise<Array>} - Array of booking objects for the attendee.
  */
 export async function getBookingsByAttendeeId(attendeeId) {
-  const url = `http://localhost:8080/v1/bookings/attendee/${attendeeId}`;
+  const url = buildApiUrl(`/v1/bookings/attendee/${attendeeId}`);
   const response = await fetch(url, {
     method: "GET",
-    headers: {
-      "Content-Type": "application/json",
-      // Add Authorization header if needed:
-      // "Authorization": `Bearer ${yourToken}`,
-    },
+    headers: getAuthHeaders(),
   });
 
   if (!response.ok) {
