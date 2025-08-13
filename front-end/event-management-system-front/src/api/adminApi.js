@@ -1,3 +1,5 @@
+import { buildApiUrl, getAuthHeaders } from '../config/apiConfig';
+
 /**
  * Update a user's role via the admin endpoint.
  * @param {string} userId - The user's ID.
@@ -5,14 +7,10 @@
  * @returns {Promise<object>} - The updated user object.
  */
 export async function updateUserRole(userId, role) {
-  const url = `http://localhost:8080/v1/admin/users/${userId}/role?role=${encodeURIComponent(role)}`;
+  const url = buildApiUrl(`/v1/admin/users/${userId}/role?role=${encodeURIComponent(role)}`);
   const response = await fetch(url, {
     method: "PUT",
-    headers: {
-      "Content-Type": "application/json",
-      // Add Authorization header if needed:
-      // "Authorization": `Bearer ${yourToken}`,
-    },
+    headers: getAuthHeaders(),
   });
 
   if (!response.ok) {
@@ -29,14 +27,10 @@ export async function updateUserRole(userId, role) {
  * @returns {Promise<object>} - Paginated users response.
  */
 export async function getAllUsers(page = 0, size = 10) {
-  const url = `http://localhost:8080/v1/admin/users?page=${page}&size=${size}`;
+  const url = buildApiUrl(`/v1/admin/users?page=${page}&size=${size}`);
   const response = await fetch(url, {
     method: "GET",
-    headers: {
-      "Content-Type": "application/json",
-      // Add Authorization header if needed:
-      // "Authorization": `Bearer ${yourToken}`,
-    },
+    headers: getAuthHeaders(),
   });
 
   if (!response.ok) {
@@ -52,14 +46,10 @@ export async function getAllUsers(page = 0, size = 10) {
  * @returns {Promise<void>} - Resolves if successful.
  */
 export async function deactivateUser(userId) {
-  const url = `http://localhost:8080/v1/admin/users/${userId}/deactivate`;
+  const url = buildApiUrl(`/v1/admin/users/${userId}/deactivate`);
   const response = await fetch(url, {
     method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      // Add Authorization header if needed:
-      // "Authorization": `Bearer ${yourToken}`,
-    },
+    headers: getAuthHeaders(),
   });
 
   if (!response.ok) {
@@ -74,14 +64,10 @@ export async function deactivateUser(userId) {
  * @returns {Promise<void>} - Resolves if successful.
  */
 export async function flagEvent(eventId, reason) {
-  const url = `http://localhost:8080/v1/admin/events/${eventId}/flag?reason=${encodeURIComponent(reason)}`;
+  const url = buildApiUrl(`/v1/admin/events/${eventId}/flag?reason=${encodeURIComponent(reason)}`);
   const response = await fetch(url, {
     method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      // Add Authorization header if needed:
-      // "Authorization": `Bearer ${yourToken}`,
-    },
+    headers: getAuthHeaders(),
   });
 
   if (!response.ok) {
@@ -95,14 +81,10 @@ export async function flagEvent(eventId, reason) {
  * @returns {Promise<void>} - Resolves if successful.
  */
 export async function cancelEvent(eventId) {
-  const url = `http://localhost:8080/v1/admin/events/${eventId}/cancel`;
+  const url = buildApiUrl(`/v1/admin/events/${eventId}/cancel`);
   const response = await fetch(url, {
     method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      // Add Authorization header if needed:
-      // "Authorization": `Bearer ${yourToken}`,
-    },
+    headers: getAuthHeaders(),
   });
 
   if (!response.ok) {
@@ -117,14 +99,10 @@ export async function cancelEvent(eventId) {
  * @returns {Promise<object>} - Paginated events response.
  */
 export async function getAllEvents(page = 0, size = 10) {
-  const url = `http://localhost:8080/v1/admin/events?page=${page}&size=${size}`;
+  const url = buildApiUrl(`/v1/admin/events?page=${page}&size=${size}`);
   const response = await fetch(url, {
     method: "GET",
-    headers: {
-      "Content-Type": "application/json",
-      // Add Authorization header if needed:
-      // "Authorization": `Bearer ${yourToken}`,
-    },
+    headers: getAuthHeaders(),
   });
 
   if (!response.ok) {
@@ -141,14 +119,10 @@ export async function getAllEvents(page = 0, size = 10) {
  * @returns {Promise<object>} - Paginated flagged events response.
  */
 export async function getFlaggedEvents(page = 0, size = 10) {
-  const url = `http://localhost:8080/v1/admin/events/flagged?page=${page}&size=${size}`;
+  const url = buildApiUrl(`/v1/admin/events/flagged?page=${page}&size=${size}`);
   const response = await fetch(url, {
     method: "GET",
-    headers: {
-      "Content-Type": "application/json",
-      // Add Authorization header if needed:
-      // "Authorization": `Bearer ${yourToken}`,
-    },
+    headers: getAuthHeaders(),
   });
 
   if (!response.ok) {
@@ -166,14 +140,10 @@ export async function getFlaggedEvents(page = 0, size = 10) {
  * @returns {Promise<object>} - Paginated events response.
  */
 export async function getEventsByStatus(status, page = 0, size = 10) {
-  const url = `http://localhost:8080/v1/admin/events/by-status?status=${encodeURIComponent(status)}&page=${page}&size=${size}`;
+  const url = buildApiUrl(`/v1/admin/events/by-status?status=${encodeURIComponent(status)}&page=${page}&size=${size}`);
   const response = await fetch(url, {
     method: "GET",
-    headers: {
-      "Content-Type": "application/json",
-      // Add Authorization header if needed:
-      // "Authorization": `Bearer ${yourToken}`,
-    },
+    headers: getAuthHeaders(),
   });
 
   if (!response.ok) {
@@ -188,14 +158,10 @@ export async function getEventsByStatus(status, page = 0, size = 10) {
  * @returns {Promise<object>} - Event type distribution object.
  */
 export async function getEventTypeDistribution() {
-  const url = `http://localhost:8080/v1/admin/event-type-distribution`;
+  const url = buildApiUrl("/v1/admin/event-type-distribution");
   const response = await fetch(url, {
     method: "GET",
-    headers: {
-      "Content-Type": "application/json",
-      // Add Authorization header if needed:
-      // "Authorization": `Bearer ${yourToken}`,
-    },
+    headers: getAuthHeaders(),
   });
 
   if (!response.ok) {
@@ -210,14 +176,10 @@ export async function getEventTypeDistribution() {
  * @returns {Promise<object>} - Dashboard statistics.
  */
 export async function getAdminDashboard() {
-  const url = `http://localhost:8080/v1/admin/dashboard`;
+  const url = buildApiUrl("/v1/admin/dashboard");
   const response = await fetch(url, {
     method: "GET",
-    headers: {
-      "Content-Type": "application/json",
-      // Add Authorization header if needed:
-      // "Authorization": `Bearer ${yourToken}`,
-    },
+    headers: getAuthHeaders(),
   });
 
   if (!response.ok) {
@@ -234,14 +196,10 @@ export async function getAdminDashboard() {
  * @returns {Promise<object>} - Daily cancellations response.
  */
 export async function getDailyCancellations(start, end) {
-  const url = `http://localhost:8080/v1/admin/daily-cancellations?start=${encodeURIComponent(start)}&end=${encodeURIComponent(end)}`;
+  const url = buildApiUrl(`/v1/admin/daily-cancellations?start=${encodeURIComponent(start)}&end=${encodeURIComponent(end)}`);
   const response = await fetch(url, {
     method: "GET",
-    headers: {
-      "Content-Type": "application/json",
-      // Add Authorization header if needed:
-      // "Authorization": `Bearer ${yourToken}`,
-    },
+    headers: getAuthHeaders(),
   });
 
   if (!response.ok) {
@@ -258,14 +216,10 @@ export async function getDailyCancellations(start, end) {
  * @returns {Promise<object>} - Daily bookings response.
  */
 export async function getDailyBookings(start, end) {
-  const url = `http://localhost:8080/v1/admin/daily-bookings?start=${encodeURIComponent(start)}&end=${encodeURIComponent(end)}`;
+  const url = buildApiUrl(`/v1/admin/daily-bookings?start=${encodeURIComponent(start)}&end=${encodeURIComponent(end)}`);
   const response = await fetch(url, {
     method: "GET",
-    headers: {
-      "Content-Type": "application/json",
-      // Add Authorization header if needed:
-      // "Authorization": `Bearer ${yourToken}`,
-    },
+    headers: getAuthHeaders(),
   });
 
   if (!response.ok) {
@@ -274,3 +228,24 @@ export async function getDailyBookings(start, end) {
 
   return await response.json();
 }
+
+/**
+ * Create a new user via the admin endpoint.
+ * @param {object} userData - User data to create.
+ * @returns {Promise<object>} - Created user object.
+ */
+export async function createUser(userData) {
+  const url = buildApiUrl("/v1/admin/users");
+  const response = await fetch(url, {
+    method: "POST",
+    headers: getAuthHeaders(),
+    body: JSON.stringify(userData),
+  });
+
+  if (!response.ok) {
+    throw new Error(`Failed to create user: ${response.statusText}`);
+  }
+
+  return await response.json();
+}
+

@@ -398,25 +398,25 @@
   }
 }
 
-/* Enhanced form focus states */
+
 .form-control:focus {
   outline: none;
   border-color: #3b82f6;
   box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
 }
 
-/* Better spacing for form elements */
+
 .form-group:last-child {
   margin-bottom: 0;
 }
 
-/* Improved button states */
+
 .btn:focus {
   outline: none;
   box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.25);
 }
 
-/* Enhanced role selection styling */
+
 .role-selection .role-option:first-child {
   margin-top: 0;
 }

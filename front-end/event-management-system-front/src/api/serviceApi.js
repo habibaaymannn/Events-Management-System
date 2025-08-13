@@ -1,17 +1,15 @@
+import { buildApiUrl, getAuthHeaders } from '../config/apiConfig';
+
 /**
  * Add a new service for the service provider.
  * @param {object} serviceData - Service data to create.
  * @returns {Promise<object>} - Created service object.
  */
 export async function addNewService(serviceData) {
-  const url = `http://localhost:8080/v1/services`;
+  const url = buildApiUrl("/v1/services");
   const response = await fetch(url, {
     method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      // Add Authorization header if needed:
-      // "Authorization": `Bearer ${yourToken}`,
-    },
+    headers: getAuthHeaders(),
     body: JSON.stringify(serviceData),
   });
 
@@ -30,7 +28,7 @@ export async function addNewService(serviceData) {
  * @returns {Promise<object>} - Updated booking object.
  */
 export async function respondToBookingRequest(bookingId, status, reason = "") {
-  const url = `http://localhost:8080/v1/services/bookings/${bookingId}/status`;
+  const url = buildApiUrl(`/v1/services/bookings/${bookingId}/status`);
   const requestBody = { status };
 
   // Add reason if provided and status is REJECTED
@@ -40,11 +38,7 @@ export async function respondToBookingRequest(bookingId, status, reason = "") {
 
   const response = await fetch(url, {
     method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      // Add Authorization header if needed:
-      // "Authorization": `Bearer ${yourToken}`,
-    },
+    headers: getAuthHeaders(),
     body: JSON.stringify(requestBody),
   });
 
@@ -62,7 +56,7 @@ export async function respondToBookingRequest(bookingId, status, reason = "") {
  * @returns {Promise<void>} - Resolves if successful.
  */
 export async function cancelServiceBooking(bookingId, reason = "") {
-  const url = `http://localhost:8080/v1/services/bookings/${bookingId}/cancel`;
+  const url = buildApiUrl(`/v1/services/bookings/${bookingId}/cancel`);
   const requestBody = {};
   
   // Add reason if provided
@@ -72,11 +66,7 @@ export async function cancelServiceBooking(bookingId, reason = "") {
 
   const response = await fetch(url, {
     method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      // Add Authorization header if needed:
-      // "Authorization": `Bearer ${yourToken}`,
-    },
+    headers: getAuthHeaders(),
     body: JSON.stringify(requestBody),
   });
 
@@ -92,14 +82,10 @@ export async function cancelServiceBooking(bookingId, reason = "") {
  * @returns {Promise<object>} - Updated service object.
  */
 export async function updateServiceAvailability(serviceId, availabilityData) {
-  const url = `http://localhost:8080/v1/services/${serviceId}/availability`;
+  const url = buildApiUrl(`/v1/services/${serviceId}/availability`);
   const response = await fetch(url, {
     method: "PATCH",
-    headers: {
-      "Content-Type": "application/json",
-      // Add Authorization header if needed:
-      // "Authorization": `Bearer ${yourToken}`,
-    },
+    headers: getAuthHeaders(),
     body: JSON.stringify(availabilityData),
   });
 
@@ -118,7 +104,7 @@ export async function updateServiceAvailability(serviceId, availabilityData) {
  * @returns {Promise<Array>} - Array of booking objects.
  */
 export async function getServiceProviderBookings(page = 0, size = 10, status = "") {
-  let url = `http://localhost:8080/v1/services/bookings`;
+  let url = buildApiUrl("/v1/services/bookings");
   const params = new URLSearchParams();
   
   if (page !== undefined) params.append('page', page);
@@ -131,11 +117,7 @@ export async function getServiceProviderBookings(page = 0, size = 10, status = "
 
   const response = await fetch(url, {
     method: "GET",
-    headers: {
-      "Content-Type": "application/json",
-      // Add Authorization header if needed:
-      // "Authorization": `Bearer ${yourToken}`,
-    },
+    headers: getAuthHeaders(),
   });
 
   if (!response.ok) {
@@ -150,14 +132,10 @@ export async function getServiceProviderBookings(page = 0, size = 10, status = "
  * @returns {Promise<Array>} - Array of service objects.
  */
 export async function getMyServices() {
-  const url = `http://localhost:8080/v1/services/my-services`;
+  const url = buildApiUrl("/v1/services/my-services");
   const response = await fetch(url, {
     method: "GET",
-    headers: {
-      "Content-Type": "application/json",
-      // Add Authorization header if needed:
-      // "Authorization": `Bearer ${yourToken}`,
-    },
+    headers: getAuthHeaders(),
   });
 
   if (!response.ok) {
@@ -166,3 +144,4 @@ export async function getMyServices() {
 
   return await response.json();
 }
+

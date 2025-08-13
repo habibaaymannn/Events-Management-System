@@ -1,17 +1,15 @@
+import { buildApiUrl, getAuthHeaders } from '../config/apiConfig';
+
 /**
  * Get an event by its ID.
  * @param {number|string} id - Event ID.
  * @returns {Promise<object>} - Event object.
  */
 export async function getEventById(id) {
-  const url = `http://localhost:8080/v1/events/${id}`;
+  const url = buildApiUrl(`/v1/events/${id}`);
   const response = await fetch(url, {
     method: "GET",
-    headers: {
-      "Content-Type": "application/json",
-      // Add Authorization header if needed:
-      // "Authorization": `Bearer ${yourToken}`,
-    },
+    headers: getAuthHeaders(),
   });
 
   if (!response.ok) {
@@ -28,14 +26,10 @@ export async function getEventById(id) {
  * @returns {Promise<object>} - Updated event object.
  */
 export async function updateEvent(id, eventData) {
-  const url = `http://localhost:8080/v1/events/${id}`;
+  const url = buildApiUrl(`/v1/events/${id}`);
   const response = await fetch(url, {
     method: "PUT",
-    headers: {
-      "Content-Type": "application/json",
-      // Add Authorization header if needed:
-      // "Authorization": `Bearer ${yourToken}`,
-    },
+    headers: getAuthHeaders(),
     body: JSON.stringify(eventData),
   });
 
@@ -52,14 +46,10 @@ export async function updateEvent(id, eventData) {
  * @returns {Promise<void>} - Resolves if successful.
  */
 export async function deleteEvent(id) {
-  const url = `http://localhost:8080/v1/events/${id}`;
+  const url = buildApiUrl(`/v1/events/${id}`);
   const response = await fetch(url, {
     method: "DELETE",
-    headers: {
-      "Content-Type": "application/json",
-      // Add Authorization header if needed:
-      // "Authorization": `Bearer ${yourToken}`,
-    },
+    headers: getAuthHeaders(),
   });
 
   if (!response.ok) {
@@ -74,14 +64,10 @@ export async function deleteEvent(id) {
  * @returns {Promise<object>} - Paginated events response.
  */
 export async function getAllEvents(page = 0, size = 10) {
-  const url = `http://localhost:8080/v1/events?page=${page}&size=${size}`;
+  const url = buildApiUrl(`/v1/events?page=${page}&size=${size}`);
   const response = await fetch(url, {
     method: "GET",
-    headers: {
-      "Content-Type": "application/json",
-      // Add Authorization header if needed:
-      // "Authorization": `Bearer ${yourToken}`,
-    },
+    headers: getAuthHeaders(),
   });
 
   if (!response.ok) {
@@ -97,14 +83,10 @@ export async function getAllEvents(page = 0, size = 10) {
  * @returns {Promise<object>} - Created event object.
  */
 export async function createEvent(eventData) {
-  const url = `http://localhost:8080/v1/events`;
+  const url = buildApiUrl("/v1/events");
   const response = await fetch(url, {
     method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      // Add Authorization header if needed:
-      // "Authorization": `Bearer ${yourToken}`,
-    },
+    headers: getAuthHeaders(),
     body: JSON.stringify(eventData),
   });
 
@@ -121,14 +103,10 @@ export async function createEvent(eventData) {
  * @returns {Promise<Array>} - Array of event objects.
  */
 export async function getEventsByType(type) {
-  const url = `http://localhost:8080/v1/events/type/${encodeURIComponent(type)}`;
+  const url = buildApiUrl(`/v1/events/type/${encodeURIComponent(type)}`);
   const response = await fetch(url, {
     method: "GET",
-    headers: {
-      "Content-Type": "application/json",
-      // Add Authorization header if needed:
-      // "Authorization": `Bearer ${yourToken}`,
-    },
+    headers: getAuthHeaders(),
   });
 
   if (!response.ok) {

@@ -32,6 +32,8 @@ const AdminDashboard = () => {
     },
     revenueByOrganizer: []
   });
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
 
   useEffect(() => {
     loadDashboardData();
@@ -39,23 +41,53 @@ const AdminDashboard = () => {
 
   const loadDashboardData = async () => {
     try {
+      setLoading(true);
+      setError(null);
       const data = await getAdminDashboard();
-      setDashboardData(data);
+      
+      
+      setDashboardData({
+        users: data.users || {
+          admins: 0,
+          eventOrganizers: 0,
+          eventAttendees: 0,
+          serviceProviders: 0,
+          venueProviders: 0
+        },
+        events: data.events || {
+          upcoming: 0,
+          ongoing: 0,
+          completed: 0,
+          cancelled: 0
+        },
+        venues: Array.isArray(data.venues) ? data.venues : [],
+        services: Array.isArray(data.services) ? data.services : [],
+        eventTypes: data.eventTypes || {},
+        dailyStats: data.dailyStats || {
+          bookings: 0,
+          cancellations: 0
+        },
+        revenueByOrganizer: Array.isArray(data.revenueByOrganizer) ? data.revenueByOrganizer : []
+      });
     } catch (error) {
-      // Handle error (show notification, etc.)
+      console.error("Error loading dashboard data:", error);
+      setError(error.message);
+      // Keep default data structure on error
+    } finally {
+      setLoading(false);
     }
   };
 
-  // Calculate utilization rates
-  const venueUtilization = dashboardData.venues.length > 0 
+  
+  const venueUtilization = dashboardData.venues && dashboardData.venues.length > 0 
     ? Math.round((dashboardData.venues.filter(v => v.bookings && v.bookings.length > 0).length / dashboardData.venues.length) * 100)
     : 0;
   
-  const serviceUtilization = dashboardData.services.length > 0
+  const serviceUtilization = dashboardData.services && dashboardData.services.length > 0
     ? Math.round((dashboardData.services.filter(s => s.bookings && s.bookings.length > 0).length / dashboardData.services.length) * 100)
     : 0;
 
-  // Prepare chart data
+ 
   const eventStatusData = [
     { name: "Upcoming", value: dashboardData.events.upcoming, color: "#ffc107" },
     { name: "Ongoing", value: dashboardData.events.ongoing, color: "#28a745" },
@@ -68,15 +100,52 @@ const AdminDashboard = () => {
     count
   }));
 
-  // Check if we're on the main dashboard
-  const isMainDashboard = location.pathname === '/' || location.pathname === '';
+  
+  const isMainDashboard = location.pathname === '/' || location.pathname === '/admin' || location.pathname === '';
+
+  
+  useEffect(() => {
+    if (isMainDashboard && location.pathname !== '/') {
+      console.log("Redirecting to main admin dashboard");
+    }
+  }, [location.pathname, isMainDashboard]);
+
+  if (loading) {
+    return (
+      <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '50vh' }}>
+        <div style={{ textAlign: 'center' }}>
+          <h3>Loading Dashboard...</h3>
+          <p>Please wait while we fetch your data.</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div style={{ width: '98vw', maxWidth: '98vw', margin: "10px auto", padding: '0 10px' }}>
+        <div className="card" style={{ padding: '2rem', textAlign: 'center' }}>
+          <h3 style={{ color: '#dc3545', marginBottom: '1rem' }}>Error Loading Dashboard</h3>
+          <p style={{ color: '#6c757d', marginBottom: '1.5rem' }}>
+            Unable to fetch dashboard data: {error}
+          </p>
+          <button 
+            onClick={loadDashboardData} 
+            className="btn btn-primary"
+            style={{ padding: '0.75rem 1.5rem' }}
+          >
+            Retry
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   return (
-    <Routes>
-      <Route path="user-management" element={<UserManagement />} />
-      <Route path="event-monitoring" element={<EventMonitoring />} />
-      <Route path="/" element={
-        <div style={{ width: '98vw', maxWidth: '98vw', margin: "10px auto", padding: '0 10px' }}>
+    <div style={{ width: '98vw', maxWidth: '98vw', margin: "10px auto", padding: '0 10px' }}>
+      {/* Only show this if we're not on a sub-route */}
+      {isMainDashboard && (
+        <>
           <h2 style={{ textAlign: "center", marginBottom: 24, color: "#2c3e50", fontSize: "2.5rem", fontWeight: 700 }}>
             System Admin Dashboard
           </h2>
@@ -179,16 +248,20 @@ const AdminDashboard = () => {
             <div className="card text-center">
               <h3 className="text-warning">{venueUtilization}%</h3>
               <p className="text-muted">Venue Utilization Rate</p>
-              <small>({dashboardData.venues.filter(v => v.bookings && v.bookings.length > 0).length} of {dashboardData.venues.length} venues booked)</small>
+              <small>
+                ({dashboardData.venues ? dashboardData.venues.filter(v => v.bookings && v.bookings.length > 0).length : 0} of {dashboardData.venues ? dashboardData.venues.length : 0} venues booked)
+              </small>
             </div>
             <div className="card text-center">
               <h3 className="text-danger">{serviceUtilization}%</h3>
               <p className="text-muted">Service Providers Utilization Rate</p>
-              <small>({dashboardData.services.filter(s => s.bookings && s.bookings.length > 0).length} of {dashboardData.services.length} services booked)</small>
+              <small>
+                ({dashboardData.services ? dashboardData.services.filter(s => s.bookings && s.bookings.length > 0).length : 0} of {dashboardData.services ? dashboardData.services.length : 0} services booked)
+              </small>
             </div>
             {/* Event Type Distribution Statistic */}
             <div className="card text-center">
-              <h3 className="text-primary">{eventTypeData.reduce((a, b) => a + b.count, 0)}</h3>
+              <h3 className="text-primary">{eventTypeData.reduce((a, b) => a + (b.count || 0), 0)}</h3>
               <p className="text-muted">Event Type Distribution</p>
               <small>
                 {eventTypeData.map(et => `${et.name}: ${et.count}`).join(', ') || 'No event types'}
@@ -197,11 +270,13 @@ const AdminDashboard = () => {
             {/* Revenue per Organizer Statistic */}
             <div className="card text-center">
               <h3 className="text-success">
-                ${dashboardData.revenueByOrganizer.reduce((a, b) => a + b.revenue, 0).toLocaleString()}
+                ${dashboardData.revenueByOrganizer ? dashboardData.revenueByOrganizer.reduce((a, b) => a + (b.revenue || 0), 0).toLocaleString() : '0'}
               </h3>
               <p className="text-muted">Total Revenue (Organizers)</p>
               <small>
-                {dashboardData.revenueByOrganizer.map(ro => `${ro.name}: $${ro.revenue.toLocaleString()}`).join(', ') || 'No revenue'}
+                {dashboardData.revenueByOrganizer && dashboardData.revenueByOrganizer.length > 0 
+                  ? dashboardData.revenueByOrganizer.map(ro => `${ro.name}: $${(ro.revenue || 0).toLocaleString()}`).join(', ') 
+                  : 'No revenue'}
               </small>
             </div>
           </div>
@@ -222,9 +297,20 @@ const AdminDashboard = () => {
               <p className="text-muted">Daily Cancellation Count</p>
             </div>
           </div>
-        </div>
-      } />
-    </Routes>
+        </>
+      )}
+
+      <Routes>
+        <Route path="user-management" element={<UserManagement />} />
+        <Route path="event-monitoring" element={<EventMonitoring />} />
+        <Route path="/" element={
+          <div>
+            {/* Main dashboard content */}
+            {/* This will only show when we're on the exact root path */}
+          </div>
+        } />
+      </Routes>
+    </div>
   );
 };
 

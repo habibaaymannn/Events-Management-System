@@ -21,6 +21,7 @@ function App() {
   useEffect(() => {
     if (user) {
       localStorage.setItem("currentUser", JSON.stringify(user));
+      console.log("User set with role:", user.role, "and userType:", user.userType);
     } else {
       localStorage.removeItem("currentUser");
     }
@@ -64,7 +65,9 @@ function App() {
           <div>
             <h3 style={{ margin: 0 }}>Event Management System</h3>
             <p style={{ margin: 0, opacity: 0.9, fontSize: '0.9rem' }}>
-              Welcome, {user.email} ({user.role})
+              Welcome, {user.firstName && user.lastName 
+                ? `${user.firstName} ${user.lastName}` 
+                : user.email} ({user.role})
             </p>
           </div>
           <button
@@ -77,6 +80,9 @@ function App() {
         </header>
 
         <Routes>
+          {user.role === 'admin' && (
+            <Route path="/*" element={<AdminDashboard />} />
+          )}
           {user.role === 'venue-provider' && (
             <>
               <Route path="/*" element={<VenueProviderDashboard />} />
@@ -94,9 +100,17 @@ function App() {
           {user.role === 'event-attendee' && (
             <Route path="/*" element={<EventAttendeeDashboard />} />
           )}
-          {user.role === 'admin' && (
-            <Route path="/*" element={<AdminDashboard />} />
-          )}
+          
+          {/* Debug route for unmatched roles */}
+          <Route path="*" element={
+            <div style={{padding: "20px", textAlign: "center"}}>
+              <h2>Welcome to the {user.role?.replace('-', ' ') || 'Unknown'} Dashboard</h2>
+              <p>Role: {user.role}</p>
+              <p>UserType: {user.userType}</p>
+              <p>Email: {user.email}</p>
+              <p>If you're seeing this, there might be a role matching issue.</p>
+            </div>
+          } />
         </Routes>
       </div>
     </Router>

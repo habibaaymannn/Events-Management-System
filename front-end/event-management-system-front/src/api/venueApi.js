@@ -1,17 +1,15 @@
+import { buildApiUrl, getAuthHeaders } from '../config/apiConfig';
+
 /**
  * Create a new venue.
  * @param {object} venueData - Venue data to create.
  * @returns {Promise<object>} - Created venue object.
  */
 export async function createVenue(venueData) {
-  const url = "http://localhost:8080/v1/venues";
+  const url = buildApiUrl("/v1/venues");
   const response = await fetch(url, {
     method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      // Add Authorization header if needed:
-      // "Authorization": `Bearer ${yourToken}`,
-    },
+    headers: getAuthHeaders(),
     body: JSON.stringify(venueData),
   });
 
@@ -28,14 +26,10 @@ export async function createVenue(venueData) {
  * @returns {Promise<object>} - Venue object.
  */
 export async function getVenueById(id) {
-  const url = `http://localhost:8080/v1/venues/${id}`;
+  const url = buildApiUrl(`/v1/venues/${id}`);
   const response = await fetch(url, {
     method: "GET",
-    headers: {
-      "Content-Type": "application/json",
-      // Add Authorization header if needed:
-      // "Authorization": `Bearer ${yourToken}`,
-    },
+    headers: getAuthHeaders(),
   });
 
   if (!response.ok) {
@@ -52,14 +46,10 @@ export async function getVenueById(id) {
  * @returns {Promise<object>} - Updated venue object.
  */
 export async function updateVenue(id, venueData) {
-  const url = `http://localhost:8080/v1/venues/${id}`;
+  const url = buildApiUrl(`/v1/venues/${id}`);
   const response = await fetch(url, {
     method: "PUT",
-    headers: {
-      "Content-Type": "application/json",
-      // Add Authorization header if needed:
-      // "Authorization": `Bearer ${yourToken}`,
-    },
+    headers: getAuthHeaders(),
     body: JSON.stringify(venueData),
   });
 
@@ -76,14 +66,10 @@ export async function updateVenue(id, venueData) {
  * @returns {Promise<void>} - Resolves if successful.
  */
 export async function deleteVenue(id) {
-  const url = `http://localhost:8080/v1/venues/${id}`;
+  const url = buildApiUrl(`/v1/venues/${id}`);
   const response = await fetch(url, {
     method: "DELETE",
-    headers: {
-      "Content-Type": "application/json",
-      // Add Authorization header if needed:
-      // "Authorization": `Bearer ${yourToken}`,
-    },
+    headers: getAuthHeaders(),
   });
 
   if (!response.ok) {
@@ -96,14 +82,10 @@ export async function deleteVenue(id) {
  * @returns {Promise<Array>} - Array of venue objects.
  */
 export async function getAllVenues() {
-  const url = `http://localhost:8080/v1/venues`;
+  const url = buildApiUrl("/v1/venues");
   const response = await fetch(url, {
     method: "GET",
-    headers: {
-      "Content-Type": "application/json",
-      // Add Authorization header if needed:
-      // "Authorization": `Bearer ${yourToken}`,
-    },
+    headers: getAuthHeaders(),
   });
 
   if (!response.ok) {
@@ -119,14 +101,10 @@ export async function getAllVenues() {
  * @returns {Promise<void>} - Resolves if successful.
  */
 export async function cancelVenueBooking(bookingId) {
-  const url = `http://localhost:8080/v1/venues/bookings/${bookingId}/cancel`;
+  const url = buildApiUrl(`/v1/venues/bookings/${bookingId}/cancel`);
   const response = await fetch(url, {
     method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      // Add Authorization header if needed:
-      // "Authorization": `Bearer ${yourToken}`,
-    },
+    headers: getAuthHeaders(),
   });
 
   if (!response.ok) {
@@ -142,7 +120,7 @@ export async function cancelVenueBooking(bookingId) {
  * @returns {Promise<object>} - Updated booking object.
  */
 export async function respondToVenueBookingRequest(bookingId, status, reason = "") {
-  const url = `http://localhost:8080/v1/venues/bookings/${bookingId}/status`;
+  const url = buildApiUrl(`/v1/venues/bookings/${bookingId}/status`);
   const requestBody = { status };
   
   // Add reason if provided and status is REJECTED
@@ -152,11 +130,7 @@ export async function respondToVenueBookingRequest(bookingId, status, reason = "
 
   const response = await fetch(url, {
     method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      // Add Authorization header if needed:
-      // "Authorization": `Bearer ${yourToken}`,
-    },
+    headers: getAuthHeaders(),
     body: JSON.stringify(requestBody),
   });
 
@@ -166,3 +140,4 @@ export async function respondToVenueBookingRequest(bookingId, status, reason = "
 
   return await response.json();
 }
+
