@@ -35,3 +35,11 @@ spring:
           issuer-uri: ${ISSUER_URI}
   stripe:
     api-key: ${SECRET_KEY}
+logging:
+  level:
+    com.example.cdr.eventsmanagementsystem.Aspect.LoggingAspect: INFO
+server:
+  error:
+    include-message: always
+    include-binding-errors: always
+    include-stacktrace: never

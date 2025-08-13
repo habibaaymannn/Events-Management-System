@@ -1,22 +1,21 @@
 package com.example.cdr.eventsmanagementsystem.Service.Booking;
 
+import java.math.BigDecimal;
+
+import com.example.cdr.eventsmanagementsystem.DTO.Payment.ConfirmPaymentRequest;
+import com.example.cdr.eventsmanagementsystem.DTO.Payment.CreatePaymentIntentRequest;
+import com.stripe.model.Customer;
 import com.stripe.model.PaymentIntent;
 import com.stripe.model.Refund;
-import com.stripe.model.Customer;
-
-import java.math.BigDecimal;
 
 public interface IStripeService {
     PaymentIntent createPaymentIntent(BigDecimal amount, String currency, String customerId, String description);
     
     PaymentIntent confirmPaymentIntent(String paymentIntentId, String paymentMethodId);
-    
-    PaymentIntent retrievePaymentIntent(String paymentIntentId);
-    
     Customer createCustomer(String email, String name, String phone);
-    
-    Customer retrieveCustomer(String customerId);
-    
+    PaymentIntent retrievePaymentIntent(String paymentIntentId);
     Refund createRefund(String paymentIntentId, BigDecimal amount, String reason);
 
+    PaymentIntent createPaymentIntent(CreatePaymentIntentRequest request);
+    PaymentIntent confirmPayment(ConfirmPaymentRequest request);
 }

@@ -25,4 +25,5 @@ public interface IBookingService {
     List<BookingDetailsResponse> getBookingsByAttendee(String attendeeId);
     List<BookingDetailsResponse> getBookingsByEvent(Long eventId);
     BookingDetailsResponse updateBookingStatus(Long bookingId, BookingStatus status);
+    BookingDetailsResponse completePayment(Long bookingId, String paymentMethodId);
 }

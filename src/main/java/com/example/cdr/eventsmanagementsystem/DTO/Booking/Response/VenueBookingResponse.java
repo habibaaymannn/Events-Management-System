@@ -13,6 +13,6 @@ public class VenueBookingResponse extends BaseBookingDTO {
     private Long venueId;
     private String organizerId;
     private BookingStatus status;
-        private String paymentUrl; 
+    private String paymentUrl; 
     private LocalDateTime createdAt;
 }

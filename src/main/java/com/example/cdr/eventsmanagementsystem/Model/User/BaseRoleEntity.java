@@ -47,6 +47,9 @@ public abstract class BaseRoleEntity {
     @LastModifiedBy
     private String lastModifiedBy;
 
+    @Column(nullable = false)
+    private boolean active = true;
+
     public String getFullName() {
         return firstName + " " + lastName;
     }
