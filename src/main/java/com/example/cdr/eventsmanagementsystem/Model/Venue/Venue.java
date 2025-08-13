@@ -15,6 +15,7 @@ import org.springframework.data.annotation.LastModifiedDate;
 import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
@@ -61,8 +62,15 @@ public class Venue {
     @JsonIgnore
     private List<Booking> bookings = new ArrayList<>();
 
-    @ElementCollection
-    private Set<EventType> supportedEventTypes;
+    @Column(name = "event_type", nullable = false)
+    @ElementCollection(fetch = FetchType.EAGER)
+    @CollectionTable(
+            name = "venue_supported_event_types",
+            joinColumns = @JoinColumn(name = "venue_id"),
+            foreignKey = @ForeignKey(name = "FK_venue_event_types")
+    )
+    @Enumerated(EnumType.STRING)
+    private Set<EventType> supportedEventTypes = new HashSet<>();
 
     @CreatedDate
     private LocalDateTime createdAt;

@@ -10,6 +10,8 @@ import org.springframework.data.annotation.LastModifiedBy;
 import org.springframework.data.annotation.LastModifiedDate;
 import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.List;
 
 @Entity
 @Setter
@@ -24,14 +26,20 @@ public class Services {
     @Column(nullable = false)
     private String name;
 
+    @Enumerated(EnumType.STRING)
     @Column(nullable = false)
-    private ServiceDescription description;
+    private ServiceType type;
+
+    @Column(nullable = false)
+    private String description;
 
     @Column(nullable = false)
     private Double price;
 
-    @Column(nullable = false)
-    private String location;
+    @ElementCollection
+    @CollectionTable(name = "services_areas", joinColumns = @JoinColumn(name = "service_id"))
+    @Column(name = "services_area", nullable = false)
+    private List<String> servicesAreas = new ArrayList<>();
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)

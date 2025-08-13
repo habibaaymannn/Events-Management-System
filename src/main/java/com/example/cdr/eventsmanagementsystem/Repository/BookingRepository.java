@@ -4,6 +4,7 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
 
+import com.example.cdr.eventsmanagementsystem.DTO.Booking.Response.BookingDetailsResponse;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
@@ -20,8 +21,8 @@ public interface BookingRepository extends JpaRepository<Booking, Long> {
     List<Booking> findByBookerId(String bookerId);
     List<Booking> findByEvent_Id(Long eventId);
 
-    List<Booking> findByService_ServiceProvider_Id(String serviceProviderId);
-    List<Booking> findByVenue_VenueProvider_Id(String venueProviderId);
+    Page<Booking> findByService_ServiceProvider_Id(String serviceProviderId, Pageable pageable);
+    Page<Booking> findByVenue_VenueProvider_Id(String venueProviderId,Pageable pageable);
 
     long countByVenueIsNotNullAndStatus(BookingStatus status);
 
