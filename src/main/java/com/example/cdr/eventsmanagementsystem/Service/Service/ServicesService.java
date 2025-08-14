@@ -40,7 +40,7 @@ public class ServicesService implements IServicesService{
     public ServicesDTO addService(ServicesDTO dto) {
         Services newService = serviceMapper.toService(dto);
 
-        ServiceProvider serviceProvider = userSyncService.ensureServiceProviderExists();
+        ServiceProvider serviceProvider = userSyncService.ensureUserExists(ServiceProvider.class);
         newService.setServiceProvider(serviceProvider);
 
         Services savedService = serviceRepository.save(newService);

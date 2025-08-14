@@ -24,7 +24,7 @@ public class EmailNotificationService implements NotificationService {
     @Override
     public void sendPaymentRequestEmail(Booking booking, String clientSecret) {
         try {
-            BaseRoleEntity booker = userSyncService.findExistingUser(booking.getBookerId(), booking.getBookerType().toString());
+            BaseRoleEntity booker = userSyncService.findUserById(booking.getBookerId());
 
             if (booker == null) {
                 log.error("User not found for payment email: booking {}", booking.getId());

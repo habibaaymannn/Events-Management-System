@@ -73,7 +73,7 @@ public class BookingService implements IBookingService {
         Event event = eventRepository.findById(request.getEventId())
                 .orElseThrow(() -> new EntityNotFoundException("Event not found"));
 
-        Attendee attendee = userSyncService.ensureAttendeeExists();
+        Attendee attendee = userSyncService.ensureUserExists(Attendee.class);
 
         BigDecimal unitPrice = event.getRetailPrice() != null ? event.getRetailPrice() : new BigDecimal("50.00");
         BigDecimal totalAmount = unitPrice.multiply(new BigDecimal(request.getTicketQuantity()));
@@ -117,7 +117,7 @@ public class BookingService implements IBookingService {
         Venue venue = venueRepository.findById(request.getVenueId())
                 .orElseThrow(() -> new EntityNotFoundException("Venue not found"));
 
-        Organizer organizer = userSyncService.ensureOrganizerExists();
+        Organizer organizer = userSyncService.ensureUserExists(Organizer.class);
 
         Customer customer = stripeService.createCustomer(
             organizer.getEmail(),
@@ -166,7 +166,7 @@ public class BookingService implements IBookingService {
                 serviceRepository.findById(request.getServiceId())
                 .orElseThrow(() -> new EntityNotFoundException("Service not found"));
 
-        Organizer organizer = userSyncService.ensureOrganizerExists();
+        Organizer organizer = userSyncService.ensureUserExists(Organizer.class);
 
         Customer customer = stripeService.createCustomer(
             organizer.getEmail(),

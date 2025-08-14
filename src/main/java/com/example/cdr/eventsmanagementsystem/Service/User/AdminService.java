@@ -10,14 +10,14 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
-
+import com.example.cdr.eventsmanagementsystem.Service.Auth.UserRoleHandler;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-
 import com.example.cdr.eventsmanagementsystem.DTO.Admin.DashboardStatisticsDto;
 import com.example.cdr.eventsmanagementsystem.DTO.Admin.EventDetailsDto;
 import com.example.cdr.eventsmanagementsystem.DTO.Admin.OrganizerRevenueDto;
@@ -46,7 +46,6 @@ import com.example.cdr.eventsmanagementsystem.Repository.UsersRepository.VenuePr
 import com.example.cdr.eventsmanagementsystem.Repository.VenueRepository;
 import com.example.cdr.eventsmanagementsystem.Service.Auth.UserSyncService;
 import com.example.cdr.eventsmanagementsystem.Service.Booking.IStripeService;
-
 import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
 
@@ -117,39 +116,23 @@ public class AdminService implements IAdminService {
             throw new IllegalArgumentException("User not found: " + userId);
         }
 
-        BaseRoleEntity target = switch (role) {
-            case "admin" -> new Admin();
-            case "organizer" -> new Organizer();
-            case "service_provider" -> new ServiceProvider();
-            case "venue_provider" -> new VenueProvider();
-            case "attendee" -> new Attendee();
-            default -> throw new IllegalArgumentException("Unknown target role: " + role);
-        };
+        UserRoleHandler<? extends BaseRoleEntity> targetHandler = userSyncService.getHandlerForRole(role);
 
-        if (existing.getClass().equals(target.getClass())) {
+
+        if (existing.getClass().equals(targetHandler.getRoleClass())) {
             return adminMapper.toUserDetails(existing);
         }
 
-        target.setId(existing.getId());
-        target.setFirstName(existing.getFirstName());
-        target.setLastName(existing.getLastName());
-        target.setEmail(existing.getEmail());
+        BaseRoleEntity target = targetHandler.createNewUser(
+                existing.getId(),
+                existing.getEmail(),
+                existing.getFirstName(),
+                existing.getLastName()
+        );
         target.setActive(existing.isActive());
-
-        if (existing instanceof Admin) {
-            adminRepository.deleteById(userId);
-        } else if (existing instanceof Organizer) {
-            organizerRepository.deleteById(userId);
-        } else if (existing instanceof ServiceProvider) {
-            serviceProviderRepository.deleteById(userId);
-        } else if (existing instanceof VenueProvider) {
-            venueProviderRepository.deleteById(userId);
-        } else if (existing instanceof Attendee) {
-            attendeeRepository.deleteById(userId);
-        }
-
-        userSyncService.saveUser(target);
-
+        UserRoleHandler oldHandler = userSyncService.getHandlerForRole(existing.getClass().getSimpleName().toLowerCase());
+        oldHandler.deleteUser(existing.getId());
+        targetHandler.saveUser(target);
         return adminMapper.toUserDetails(target);
     }
 
@@ -160,7 +143,11 @@ public class AdminService implements IAdminService {
             throw new IllegalArgumentException("User not found: " + userId);
         }
         user.setActive(false);
-        userSyncService.saveUser(user);
+        UserRoleHandler handler = userSyncService.getHandlers().stream()
+                .filter(h -> h.getRoleClass().isInstance(user))
+                .findFirst()
+                .orElseThrow(() -> new IllegalArgumentException("No handler for user type"));
+        handler.saveUser(user);
     }
 
     @Override

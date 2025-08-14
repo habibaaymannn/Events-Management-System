@@ -37,7 +37,7 @@ public class VenueService implements IVenueService {
     public VenueDTO addVenue(VenueDTO dto) {
 
         Venue newVenue = venueMapper.toVenue(dto);
-        VenueProvider venueProvider = userSyncService.ensureVenueProviderExists();
+        VenueProvider venueProvider = userSyncService.ensureUserExists(VenueProvider.class);
         newVenue.setVenueProvider(venueProvider);
 
         if (newVenue.getSupportedEventTypes() == null) {

@@ -1,12 +1,9 @@
 package com.example.cdr.eventsmanagementsystem.Service.Event;
 
 import java.util.List;
-
-import com.example.cdr.eventsmanagementsystem.Util.AuthUtil;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
-
 import com.example.cdr.eventsmanagementsystem.DTO.Event.EventDTO;
 import com.example.cdr.eventsmanagementsystem.DTO.Event.EventResponseDTO;
 import com.example.cdr.eventsmanagementsystem.DTO.Event.UpdateEventDTO;
@@ -17,7 +14,6 @@ import com.example.cdr.eventsmanagementsystem.Model.User.Organizer;
 import com.example.cdr.eventsmanagementsystem.Repository.EventRepository;
 import com.example.cdr.eventsmanagementsystem.Repository.UsersRepository.OrganizerRepository;
 import com.example.cdr.eventsmanagementsystem.Service.Auth.UserSyncService;
-
 import jakarta.persistence.EntityNotFoundException;
 
 @Service
@@ -43,24 +39,25 @@ public class EventService implements IEventService {
     }
 
     private Organizer ensureCurrentUserAsOrganizer() {
-        String userId = AuthUtil.getCurrentUserId();
-        String email = userSyncService.getCurrentUserEmail();
-        String firstName = userSyncService.getCurrentUserFirstName();
-        String lastName = userSyncService.getCurrentUserLastName();
-        
-        Organizer organizer = organizerRepository.findById(userId).orElse(null);
-        
-        if (organizer == null) {
-            organizer = new Organizer();
-            organizer.setId(userId);
-            organizer.setEmail(email);
-            organizer.setFirstName(firstName);
-            organizer.setLastName(lastName);
-            
-            organizer = organizerRepository.save(organizer);
-        }
-        
-        return organizer;
+        return userSyncService.ensureUserExists(Organizer.class);
+//        String userId = AuthUtil.getCurrentUserId();
+//        String email = userSyncService.getCurrentUserEmail();
+//        String firstName = userSyncService.getCurrentUserFirstName();
+//        String lastName = userSyncService.getCurrentUserLastName();
+//
+//        Organizer organizer = organizerRepository.findById(userId).orElse(null);
+//
+//        if (organizer == null) {
+//            organizer = new Organizer();
+//            organizer.setId(userId);
+//            organizer.setEmail(email);
+//            organizer.setFirstName(firstName);
+//            organizer.setLastName(lastName);
+//
+//            organizer = organizerRepository.save(organizer);
+//        }
+//
+//        return organizer;
     }
 
     @Override
