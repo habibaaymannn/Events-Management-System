@@ -119,8 +119,18 @@ public class GlobalExceptionHandler {
 
     @ExceptionHandler(IllegalStateException.class)
     public ResponseEntity<Map<String, Object>> handleIllegalState(IllegalStateException ex, HttpServletRequest req) {
-        HttpStatus status = mapUpstreamStatus(ex);
-        Map<String, Object> body = base(status, req, upstreamTitle(status), upstreamDetail(ex, status));
+        HttpStatus mapped = tryMapUpstreamByClassName(ex);
+        HttpStatus status = mapped != null ? mapped : HttpStatus.BAD_GATEWAY;
+        String title = switch (status) {
+            case PAYMENT_REQUIRED -> "Payment failed";
+            case TOO_MANY_REQUESTS -> "Rate limited";
+            case UNAUTHORIZED -> "Upstream authentication failed";
+            default -> "Upstream provider error";
+        };
+        String detail = status.is5xxServerError()
+                ? "A provider error occurred. Please try again later."
+                : truncate(safeMessage(ex));
+        Map<String, Object> body = base(status, req, title, detail);
         return ResponseEntity.status(status).body(body);
     }
 
@@ -139,7 +149,8 @@ public class GlobalExceptionHandler {
                     req.getMethod() + " " + req.getRequestURI(), ex.getMessage());
         }
 
-        Map<String, Object> body = base(status, req, status.getReasonPhrase(), detailFor(status, ex, errorId));
+        String detail = server ? "An unexpected error occurred. Reference: " + errorId : truncate(safeMessage(ex));
+        Map<String, Object> body = base(status, req, status.getReasonPhrase(), detail);
         ResponseEntity.BodyBuilder builder = ResponseEntity.status(status);
         if (errorId != null) builder.header("X-Error-Id", errorId);
         return builder.body(body);
@@ -169,11 +180,6 @@ public class GlobalExceptionHandler {
         body.put("endpoint", req.getMethod() + " " + req.getRequestURI());
         body.put("timestamp", Instant.now().toString());
         return body;
-    }
-
-    private String detailFor(HttpStatus status, Exception ex, String errorId) {
-        if (status.is5xxServerError()) return "An unexpected error occurred. Reference: " + errorId;
-        return truncate(safeMessage(ex));
     }
 
     private String safeMessage(Throwable ex) {
@@ -222,16 +228,10 @@ public class GlobalExceptionHandler {
         return false;
     }
 
-    private HttpStatus mapUpstreamStatus(Throwable ex) {
-        HttpStatus mapped = tryMapUpstreamByClassName(ex);
-        return mapped != null ? mapped : HttpStatus.BAD_GATEWAY;
-    }
-
     private HttpStatus tryMapUpstreamByClassName(Throwable t) {
         String cn = t.getClass().getName();
         String simple = t.getClass().getSimpleName();
         if (cn.startsWith("com.stripe.")) {
-            // Best-effort mapping without Stripe SDK imports
             if (simple.contains("CardException")) return HttpStatus.PAYMENT_REQUIRED;      // 402
             if (simple.contains("InvalidRequest")) return HttpStatus.BAD_REQUEST;          // 400
             if (simple.contains("RateLimit")) return HttpStatus.TOO_MANY_REQUESTS;         // 429
@@ -241,20 +241,6 @@ public class GlobalExceptionHandler {
             return HttpStatus.BAD_GATEWAY;
         }
         return null;
-    }
-
-    private String upstreamTitle(HttpStatus status) {
-        return switch (status) {
-            case PAYMENT_REQUIRED -> "Payment failed";
-            case TOO_MANY_REQUESTS -> "Rate limited";
-            case UNAUTHORIZED -> "Upstream authentication failed";
-            default -> "Upstream provider error";
-        };
-    }
-
-    private String upstreamDetail(Throwable ex, HttpStatus status) {
-        if (status.is5xxServerError()) return "A provider error occurred. Please try again later.";
-        return truncate(safeMessage(ex));
     }
 }
 

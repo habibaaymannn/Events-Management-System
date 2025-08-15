@@ -5,7 +5,6 @@ import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 
-import com.fasterxml.jackson.annotation.JsonIgnore;
 import org.springframework.data.annotation.CreatedBy;
 import org.springframework.data.annotation.CreatedDate;
 import org.springframework.data.annotation.LastModifiedBy;
@@ -16,6 +15,7 @@ import com.example.cdr.eventsmanagementsystem.Model.Booking.Booking;
 import com.example.cdr.eventsmanagementsystem.Model.User.Admin;
 import com.example.cdr.eventsmanagementsystem.Model.User.Organizer;
 import com.example.cdr.eventsmanagementsystem.Model.Venue.Venue;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
@@ -85,8 +85,6 @@ public class Event {
     @OneToMany(mappedBy = "event")
     @JsonIgnore
     private List<Booking> bookings = new ArrayList<>();
-
-    private LocalDateTime freeCancellationDeadline;  
     private BigDecimal retailPrice; 
 
     @Column(nullable = false)

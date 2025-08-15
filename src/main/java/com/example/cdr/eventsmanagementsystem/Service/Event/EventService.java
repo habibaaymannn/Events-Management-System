@@ -1,34 +1,38 @@
 package com.example.cdr.eventsmanagementsystem.Service.Event;
 
 import java.util.List;
+
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
+
 import com.example.cdr.eventsmanagementsystem.DTO.Event.EventDTO;
 import com.example.cdr.eventsmanagementsystem.DTO.Event.EventResponseDTO;
 import com.example.cdr.eventsmanagementsystem.DTO.Event.UpdateEventDTO;
 import com.example.cdr.eventsmanagementsystem.Mapper.EventMapper;
+import com.example.cdr.eventsmanagementsystem.Model.Booking.Booking;
 import com.example.cdr.eventsmanagementsystem.Model.Event.Event;
 import com.example.cdr.eventsmanagementsystem.Model.Event.EventType;
 import com.example.cdr.eventsmanagementsystem.Model.User.Organizer;
+import com.example.cdr.eventsmanagementsystem.Repository.BookingRepository;
 import com.example.cdr.eventsmanagementsystem.Repository.EventRepository;
 import com.example.cdr.eventsmanagementsystem.Repository.UsersRepository.OrganizerRepository;
 import com.example.cdr.eventsmanagementsystem.Service.Auth.UserSyncService;
+import com.example.cdr.eventsmanagementsystem.Service.Booking.BookingService;
+
 import jakarta.persistence.EntityNotFoundException;
+import lombok.RequiredArgsConstructor;
 
 @Service
+@RequiredArgsConstructor
 public class EventService implements IEventService {
     private final EventRepository eventRepository;
     private final EventMapper eventMapper;
     private final UserSyncService userSyncService;
     private final OrganizerRepository organizerRepository;
-
-    public EventService(EventRepository eventRepository, EventMapper eventMapper, UserSyncService userSyncService, OrganizerRepository organizerRepository) {
-        this.eventRepository = eventRepository;
-        this.eventMapper = eventMapper;
-        this.userSyncService = userSyncService;
-        this.organizerRepository = organizerRepository;
-    }
+    private final BookingRepository bookingRepository;
+    private final BookingService bookingService;
+    
 
     @Override
     public EventResponseDTO createEvent(EventDTO eventDTO) {

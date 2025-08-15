@@ -39,7 +39,7 @@ public class LoggingAspect {
 
         String shortSig = sig.getDeclaringType().getSimpleName() + "." + sig.getName() + "(" +
                 Arrays.stream(sig.getParameterTypes()).map(Class::getSimpleName).collect(Collectors.joining(","))
-                + ")"; 
+                + ")"; //method signature: class.method(params)
 
         String layer = resolveLayer(sig.getDeclaringTypeName());
 
