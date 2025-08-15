@@ -4,7 +4,6 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
 
-import com.example.cdr.eventsmanagementsystem.DTO.Booking.Response.BookingDetailsResponse;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
@@ -43,4 +42,16 @@ public interface BookingRepository extends JpaRepository<Booking, Long> {
             LocalDateTime start,
             LocalDateTime end,
             Pageable pageable);
+
+    @Query("select (count(b) > 0) from Booking b where b.venue.id = :venueId and b.status in :statuses and b.startTime < :end and b.endTime > :start")
+    boolean existsVenueConflict(@Param("venueId") Long venueId,
+                                @Param("start") LocalDateTime start,
+                                @Param("end") LocalDateTime end,
+                                @Param("statuses") List<BookingStatus> statuses);
+
+    @Query("select (count(b) > 0) from Booking b where b.service.id = :serviceId and b.status in :statuses and b.startTime < :end and b.endTime > :start")
+    boolean existsServiceConflict(@Param("serviceId") Long serviceId,
+                                  @Param("start") LocalDateTime start,
+                                  @Param("end") LocalDateTime end,
+                                  @Param("statuses") List<BookingStatus> statuses);
 }

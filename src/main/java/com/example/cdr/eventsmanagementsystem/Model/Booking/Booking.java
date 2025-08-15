@@ -2,17 +2,20 @@ package com.example.cdr.eventsmanagementsystem.Model.Booking;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
-import com.example.cdr.eventsmanagementsystem.Model.Service.Services;
-import com.fasterxml.jackson.annotation.JsonIgnore;
+
 import org.springframework.data.annotation.CreatedBy;
 import org.springframework.data.annotation.CreatedDate;
 import org.springframework.data.annotation.LastModifiedBy;
 import org.springframework.data.annotation.LastModifiedDate;
+
 import com.example.cdr.eventsmanagementsystem.Model.Event.Event;
+import com.example.cdr.eventsmanagementsystem.Model.Service.Services;
 import com.example.cdr.eventsmanagementsystem.Model.User.Attendee;
 import com.example.cdr.eventsmanagementsystem.Model.User.BaseRoleEntity;
 import com.example.cdr.eventsmanagementsystem.Model.User.Organizer;
 import com.example.cdr.eventsmanagementsystem.Model.Venue.Venue;
+import com.fasterxml.jackson.annotation.JsonIgnore;
+
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
@@ -70,6 +73,12 @@ public class Booking {
     private String stripePaymentId;
     private BigDecimal refundAmount;
     private LocalDateTime refundProcessedAt;
+
+    private LocalDateTime freeCancellationDeadline;
+    private BigDecimal penaltyPercent; 
+
+    private BigDecimal totalAmount; 
+    private String currency; 
 
     private String cancellationReason;
     private LocalDateTime cancelledAt;

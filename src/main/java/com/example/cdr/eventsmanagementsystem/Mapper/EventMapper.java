@@ -27,6 +27,8 @@ public interface EventMapper {
     @Mapping(target = "lastModifiedBy", ignore = true)
     @Mapping(target = "createdDate", ignore = true)
     @Mapping(target = "lastModifiedDate", ignore = true)
+    @Mapping(target = "flagged", ignore = true)
+    @Mapping(target = "flagReason", ignore = true)
     Event toEvent(EventDTO dto);
 
     default Event toEventWithDefaults(EventDTO dto, Organizer organizer) {
@@ -51,11 +53,6 @@ public interface EventMapper {
             event.setEndTime(event.getStartTime().plusHours(1));
         }
 
-            // free cancellation default
-        if (event.getFreeCancellationDeadline() == null) {
-            event.setFreeCancellationDeadline(LocalDateTime.now().plusDays(1));
-        }
-
         if (event.getCreatedDate() == null) {
             event.setCreatedDate(LocalDateTime.now());
         }
@@ -74,7 +71,8 @@ public interface EventMapper {
     @Mapping(target = "lastModifiedBy", ignore = true)
     @Mapping(target = "createdDate", ignore = true)
     @Mapping(target = "lastModifiedDate", ignore = true)
-    @Mapping(target = "freeCancellationDeadline", ignore = true)
+    @Mapping(target = "flagged", ignore = true)
+    @Mapping(target = "flagReason", ignore = true)
     void updateEventFromDTO(UpdateEventDTO dto, @MappingTarget Event event);
 
     @Mapping(source = "organizer.id", target = "organizerId")

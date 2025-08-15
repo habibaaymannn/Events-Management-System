@@ -46,3 +46,6 @@ server:
 app:
   payment:
     return-url: http://localhost:3000/booking-success
+  booking:
+    free-cancel-days-before-start: 1
+    penalty-percent: 0.20

@@ -15,7 +15,6 @@ public class EventDTO {
     private LocalDateTime startTime;
     private LocalDateTime endTime;
     private BigDecimal retailPrice;
-    private LocalDateTime freeCancellationDeadline;
     
     private String organizerId;
 }

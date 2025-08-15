@@ -1,22 +1,24 @@
 package com.example.cdr.eventsmanagementsystem.Service.Booking;
 
 import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.time.LocalDateTime;
+import java.util.Arrays;
 import java.util.List;
-import java.util.stream.Collectors;
 
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.ApplicationEventPublisher;
+import static org.springframework.http.HttpStatus.CONFLICT;
+import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.server.ResponseStatusException;
 
 import com.example.cdr.eventsmanagementsystem.DTO.Booking.Request.CancelBookingRequest;
-import com.example.cdr.eventsmanagementsystem.DTO.Booking.Request.CombinedBookingRequest;
 import com.example.cdr.eventsmanagementsystem.DTO.Booking.Request.EventBookingRequest;
 import com.example.cdr.eventsmanagementsystem.DTO.Booking.Request.ServiceBookingRequest;
 import com.example.cdr.eventsmanagementsystem.DTO.Booking.Request.VenueBookingRequest;
 import com.example.cdr.eventsmanagementsystem.DTO.Booking.Response.BookingDetailsResponse;
-import com.example.cdr.eventsmanagementsystem.DTO.Booking.Response.CombinedBookingResponse;
 import com.example.cdr.eventsmanagementsystem.DTO.Booking.Response.EventBookingResponse;
 import com.example.cdr.eventsmanagementsystem.DTO.Booking.Response.ServiceBookingResponse;
 import com.example.cdr.eventsmanagementsystem.DTO.Booking.Response.VenueBookingResponse;
@@ -67,6 +69,12 @@ public class BookingService implements IBookingService {
     @Value("${app.payment.page-url:http://localhost:8080/payment-page}")
     private String paymentPageUrl;
 
+    @Value("${app.booking.free-cancel-days-before-start:1}")
+    private int freeCancelDaysBeforeStart;
+
+    @Value("${app.booking.penalty-percent:0.20}")
+    private BigDecimal defaultPenaltyPercent;
+
     @Override
     @Transactional
     public EventBookingResponse bookEvent(EventBookingRequest request) {
@@ -101,6 +109,13 @@ public class BookingService implements IBookingService {
         booking.setCreatedAt(LocalDateTime.now());
         booking.setUpdatedAt(LocalDateTime.now());
 
+        booking.setFreeCancellationDeadline(
+            event.getStartTime() != null ? event.getStartTime().minusDays(freeCancelDaysBeforeStart) : LocalDateTime.now().plusDays(freeCancelDaysBeforeStart)
+        );
+        booking.setPenaltyPercent(defaultPenaltyPercent);
+        booking.setTotalAmount(totalAmount);
+        booking.setCurrency(request.getPaymentDetails().getCurrency());
+
         Booking savedBooking = bookingRepository.save(booking);
 
         eventPublisher.publishEvent(new EventBookingCreated(savedBooking));
@@ -114,8 +129,21 @@ public class BookingService implements IBookingService {
     @Override
     @Transactional
     public VenueBookingResponse bookVenue(VenueBookingRequest request) {
+        if (request.getStartTime() == null || request.getEndTime() == null) {
+            throw new IllegalArgumentException("Start and end time are required for venue booking");
+        }
+        if (!request.getEndTime().isAfter(request.getStartTime())) {
+            throw new IllegalArgumentException("End time must be after start time");
+        }
         Venue venue = venueRepository.findById(request.getVenueId())
                 .orElseThrow(() -> new EntityNotFoundException("Venue not found"));
+
+        List<BookingStatus> blockingStatuses = Arrays.asList(BookingStatus.PENDING, BookingStatus.BOOKED, BookingStatus.ACCEPTED);
+        boolean venueConflictEarly = bookingRepository.existsVenueConflict(
+                venue.getId(), request.getStartTime(), request.getEndTime(), blockingStatuses);
+        if (venueConflictEarly) {
+            throw new ResponseStatusException(CONFLICT, "Venue is not available for the selected time range");
+        }
 
         Organizer organizer = userSyncService.ensureUserExists(Organizer.class);
 
@@ -149,6 +177,13 @@ public class BookingService implements IBookingService {
         booking.setCreatedAt(LocalDateTime.now());
         booking.setUpdatedAt(LocalDateTime.now());
 
+        booking.setFreeCancellationDeadline(
+            request.getStartTime() != null ? request.getStartTime().minusDays(freeCancelDaysBeforeStart) : LocalDateTime.now().plusDays(freeCancelDaysBeforeStart)
+        );
+        booking.setPenaltyPercent(defaultPenaltyPercent);
+        booking.setTotalAmount(amount);
+        booking.setCurrency(request.getCurrency() != null ? request.getCurrency() : "usd");
+
         Booking savedBooking = bookingRepository.save(booking);
 
         eventPublisher.publishEvent(new VenueBookingCreated(savedBooking));
@@ -162,9 +197,22 @@ public class BookingService implements IBookingService {
     @Override
     @Transactional
     public ServiceBookingResponse bookService(ServiceBookingRequest request) {
+        if (request.getStartTime() == null || request.getEndTime() == null) {
+            throw new IllegalArgumentException("Start and end time are required for service booking");
+        }
+        if (!request.getEndTime().isAfter(request.getStartTime())) {
+            throw new IllegalArgumentException("End time must be after start time");
+        }
         com.example.cdr.eventsmanagementsystem.Model.Service.Services service =
                 serviceRepository.findById(request.getServiceId())
                 .orElseThrow(() -> new EntityNotFoundException("Service not found"));
+
+        List<BookingStatus> blockingStatuses = Arrays.asList(BookingStatus.PENDING, BookingStatus.BOOKED, BookingStatus.ACCEPTED);
+        boolean serviceConflictEarly = bookingRepository.existsServiceConflict(
+                service.getId(), request.getStartTime(), request.getEndTime(), blockingStatuses);
+        if (serviceConflictEarly) {
+            throw new ResponseStatusException(CONFLICT, "Service is not available for the selected time range");
+        }
 
         Organizer organizer = userSyncService.ensureUserExists(Organizer.class);
 
@@ -174,8 +222,9 @@ public class BookingService implements IBookingService {
             null
         );
 
+        BigDecimal amount = BigDecimal.valueOf(service.getPrice());
         PaymentIntent paymentIntent = stripeService.createPaymentIntent(
-            BigDecimal.valueOf(service.getPrice()),
+            amount,
             request.getCurrency() != null ? request.getCurrency() : "usd",
             customer.getId(),
             "Service booking for: " + service.getName()
@@ -195,6 +244,13 @@ public class BookingService implements IBookingService {
         booking.setEndTime(request.getEndTime());
         booking.setCreatedAt(LocalDateTime.now());
         booking.setUpdatedAt(LocalDateTime.now());
+
+        booking.setFreeCancellationDeadline(
+            request.getStartTime() != null ? request.getStartTime().minusDays(freeCancelDaysBeforeStart) : LocalDateTime.now().plusDays(freeCancelDaysBeforeStart)
+        );
+        booking.setPenaltyPercent(defaultPenaltyPercent);
+        booking.setTotalAmount(amount);
+        booking.setCurrency(request.getCurrency() != null ? request.getCurrency() : "usd");
 
         Booking savedBooking = bookingRepository.save(booking);
 
@@ -253,46 +309,7 @@ public class BookingService implements IBookingService {
                             bookingId, clientSecret);
     }
 
-    @Override
-    @Transactional
-    public CombinedBookingResponse bookResources(CombinedBookingRequest request) {
-        CombinedBookingResponse response = new CombinedBookingResponse();
-        response.setOrganizerId(request.getOrganizerId());
-        response.setCreatedAt(LocalDateTime.now());
-
-        if (request.getVenueId() != null) {
-            VenueBookingRequest venueRequest = new VenueBookingRequest();
-            venueRequest.setVenueId(request.getVenueId());
-            venueRequest.setOrganizerId(request.getOrganizerId());
-            venueRequest.setCurrency(request.getCurrency());
-            venueRequest.setStartTime(request.getStartTime());
-            venueRequest.setEndTime(request.getEndTime());
-
-            VenueBookingResponse venueResponse = bookVenue(venueRequest);
-            response.setVenueBookingId(venueResponse.getBookingId());
-        }
-
-        if (request.getServiceIds() != null && !request.getServiceIds().isEmpty()) {
-            List<Long> serviceBookingIds = request.getServiceIds().stream()
-                    .map(serviceId -> {
-                        ServiceBookingRequest serviceRequest = new ServiceBookingRequest();
-                        serviceRequest.setServiceId(serviceId);
-                        serviceRequest.setOrganizerId(request.getOrganizerId());
-                        serviceRequest.setCurrency(request.getCurrency());
-                        serviceRequest.setStartTime(request.getStartTime());
-                        serviceRequest.setEndTime(request.getEndTime());
-
-                        ServiceBookingResponse serviceResponse = bookService(serviceRequest);
-                        return serviceResponse.getBookingId();
-                    })
-                    .collect(Collectors.toList());
-
-            response.setServiceBookingIds(serviceBookingIds);
-        }
-
-        return response;
-    }
-
+    
     @Override
     @Transactional
     public void cancelBooking(CancelBookingRequest request) {
@@ -301,13 +318,30 @@ public class BookingService implements IBookingService {
 
         String currentUserId = AuthUtil.getCurrentUserId();
         if (!booking.getBookerId().equals(currentUserId)) {
-            throw new RuntimeException("You can only cancel your own bookings");
+            throw new AccessDeniedException("You can only cancel your own bookings");
         }
 
         if (booking.getStripePaymentId() != null && 
             booking.getStatus() == BookingStatus.BOOKED) {
-            
-            stripeService.createRefund(booking.getStripePaymentId(), null, "Customer requested cancellation");
+
+            LocalDateTime now = LocalDateTime.now();
+            LocalDateTime freeDeadline = booking.getFreeCancellationDeadline();
+            boolean pastDeadline = freeDeadline != null && now.isAfter(freeDeadline);
+
+            BigDecimal refundAmount = null; // null => full refund
+            if (pastDeadline) {
+                BigDecimal total = booking.getTotalAmount();
+                if (total == null) {
+                    PaymentIntent intent = stripeService.retrievePaymentIntent(booking.getStripePaymentId());
+                    total = new BigDecimal(intent.getAmount()).divide(new BigDecimal("100"));
+                }
+                BigDecimal penaltyPercent = booking.getPenaltyPercent() != null ? booking.getPenaltyPercent() : defaultPenaltyPercent;
+                BigDecimal keep = total.multiply(penaltyPercent);
+                refundAmount = total.subtract(keep).setScale(2, RoundingMode.HALF_UP);
+                booking.setRefundAmount(refundAmount);
+            }
+
+            stripeService.createRefund(booking.getStripePaymentId(), refundAmount, "requested_by_customer");
             booking.setRefundProcessedAt(LocalDateTime.now());
         }
 

@@ -3,12 +3,10 @@ package com.example.cdr.eventsmanagementsystem.Service.Booking;
 import java.util.List;
 
 import com.example.cdr.eventsmanagementsystem.DTO.Booking.Request.CancelBookingRequest;
-import com.example.cdr.eventsmanagementsystem.DTO.Booking.Request.CombinedBookingRequest;
 import com.example.cdr.eventsmanagementsystem.DTO.Booking.Request.EventBookingRequest;
 import com.example.cdr.eventsmanagementsystem.DTO.Booking.Request.ServiceBookingRequest;
 import com.example.cdr.eventsmanagementsystem.DTO.Booking.Request.VenueBookingRequest;
 import com.example.cdr.eventsmanagementsystem.DTO.Booking.Response.BookingDetailsResponse;
-import com.example.cdr.eventsmanagementsystem.DTO.Booking.Response.CombinedBookingResponse;
 import com.example.cdr.eventsmanagementsystem.DTO.Booking.Response.EventBookingResponse;
 import com.example.cdr.eventsmanagementsystem.DTO.Booking.Response.ServiceBookingResponse;
 import com.example.cdr.eventsmanagementsystem.DTO.Booking.Response.VenueBookingResponse;
@@ -18,7 +16,7 @@ public interface IBookingService {
     EventBookingResponse bookEvent(EventBookingRequest request);
     VenueBookingResponse bookVenue(VenueBookingRequest request);
     ServiceBookingResponse bookService(ServiceBookingRequest request);
-    CombinedBookingResponse bookResources(CombinedBookingRequest request);
+    // CombinedBookingResponse bookResources(CombinedBookingRequest request);
 
     void cancelBooking(CancelBookingRequest request);
     BookingDetailsResponse getBookingById(Long bookingId);

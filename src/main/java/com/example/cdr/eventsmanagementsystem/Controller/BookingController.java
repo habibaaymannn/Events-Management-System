@@ -13,13 +13,11 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.example.cdr.eventsmanagementsystem.DTO.Booking.Request.CancelBookingRequest;
-import com.example.cdr.eventsmanagementsystem.DTO.Booking.Request.CombinedBookingRequest;
 import com.example.cdr.eventsmanagementsystem.DTO.Booking.Request.CompletePaymentRequest;
 import com.example.cdr.eventsmanagementsystem.DTO.Booking.Request.EventBookingRequest;
 import com.example.cdr.eventsmanagementsystem.DTO.Booking.Request.ServiceBookingRequest;
 import com.example.cdr.eventsmanagementsystem.DTO.Booking.Request.VenueBookingRequest;
 import com.example.cdr.eventsmanagementsystem.DTO.Booking.Response.BookingDetailsResponse;
-import com.example.cdr.eventsmanagementsystem.DTO.Booking.Response.CombinedBookingResponse;
 import com.example.cdr.eventsmanagementsystem.DTO.Booking.Response.EventBookingResponse;
 import com.example.cdr.eventsmanagementsystem.DTO.Booking.Response.ServiceBookingResponse;
 import com.example.cdr.eventsmanagementsystem.DTO.Booking.Response.VenueBookingResponse;
@@ -67,14 +65,14 @@ public class BookingController {
         return ResponseEntity.ok(response);
     }
 
-    @Operation(summary = "Book combined resources", description = "Creates a new combined booking for multiple resources")
-    @PostMapping("/combined")
-    @PreAuthorize("hasRole('organizer')")
-    public ResponseEntity<CombinedBookingResponse> bookResources(
-            @RequestBody CombinedBookingRequest request) {
-        CombinedBookingResponse response = bookingService.bookResources(request);
-        return ResponseEntity.ok(response);
-    }
+    // @Operation(summary = "Book combined resources", description = "Creates a new combined booking for multiple resources")
+    // @PostMapping("/combined")
+    // @PreAuthorize("hasRole('organizer')")
+    // public ResponseEntity<CombinedBookingResponse> bookResources(
+    //         @RequestBody CombinedBookingRequest request) {
+    //     CombinedBookingResponse response = bookingService.bookResources(request);
+    //     return ResponseEntity.ok(response);
+    // }
 
     @Operation(summary = "Cancel a booking", description = "Cancels an existing booking")
     @PostMapping("/cancel")
