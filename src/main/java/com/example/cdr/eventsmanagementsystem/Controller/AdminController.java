@@ -2,6 +2,9 @@ package com.example.cdr.eventsmanagementsystem.Controller;
 
 import java.time.LocalDate;
 import java.util.Map;
+import com.example.cdr.eventsmanagementsystem.Constants.ControllerConstants;
+import com.example.cdr.eventsmanagementsystem.Constants.RoleConstants;
+import com.example.cdr.eventsmanagementsystem.Service.User.AdminServiceInterface;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
@@ -19,20 +22,18 @@ import com.example.cdr.eventsmanagementsystem.DTO.Admin.EventDetailsDto;
 import com.example.cdr.eventsmanagementsystem.DTO.Admin.UserCreateDto;
 import com.example.cdr.eventsmanagementsystem.DTO.Admin.UserDetailsDto;
 import com.example.cdr.eventsmanagementsystem.Model.Event.EventStatus;
-import com.example.cdr.eventsmanagementsystem.Service.User.IAdminService;
-
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 
 @RestController
-@RequestMapping("/v1/admin")
-@PreAuthorize("hasRole('admin')")
+@RequestMapping(ControllerConstants.ADMIN_BASE_URL)
+@PreAuthorize("hasRole('" + RoleConstants.ADMIN_ROLE + "')")
 @RequiredArgsConstructor
 @Tag(name="Admin" , description = "Admin management APIs")
 public class AdminController {
 
-    private final IAdminService adminService;
+    private final AdminServiceInterface adminService;
 
     @Operation(summary = "Get all users", description = "Retrieves all users with pagination")
     @GetMapping("/users")
@@ -77,13 +78,13 @@ public class AdminController {
         return adminService.getEventsByStatus(status, pageable);
     }
 
-    @Operation(summary = "Get flagged events", description = "Retrieves flagged events with pagination")
-    @GetMapping("/events/flagged")
-    public Page<EventDetailsDto> getFlaggedEvents(@RequestParam(defaultValue = "0") int page,
-                                                  @RequestParam(defaultValue = "10") int size) {
-        Pageable pageable = PageRequest.of(page, size);
-        return adminService.getFlaggedEvents(pageable);
-    }
+//    @Operation(summary = "Get flagged events", description = "Retrieves flagged events with pagination")
+//    @GetMapping("/events/flagged")
+//    public Page<EventDetailsDto> getFlaggedEvents(@RequestParam(defaultValue = "0") int page,
+//                                                  @RequestParam(defaultValue = "10") int size) {
+//        Pageable pageable = PageRequest.of(page, size);
+//        return adminService.getFlaggedEvents(pageable);
+//    }
 
     @Operation(summary = "Cancel an event", description = "Cancels an existing event")
     @PostMapping("/events/{eventId}/cancel")
@@ -91,11 +92,11 @@ public class AdminController {
         adminService.cancelEvent(eventId);
     }
 
-    @Operation(summary = "Flag an event", description = "Flags an existing event with a reason")
-    @PostMapping("/events/{eventId}/flag")
-    public void flagEvent(@PathVariable Long eventId, @RequestParam String reason) {
-        adminService.flagEvent(eventId, reason);
-    }
+//    @Operation(summary = "Flag an event", description = "Flags an existing event with a reason")
+//    @PostMapping("/events/{eventId}/flag")
+//    public void flagEvent(@PathVariable Long eventId, @RequestParam String reason) {
+//        adminService.flagEvent(eventId, reason);
+//    }
 
     @Operation(summary = "Get dashboard statistics", description = "Retrieves statistics for the dashboard")
     @GetMapping("/dashboard")
@@ -122,8 +123,6 @@ public class AdminController {
                                                       @RequestParam LocalDate end) {
         return adminService.getDailyCancellationCount(start, end);
     }
-
-    
 }
 
 

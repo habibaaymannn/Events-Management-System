@@ -4,12 +4,10 @@ import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.stream.Collectors;
-
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-
 import com.example.cdr.eventsmanagementsystem.DTO.Booking.Request.CancelBookingRequest;
 import com.example.cdr.eventsmanagementsystem.DTO.Booking.Request.CombinedBookingRequest;
 import com.example.cdr.eventsmanagementsystem.DTO.Booking.Request.EventBookingRequest;
@@ -53,14 +51,14 @@ import lombok.extern.slf4j.Slf4j;
 @Slf4j
 @Service
 @RequiredArgsConstructor
-public class BookingService implements IBookingService {
+public class BookingService implements BookingServiceInterface {
 
     private final BookingRepository bookingRepository;
     private final EventRepository eventRepository;
     private final VenueRepository venueRepository;
     private final ServiceRepository serviceRepository;
     private final BookingMapper bookingMapper;
-    private final IStripeService stripeService;
+    private final StripeServiceInterface stripeService;
     private final UserSyncService userSyncService;
     private final ApplicationEventPublisher eventPublisher;
     

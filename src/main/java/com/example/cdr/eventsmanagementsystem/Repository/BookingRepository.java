@@ -3,8 +3,6 @@ package com.example.cdr.eventsmanagementsystem.Repository;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
-
-import com.example.cdr.eventsmanagementsystem.DTO.Booking.Response.BookingDetailsResponse;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;

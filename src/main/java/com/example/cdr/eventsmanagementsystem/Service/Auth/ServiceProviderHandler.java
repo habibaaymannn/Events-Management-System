@@ -2,9 +2,7 @@ package com.example.cdr.eventsmanagementsystem.Service.Auth;
 
 import com.example.cdr.eventsmanagementsystem.Model.User.ServiceProvider;
 import com.example.cdr.eventsmanagementsystem.Model.User.BaseRoleEntity;
-import com.example.cdr.eventsmanagementsystem.Model.User.VenueProvider;
 import com.example.cdr.eventsmanagementsystem.Repository.UsersRepository.ServiceProviderRepository;
-import com.example.cdr.eventsmanagementsystem.Repository.UsersRepository.VenueProviderRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
@@ -17,7 +15,7 @@ public class ServiceProviderHandler implements UserRoleHandler<ServiceProvider> 
 
     @Override
     public boolean supports(String role) {
-        return "service provider".equalsIgnoreCase(role);
+        return "service_provider".equalsIgnoreCase(role);
     }
 
     @Override

@@ -55,11 +55,30 @@ services:
       - MAIL_PASSWORD=${MAIL_PASSWORD}
       - SECRET_KEY=${SECRET_KEY}
       - ISSUER_URI=${ISSUER_URI}
+#      - SPRING_CLOUD_CONFIG_URI=http://config-server:8888
     depends_on:
       postgres:
         condition: service_healthy
+#      config-server:
+#        condition: service_healthy
     networks:
       - ems-network
+#  config-server:
+#    build:
+#      context: config-server/.
+#    container_name: ems-config-server
+#    ports:
+#      - "8889:8888"
+#    environment:
+#      - SPRING_APPLICATION_NAME=config-server
+#    networks:
+#      - ems-network
+#    healthcheck:
+#      test: ["CMD", "curl", "-f", "http://localhost:8888/actuator/health"]
+#      interval: 5s
+#      retries: 10
+#      timeout: 5s
+
 volumes:
   postgres_data:
 networks:

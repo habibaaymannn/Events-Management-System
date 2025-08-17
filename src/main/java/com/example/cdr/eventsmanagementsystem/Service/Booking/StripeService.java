@@ -20,7 +20,7 @@ import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
 @Service
-public class StripeService implements IStripeService {
+public class StripeService implements StripeServiceInterface {
     
     @Value("${spring.stripe.api-key}")
     private String stripeApiKey;

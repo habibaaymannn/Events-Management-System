@@ -3,6 +3,7 @@ package com.example.cdr.eventsmanagementsystem.Config;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.stream.Collectors;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -45,7 +46,7 @@ public class SecurityConfig {
 
     private List<String> extractRolesFromRealmAccess(Jwt jwt) {
         Map<String, Object> realmAccess = jwt.getClaim("realm_access");
-        if (realmAccess == null || realmAccess.get("roles") == null) {
+        if (Objects.isNull(realmAccess) || Objects.isNull(realmAccess.get("roles"))) {
             return Collections.emptyList();
         }
         Object roles = realmAccess.get("roles");

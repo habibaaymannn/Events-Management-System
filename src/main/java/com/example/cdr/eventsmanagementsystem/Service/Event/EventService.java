@@ -17,7 +17,7 @@ import com.example.cdr.eventsmanagementsystem.Service.Auth.UserSyncService;
 import jakarta.persistence.EntityNotFoundException;
 
 @Service
-public class EventService implements IEventService {
+public class EventService implements EventServiceInterface {
     private final EventRepository eventRepository;
     private final EventMapper eventMapper;
     private final UserSyncService userSyncService;

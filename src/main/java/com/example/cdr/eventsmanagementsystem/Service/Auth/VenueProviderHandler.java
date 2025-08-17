@@ -15,7 +15,7 @@ public class VenueProviderHandler implements UserRoleHandler<VenueProvider> {
 
     @Override
     public boolean supports(String role) {
-        return "venue provider".equalsIgnoreCase(role);
+        return "venue_provider".equalsIgnoreCase(role);
     }
 
     @Override
