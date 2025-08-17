@@ -1,15 +1,16 @@
 {
   "realm": "EMS-realm",
+  "loginTheme": "mytheme",
   "enabled": true,
   "attributes": {
     "userProfileEnabled": "true",
     "userProfileMetadata": "{\"attributes\":[{\"name\":\"userType\",\"displayName\":\"User type\",\"required\":true,\"permissions\":{\"view\":[\"admin\",\"user\"],\"edit\":[\"admin\",\"user\"]},\"annotations\":{\"inputType\":\"select\",\"options\":\"admin,venue provider,service provider,organizer,attendee\"}}]}"
-  },
+},
   "roles": {
     "realm": [
       {"name": "admin"},
-      {"name": "venue provider"},
-      {"name": "service provider"},
+      {"name": "venue_provider"},
+      {"name": "service_provider"},
       {"name": "organizer"},
       {"name": "attendee"}
     ]
@@ -23,7 +24,7 @@
       "secret": "Ywxmh2GaYFNcDrcCwHzylB3gFDsHNaTN",
       "redirectUris": ["http://localhost:8080/*"],
       "webOrigins": ["http://localhost:8080"],
-      "standardFlowEnabled": false,
+      "standardFlowEnabled": true,
       "serviceAccountsEnabled": true,
       "directAccessGrantsEnabled": true,
       "authorizationServicesEnabled": true,

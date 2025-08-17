@@ -1,12 +1,12 @@
 package com.example.cdr.eventsmanagementsystem.Service.Venue;
 
-import java.nio.file.AccessDeniedException;
-import java.util.HashSet;
-
+import org.springframework.security.access.AccessDeniedException;
+import java.util.Objects;
 import com.example.cdr.eventsmanagementsystem.DTO.Booking.Response.BookingDetailsResponse;
 import com.example.cdr.eventsmanagementsystem.Mapper.BookingMapper;
 import com.example.cdr.eventsmanagementsystem.Repository.UsersRepository.VenueProviderRepository;
 import jakarta.persistence.EntityNotFoundException;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
@@ -23,9 +23,13 @@ import com.example.cdr.eventsmanagementsystem.Service.Auth.UserSyncService;
 import com.example.cdr.eventsmanagementsystem.Util.AuthUtil;
 import lombok.RequiredArgsConstructor;
 
+/**
+ * This class includes the functionalities of the venue provider
+ */
+@Slf4j
 @RequiredArgsConstructor
 @Service
-public class VenueService implements IVenueService {
+public class VenueService implements VenueServiceInterface {
     private final VenueRepository venueRepository;
     private final VenueMapper venueMapper;
     private final VenueProviderRepository venueProviderRepository;
@@ -33,70 +37,70 @@ public class VenueService implements IVenueService {
     private final BookingRepository bookingRepository;
     private final BookingMapper bookingMapper;
 
+    @Override
     @Transactional
     public VenueDTO addVenue(VenueDTO dto) {
 
         Venue newVenue = venueMapper.toVenue(dto);
         VenueProvider venueProvider = userSyncService.ensureUserExists(VenueProvider.class);
         newVenue.setVenueProvider(venueProvider);
-
-        if (newVenue.getSupportedEventTypes() == null) {
-            newVenue.setSupportedEventTypes(new HashSet<>());
-        }
         Venue savedVenue = venueRepository.save(newVenue);
         return venueMapper.toVenueDTO(savedVenue);
+
     }
 
+    @Override
     @Transactional
-    public VenueDTO updateVenue(Long id, VenueDTO dto) throws AccessDeniedException {
-        Venue venue = venueRepository.findById(id)
+    public VenueDTO updateVenue(Long venueId, VenueDTO dto) throws AccessDeniedException {
+        Venue venue = venueRepository.findById(venueId)
                 .orElseThrow(() -> new EntityNotFoundException("Venue not found"));
 
         String venueProviderId = AuthUtil.getCurrentUserId();
-        if (venue.getVenueProvider() == null ||
-                !venue.getVenueProvider().getKeycloakId().equals(venueProviderId)) {
-            throw new AccessDeniedException("You are not allowed to update this venue");
-        }
+        verifyAccess(venue, venueProviderId);
 
         venueMapper.updateVenue(dto, venue);
 
-        if (dto.getVenueProviderId() != null) {
-            VenueProvider venueProvider = venueProviderRepository.findById(String.valueOf(dto.getVenueProviderId()))
-                    .orElseThrow(() -> new EntityNotFoundException("Venue provider (user) not found"));
-            venue.setVenueProvider(venueProvider);
-        }
         Venue updatedVenue = venueRepository.save(venue);
         return venueMapper.toVenueDTO(updatedVenue);
     }
-@Transactional
-    public void deleteVenue(Long id) throws AccessDeniedException {
-    Venue venue = venueRepository.findById(id)
-            .orElseThrow(() -> new EntityNotFoundException("Venue not found"));
-    String venueProviderId = AuthUtil.getCurrentUserId();
-    if (venue.getVenueProvider() == null ||
-            !venue.getVenueProvider().getKeycloakId().equals(venueProviderId)) {
-        throw new AccessDeniedException("You are not allowed to delete this venue");
-    }
-    venueRepository.deleteById(id);
-    }
+    @Override
+    @Transactional
+    public void deleteVenue(Long venueId) throws AccessDeniedException {
+        Venue venue = venueRepository.findById(venueId)
+                .orElseThrow(() -> new EntityNotFoundException("Venue not found"));
 
+        String venueProviderId = AuthUtil.getCurrentUserId();
+        verifyAccess(venue, venueProviderId);
+
+        venueRepository.deleteById(venueId);
+    }
+    /// Refactored to their service
     public Page<BookingDetailsResponse> getBookingsForVenueProvider(Pageable pageable) {
         String venueProviderId = AuthUtil.getCurrentUserId();
         Page<Booking> bookings = bookingRepository.findByVenue_VenueProvider_Id(venueProviderId, pageable);
         return bookings.map(bookingMapper::toBookingDetailsResponse);
     }
+
+    /// Refactored to their service
+    @Override
     @Transactional
     public void cancelBooking(Long bookingId) throws AccessDeniedException {
         String venueProviderId = AuthUtil.getCurrentUserId();
         Booking booking = bookingRepository.findById(bookingId)
                 .orElseThrow(() -> new EntityNotFoundException("Booking not found"));
 
-        if (booking.getVenue() == null ||
+        if (Objects.isNull(booking.getVenue()) ||
                 !booking.getVenue().getVenueProvider().getKeycloakId().equals(venueProviderId)) {
             throw new AccessDeniedException("You are not allowed to cancel this venue booking");
         }
 
         booking.setStatus(BookingStatus.CANCELLED);
         bookingRepository.save(booking);
+    }
+    private void verifyAccess(Venue venue,String venueProviderId) throws AccessDeniedException {
+        if (Objects.isNull(venue.getVenueProvider())||
+                !venue.getVenueProvider().getKeycloakId().equals(venueProviderId)) {
+            throw new AccessDeniedException("You are not allowed to access this venue");
+        }
     }
 }

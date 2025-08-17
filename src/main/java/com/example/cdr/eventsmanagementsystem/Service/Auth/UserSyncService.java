@@ -1,20 +1,21 @@
 package com.example.cdr.eventsmanagementsystem.Service.Auth;
 
-import com.example.cdr.eventsmanagementsystem.Repository.UsersRepository.*;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import com.example.cdr.eventsmanagementsystem.Model.User.Admin;
-import com.example.cdr.eventsmanagementsystem.Model.User.Attendee;
 import com.example.cdr.eventsmanagementsystem.Model.User.BaseRoleEntity;
-import com.example.cdr.eventsmanagementsystem.Model.User.Organizer;
-import com.example.cdr.eventsmanagementsystem.Model.User.ServiceProvider;
-import com.example.cdr.eventsmanagementsystem.Model.User.VenueProvider;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import java.util.List;
+import java.util.Objects;
+
+/**
+ * Ensures the current authenticated user exists in the system.
+ * If not, creates a new user based on JWT claims.
+ * @return The existing or newly created user entity
+ */
 
 @Slf4j
 @Service
@@ -26,7 +27,7 @@ public class UserSyncService {
     public <T extends BaseRoleEntity> T ensureUserExists(Class<T> type) {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
 
-        if (authentication == null || !(authentication.getPrincipal() instanceof Jwt)) {
+        if (Objects.isNull(authentication) || !(authentication.getPrincipal() instanceof Jwt)) {
             throw new RuntimeException("No authentication found");
         }
         Jwt jwt = (Jwt) authentication.getPrincipal();
@@ -42,7 +43,7 @@ public class UserSyncService {
                 .findFirst()
                 .map(handler -> {
                     BaseRoleEntity existingUser = handler.findUserById(userId);
-                    if (existingUser != null) {
+                    if (!Objects.isNull(existingUser)) {
                         log.debug("Found existing user: {} with role: {}", userId, userRole);
                         return type.cast(existingUser);
                     }
@@ -52,9 +53,14 @@ public class UserSyncService {
                 .orElseThrow(() -> new RuntimeException("Unsupported user role: " + userRole));
     }
     public String getCurrentUserRole(Authentication authentication) {
+        List<String> supportedRoles = List.of(
+                "admin", "organizer", "service_provider", "venue_provider", "attendee"
+        );
         return authentication.getAuthorities().stream()
                 .map(auth -> auth.getAuthority().replace("ROLE_","").toLowerCase())
-                .findFirst().orElse(null);
+                .filter(supportedRoles::contains)
+                .findFirst()
+                .orElseThrow(() -> new RuntimeException("No supported user role found in authorities"));
     }
 
     public BaseRoleEntity findExistingUser(String userId, String role) {
@@ -71,7 +77,7 @@ public class UserSyncService {
 
     public BaseRoleEntity findUserById(String userId) {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
-        if (authentication == null) {
+        if (Objects.isNull(authentication)) {
             throw new RuntimeException("No authentication found");
         }
         String role = getCurrentUserRole(authentication);

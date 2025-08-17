@@ -11,11 +11,11 @@ import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 import com.example.cdr.eventsmanagementsystem.Service.Auth.UserRoleHandler;
+import com.example.cdr.eventsmanagementsystem.Service.Booking.StripeServiceInterface;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
-import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import com.example.cdr.eventsmanagementsystem.DTO.Admin.DashboardStatisticsDto;
@@ -45,14 +45,13 @@ import com.example.cdr.eventsmanagementsystem.Repository.UsersRepository.Service
 import com.example.cdr.eventsmanagementsystem.Repository.UsersRepository.VenueProviderRepository;
 import com.example.cdr.eventsmanagementsystem.Repository.VenueRepository;
 import com.example.cdr.eventsmanagementsystem.Service.Auth.UserSyncService;
-import com.example.cdr.eventsmanagementsystem.Service.Booking.IStripeService;
 import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
 
 @Service
 @Transactional
 @RequiredArgsConstructor
-public class AdminService implements IAdminService {
+public class AdminService implements AdminServiceInterface {
 
     private final AdminRepository adminRepository;
     private final OrganizerRepository organizerRepository;
@@ -62,7 +61,7 @@ public class AdminService implements IAdminService {
     private final VenueRepository venueRepository;
     private final EventRepository eventRepository;
     private final BookingRepository bookingRepository;
-    private final IStripeService stripeService;
+    private final StripeServiceInterface stripeService;
     private final AdminMapper adminMapper;
     private final UserSyncService userSyncService;
 
@@ -108,7 +107,7 @@ public class AdminService implements IAdminService {
 
         return adminMapper.toUserDetails(entity);
     }
-
+ //update keycloak role
     @Override
     public UserDetailsDto updateUserRole(String userId, String role) {
         BaseRoleEntity existing = userSyncService.findUserById(userId);
@@ -129,6 +128,7 @@ public class AdminService implements IAdminService {
                 existing.getFirstName(),
                 existing.getLastName()
         );
+
         target.setActive(existing.isActive());
         UserRoleHandler oldHandler = userSyncService.getHandlerForRole(existing.getClass().getSimpleName().toLowerCase());
         oldHandler.deleteUser(existing.getId());
@@ -166,10 +166,10 @@ public class AdminService implements IAdminService {
         return eventRepository.findByStatus(status, pageable).map(adminMapper::toEventDetailsDto);
     }
 
-    @Override
-    public Page<EventDetailsDto> getFlaggedEvents(Pageable pageable) {
-        return eventRepository.findByFlaggedTrue(pageable).map(adminMapper::toEventDetailsDto);
-    }
+//    @Override
+//    public Page<EventDetailsDto> getFlaggedEvents(Pageable pageable) {
+//        return eventRepository.findByFlaggedTrue(pageable).map(adminMapper::toEventDetailsDto);
+//    }
 
     @Override
     public void cancelEvent(Long eventId) {
@@ -179,14 +179,14 @@ public class AdminService implements IAdminService {
         eventRepository.save(event);
     }
 
-    @Override
-    public void flagEvent(Long eventId, String reason) {
-        Event event = eventRepository.findById(eventId)
-                .orElseThrow(() -> new EntityNotFoundException("Event not found with id: " + eventId));
-        event.setFlagged(true);
-        event.setFlagReason(reason);
-        eventRepository.save(event);
-    }
+//    @Override
+//    public void flagEvent(Long eventId, String reason) {
+//        Event event = eventRepository.findById(eventId)
+//                .orElseThrow(() -> new EntityNotFoundException("Event not found with id: " + eventId));
+//        event.setFlagged(true);
+//        event.setFlagReason(reason);
+//        eventRepository.save(event);
+//    }
 
     @Override
     public DashboardStatisticsDto getDashboardStatistics() {
