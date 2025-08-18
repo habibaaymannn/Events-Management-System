@@ -1,39 +1,283 @@
 {
   "realm": "EMS-realm",
-  "loginTheme": "mytheme",
   "enabled": true,
-  "attributes": {
-    "userProfileEnabled": "true",
-    "userProfileMetadata": "{\"attributes\":[{\"name\":\"userType\",\"displayName\":\"User type\",\"required\":true,\"permissions\":{\"view\":[\"admin\",\"user\"],\"edit\":[\"admin\",\"user\"]},\"annotations\":{\"inputType\":\"select\",\"options\":\"admin,venue provider,service provider,organizer,attendee\"}}]}"
-},
+  "displayName": "EMS Realm",
+  "internationalizationEnabled": false,
+  "registrationAllowed": false,
+  "rememberMe": true,
+  "resetPasswordAllowed": true,
+  "editUsernameAllowed": false,
+  "bruteForceProtected": true,
+  "sslRequired": "external",
+
   "roles": {
     "realm": [
-      {"name": "admin"},
-      {"name": "venue_provider"},
-      {"name": "service_provider"},
-      {"name": "organizer"},
-      {"name": "attendee"}
-    ]
+      { "name": "admin", "description": "Administrator" },
+      { "name": "venue_provider", "description": "Venue Provider" },
+      { "name": "service_provider", "description": "Service Provider" },
+      { "name": "organizer", "description": "Event Organizer" },
+      { "name": "attendee", "description": "Event Attendee" }
+    ],
+    "client": {}
   },
+
+  "clientScopes": [
+    {
+      "name": "roles",
+      "description": "OIDC scope with realm and client role mappings",
+      "protocol": "openid-connect",
+      "attributes": {
+        "include.in.token.scope": "false",
+        "display.on.consent.screen": "false"
+      },
+      "protocolMappers": [
+        {
+          "name": "realm roles",
+          "protocol": "openid-connect",
+          "protocolMapper": "oidc-usermodel-realm-role-mapper",
+          "consentRequired": false,
+          "config": {
+            "multivalued": "true",
+            "userinfo.token.claim": "false",
+            "id.token.claim": "false",
+            "access.token.claim": "true",
+            "claim.name": "realm_access.roles",
+            "jsonType.label": "String"
+          }
+        },
+        {
+          "name": "client roles",
+          "protocol": "openid-connect",
+          "protocolMapper": "oidc-usermodel-client-role-mapper",
+          "consentRequired": false,
+          "config": {
+            "multivalued": "true",
+            "userinfo.token.claim": "false",
+            "id.token.claim": "false",
+            "access.token.claim": "true",
+            "claim.name": "resource_access.${client_id}.roles",
+            "jsonType.label": "String"
+          }
+        }
+      ]
+    },
+    {
+      "name": "web-origins",
+      "protocol": "openid-connect",
+      "attributes": {
+        "include.in.token.scope": "false",
+        "display.on.consent.screen": "false"
+      },
+      "protocolMappers": [
+        {
+          "name": "allowed origins",
+          "protocol": "openid-connect",
+          "protocolMapper": "oidc-allowed-origins-mapper",
+          "consentRequired": false,
+          "config": {}
+        }
+      ]
+    },
+    {
+      "name": "profile",
+      "protocol": "openid-connect",
+      "attributes": {
+        "include.in.token.scope": "true",
+        "display.on.consent.screen": "true"
+      },
+      "protocolMappers": [
+        {
+          "name": "given name",
+          "protocol": "openid-connect",
+          "protocolMapper": "oidc-usermodel-property-mapper",
+          "consentRequired": false,
+          "config": {
+            "userinfo.token.claim": "true",
+            "user.attribute": "firstName",
+            "id.token.claim": "true",
+            "access.token.claim": "true",
+            "claim.name": "given_name",
+            "jsonType.label": "String"
+          }
+        },
+        {
+          "name": "family name",
+          "protocol": "openid-connect",
+          "protocolMapper": "oidc-usermodel-property-mapper",
+          "consentRequired": false,
+          "config": {
+            "userinfo.token.claim": "true",
+            "user.attribute": "lastName",
+            "id.token.claim": "true",
+            "access.token.claim": "true",
+            "claim.name": "family_name",
+            "jsonType.label": "String"
+          }
+        },
+        {
+          "name": "preferred username",
+          "protocol": "openid-connect",
+          "protocolMapper": "oidc-usermodel-property-mapper",
+          "consentRequired": false,
+          "config": {
+            "userinfo.token.claim": "true",
+            "user.attribute": "username",
+            "id.token.claim": "true",
+            "access.token.claim": "true",
+            "claim.name": "preferred_username",
+            "jsonType.label": "String"
+          }
+        }
+      ]
+    },
+    {
+      "name": "email",
+      "protocol": "openid-connect",
+      "attributes": {
+        "include.in.token.scope": "true",
+        "display.on.consent.screen": "true"
+      },
+      "protocolMappers": [
+        {
+          "name": "email",
+          "protocol": "openid-connect",
+          "protocolMapper": "oidc-usermodel-property-mapper",
+          "consentRequired": false,
+          "config": {
+            "userinfo.token.claim": "true",
+            "user.attribute": "email",
+            "id.token.claim": "true",
+            "access.token.claim": "true",
+            "claim.name": "email",
+            "jsonType.label": "String"
+          }
+        },
+        {
+          "name": "email verified",
+          "protocol": "openid-connect",
+          "protocolMapper": "oidc-usermodel-property-mapper",
+          "consentRequired": false,
+          "config": {
+            "userinfo.token.claim": "true",
+            "user.attribute": "emailVerified",
+            "id.token.claim": "true",
+            "access.token.claim": "true",
+            "claim.name": "email_verified",
+            "jsonType.label": "boolean"
+          }
+        }
+      ]
+    },
+    {
+      "name": "address",
+      "protocol": "openid-connect",
+      "attributes": {
+        "include.in.token.scope": "true",
+        "display.on.consent.screen": "true"
+      }
+    },
+    {
+      "name": "phone",
+      "protocol": "openid-connect",
+      "attributes": {
+        "include.in.token.scope": "true",
+        "display.on.consent.screen": "true"
+      }
+    },
+    {
+      "name": "offline_access",
+      "protocol": "openid-connect",
+      "attributes": {
+        "display.on.consent.screen": "false"
+      }
+    },
+    {
+      "name": "microprofile-jwt",
+      "protocol": "openid-connect",
+      "attributes": {
+        "include.in.token.scope": "true",
+        "display.on.consent.screen": "false"
+      }
+    }
+  ],
+
+  "defaultDefaultClientScopes": ["roles", "web-origins", "profile", "email"],
+  "defaultOptionalClientScopes": ["address", "phone", "offline_access", "microprofile-jwt"],
+
   "clients": [
     {
+      "clientId": "ems-frontend",
+      "name": "ems-frontend (React SPA)",
+      "rootUrl": "http://localhost:3000",
+      "baseUrl": "/",
+      "enabled": true,
+      "protocol": "openid-connect",
+      "publicClient": true,
+      "standardFlowEnabled": true,
+      "implicitFlowEnabled": false,
+      "directAccessGrantsEnabled": false,
+      "serviceAccountsEnabled": false,
+      "redirectUris": ["http://localhost:3000/*"],
+      "webOrigins": ["http://localhost:3000"],
+      "frontchannelLogout": true,
+      "attributes": {
+        "pkce.code.challenge.method": "S256",
+        "oauth2.device.authorization.grant.enabled": "false"
+      },
+      "defaultClientScopes": ["roles", "web-origins", "profile", "email"],
+      "optionalClientScopes": ["address", "phone", "offline_access", "microprofile-jwt"],
+      "access": { "view": true, "configure": true, "manage": true }
+    },
+    {
       "clientId": "spring-boot-app",
+      "name": "spring-boot-app (Backend)",
       "enabled": true,
       "protocol": "openid-connect",
       "publicClient": false,
-      "secret": "Ywxmh2GaYFNcDrcCwHzylB3gFDsHNaTN",
-      "redirectUris": ["http://localhost:8080/*"],
-      "webOrigins": ["http://localhost:8080"],
-      "standardFlowEnabled": true,
       "serviceAccountsEnabled": true,
-      "directAccessGrantsEnabled": true,
-      "authorizationServicesEnabled": true,
-      "clientAuthenticatorType": "client-secret"
+      "standardFlowEnabled": false,
+      "directAccessGrantsEnabled": false,
+      "implicitFlowEnabled": false,
+      "redirectUris": [],
+      "webOrigins": [],
+      "frontchannelLogout": false,
+      "attributes": {
+        "access.token.lifespan": "300"
+      },
+      "defaultClientScopes": ["roles", "web-origins", "profile", "email"],
+      "optionalClientScopes": ["address", "phone", "offline_access", "microprofile-jwt"],
+      "access": { "view": true, "configure": true, "manage": true }
     }
   ],
-  "registrationAllowed": true,
-  "eventsListeners": ["role-assignment-listener","jboss-logging"],
-  "eventsEnabled": true,
-  "adminEventsEnabled": true,
-  "adminEventsDetailsEnabled": true
+
+  "users": [
+    {
+      "username": "admin1",
+      "enabled": true,
+      "emailVerified": true,
+      "firstName": "Admin",
+      "lastName": "One",
+      "email": "admin1@example.com",
+      "credentials": [
+        { "type": "password", "value": "AdminPass123!", "temporary": false }
+      ],
+      "realmRoles": ["admin"]
+    },
+    {
+      "username": "organizer1",
+      "enabled": true,
+      "emailVerified": true,
+      "firstName": "Organizer",
+      "lastName": "One",
+      "email": "organizer1@example.com",
+      "credentials": [
+        { "type": "password", "value": "OrganizerPass123!", "temporary": false }
+      ],
+      "realmRoles": ["organizer"]
+    }
+  ],
+
+  "smtpServer": {},
+  "loginTheme": "",
+  "eventsEnabled": false
 }

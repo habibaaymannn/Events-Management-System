@@ -1,12 +1,10 @@
 // API Configuration - Easy to modify
+// src/config/apiConfig.js (or wherever your BASE_URL is built)
 const API_CONFIG = {
-  // Change this port value to easily switch backend ports
-  port: 8081, // Updated to 8081
+  protocol: 'http',
   host: 'localhost',
-  protocol: 'http'
+  port: 8180,          // <-- make sure this matches server.port
 };
-
-// Build the base URL
 export const BASE_URL = `${API_CONFIG.protocol}://${API_CONFIG.host}:${API_CONFIG.port}`;
 
 // Helper function to build API endpoints

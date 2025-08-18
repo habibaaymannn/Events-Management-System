@@ -1,6 +1,4 @@
-import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
-import { useState, useEffect } from "react";
-import AuthPage from "./components/auth/AuthPage";
+import { BrowserRouter as Router, Routes, Route, Navigate } from "react-router-dom";
 import VenueProviderDashboard from "./components/venue-provider/VenueProviderDashboard";
 import ServiceProviderDashboard from "./components/service-provider/ServiceProviderDashboard";
 import EventOrganizerDashboard from "./components/event-organizer/EventOrganizerDashboard";
@@ -9,110 +7,100 @@ import AdminDashboard from "./components/admin/AdminDashboard";
 import SetAvailability from "./components/venue-provider/SetAvailability";
 import BookVenue from "./components/venue-provider/BookVenue";
 import VenueDetails from "./components/venue-provider/VenueDetails";
-import { initializeAllDummyData } from './utils/initializeDummyData';
-import './App.css';
+import ProtectedRoute from "./auth/ProtectedRoute";
+import "./App.css";
 
 function App() {
-  const [user, setUser] = useState(() => {
-    const storedUser = localStorage.getItem("currentUser");
-    return storedUser ? JSON.parse(storedUser) : null;
-  });
+  const kc = window.keycloak;
+  const roles = kc?.tokenParsed?.realm_access?.roles || [];
 
-  useEffect(() => {
-    if (user) {
-      localStorage.setItem("currentUser", JSON.stringify(user));
-      console.log("User set with role:", user.role, "and userType:", user.userType);
-    } else {
-      localStorage.removeItem("currentUser");
-    }
-  }, [user]);
-
-  useEffect(() => {
-    // Initialize dummy data when app starts
-    initializeAllDummyData();
-  }, []);
-
-  const handleLogout = () => {
-    setUser(null);
-    localStorage.removeItem("currentUser");
-  };
-
-  if (!user) {
-    return (
-      <Router>
-        <div className="App">
-          <Routes>
-            <Route path="/*" element={<AuthPage setUser={setUser} />} />
-          </Routes>
-        </div>
-      </Router>
-    );
-  }
+  const defaultDashboard = (() => {
+    if (roles.includes("admin")) return "/admin";
+    if (roles.includes("venue_provider")) return "/venue";
+    if (roles.includes("service_provider")) return "/service";
+    if (roles.includes("organizer")) return "/organizer";
+    if (roles.includes("attendee")) return "/attendee";
+    return "/unauthorized";
+  })();
 
   return (
     <Router>
-      <div className="App">
-        {/* User Header */}
-        <header style={{
-          background: 'linear-gradient(135deg, #3b82f6 0%, #1e40af 100%)',
-          padding: '1rem 2rem',
-          color: 'white',
-          display: 'flex',
-          justifyContent: 'space-between',
-          alignItems: 'center',
-          boxShadow: '0 4px 20px rgba(59, 130, 246, 0.3)'
-        }}>
-          <div>
-            <h3 style={{ margin: 0 }}>Event Management System</h3>
-            <p style={{ margin: 0, opacity: 0.9, fontSize: '0.9rem' }}>
-              Welcome, {user.firstName && user.lastName 
-                ? `${user.firstName} ${user.lastName}` 
-                : user.email} ({user.role})
-            </p>
-          </div>
-          <button
-            onClick={handleLogout}
-            className="btn btn-secondary"
-            style={{ background: 'rgba(255,255,255,0.2)', border: 'none' }}
-          >
-            Logout
-          </button>
-        </header>
+      <Routes>
+        {/* Default route: send user to their role dashboard */}
+        <Route path="/" element={<Navigate to={defaultDashboard} replace />} />
 
-        <Routes>
-          {user.role === 'admin' && (
-            <Route path="/*" element={<AdminDashboard />} />
-          )}
-          {user.role === 'venue-provider' && (
-            <>
-              <Route path="/*" element={<VenueProviderDashboard />} />
-              <Route path="/venue/:id/availability" element={<SetAvailability />} />
-              <Route path="/venue/:id/book" element={<BookVenue />} />
-              <Route path="/venue/:id/details" element={<VenueDetails />} />
-            </>
-          )}
-          {user.role === 'service-provider' && (
-            <Route path="/*" element={<ServiceProviderDashboard />} />
-          )}
-          {user.role === 'event-organizer' && (
-            <Route path="/*" element={<EventOrganizerDashboard />} />
-          )}
-          {user.role === 'event-attendee' && (
-            <Route path="/*" element={<EventAttendeeDashboard />} />
-          )}
-          
-          {/* Debug route for unmatched roles */}
-          <Route path="*" element={
-            <div style={{padding: "20px", textAlign: "center"}}>
-              <h2>Welcome to the {user.role?.replace('-', ' ') || 'Unknown'} Dashboard</h2>
-              <p>Role: {user.role}</p>
-              <p>UserType: {user.userType}</p>
-              <p>Email: {user.email}</p>
-              <p>If you're seeing this, there might be a role matching issue.</p>
-            </div>
-          } />
-        </Routes>
-      </div>
+        <Route
+          path="/admin"
+          element={
+            <ProtectedRoute allowedRoles={["admin"]}>
+              <AdminDashboard />
+            </ProtectedRoute>
+          }
+        />
+
+        <Route
+          path="/venue/*"
+          element={
+            <ProtectedRoute allowedRoles={["venue_provider"]}>
+              <VenueProviderDashboard />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/venue/availability"
+          element={
+            <ProtectedRoute allowedRoles={["venue_provider"]}>
+              <SetAvailability />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/venue/book"
+          element={
+            <ProtectedRoute allowedRoles={["venue_provider"]}>
+              <BookVenue />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/venue/details"
+          element={
+            <ProtectedRoute allowedRoles={["venue_provider"]}>
+              <VenueDetails />
+            </ProtectedRoute>
+          }
+        />
+
+        <Route
+          path="/service/*"
+          element={
+            <ProtectedRoute allowedRoles={["service_provider"]}>
+              <ServiceProviderDashboard />
+            </ProtectedRoute>
+          }
+        />
+
+        <Route
+          path="/organizer/*"
+          element={
+            <ProtectedRoute allowedRoles={["organizer"]}>
+              <EventOrganizerDashboard />
+            </ProtectedRoute>
+          }
+        />
+
+        <Route
+          path="/attendee/*"
+          element={
+            <ProtectedRoute allowedRoles={["attendee"]}>
+              <EventAttendeeDashboard />
+            </ProtectedRoute>
+          }
+        />
+
+        <Route path="/unauthorized" element={<div>Unauthorized</div>} />
+        <Route path="*" element={<div>Not Found</div>} />
+      </Routes>
     </Router>
   );
 }

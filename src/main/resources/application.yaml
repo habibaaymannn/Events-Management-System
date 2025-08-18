@@ -1,6 +1,7 @@
 spring:
   application:
     name: Events-Management-System
+
   datasource:
     url: jdbc:postgresql://postgres:5432/Events-Management-System
     username: ${DB_USERNAME}
@@ -27,22 +28,27 @@ spring:
           starttls:
             enable: true
     protocol: smtp
+
   security:
     oauth2:
       resourceserver:
         jwt:
-          issuer-uri: ${ISSUER_URI}
+          issuer-uri: ${ISSUER_URI}  # e.g. http://localhost:8080/realms/EMS-realm (host) or http://keycloak:8080/realms/EMS-realm (compose)
+
   stripe:
     api-key: ${SECRET_KEY}
+
 logging:
   level:
     com.example.cdr.eventsmanagementsystem.Aspect.LoggingAspect: INFO
+
 server:
   port: 8180
   error:
     include-message: always
     include-binding-errors: always
     include-stacktrace: never
+
 app:
   payment:
     return-url: http://localhost:3000/booking-success
