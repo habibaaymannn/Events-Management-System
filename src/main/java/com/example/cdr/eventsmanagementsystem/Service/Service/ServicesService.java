@@ -21,7 +21,8 @@ import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 /**
- * This class includes the functionalities of the service provider
+ * Service class for managing services.
+ * Provides functionality to create, updateAvailability and respond to booking requests of services
  */
 @RequiredArgsConstructor
 @Service
@@ -32,6 +33,7 @@ public class ServicesService implements ServicesServiceInterface{
     private final ServiceMapper serviceMapper;
     private final BookingMapper bookingMapper;
 
+    @Override
     @Transactional
     public ServicesDTO addService(ServicesDTO dto) {
         Services newService = serviceMapper.toService(dto);
@@ -43,8 +45,9 @@ public class ServicesService implements ServicesServiceInterface{
         return serviceMapper.toServiceDTO(savedService);
     }
 
+    @Override
     @Transactional
-    public ServicesDTO updateAvailability(Long serviceId) throws AccessDeniedException {
+    public ServicesDTO updateAvailability(Long serviceId) {
         String keycloakId = AuthUtil.getCurrentUserId();
         Services service = serviceRepository.findById(serviceId)
                 .orElseThrow(() -> new IllegalArgumentException("Service not found"));
@@ -66,8 +69,9 @@ public class ServicesService implements ServicesServiceInterface{
         return bookings.map(bookingMapper::toBookingDetailsResponse);
     }
     /// Refactor to its booking service
+    @Override
     @Transactional
-    public Booking respondToBookingRequests (Long bookingId, BookingStatus status) throws AccessDeniedException {
+    public Booking respondToBookingRequests (Long bookingId, BookingStatus status) {
         String serviceProviderId = AuthUtil.getCurrentUserId();
         Booking booking = bookingRepository.findById(bookingId)
                 .orElseThrow(() -> new EntityNotFoundException("Booking not found"));
@@ -79,8 +83,9 @@ public class ServicesService implements ServicesServiceInterface{
         return bookingRepository.save(booking);
     }
     /// Refactor to its booking service
+    @Override
     @Transactional
-    public void cancelBooking(Long bookingId) throws AccessDeniedException {
+    public void cancelBooking(Long bookingId){
         String serviceProviderId = AuthUtil.getCurrentUserId();
         Booking booking = bookingRepository.findById(bookingId)
                 .orElseThrow(() -> new EntityNotFoundException("Booking not found"));

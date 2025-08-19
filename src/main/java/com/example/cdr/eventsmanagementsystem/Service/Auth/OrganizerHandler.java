@@ -7,6 +7,12 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 
+/**
+ * Handler for managing organizer users.
+ * Provides methods to create, retrieve, save, and delete Organizer users
+ * and supports role-based operations for the "organizer" role.
+ */
+
 @Component
 @RequiredArgsConstructor
 public class OrganizerHandler implements UserRoleHandler<Organizer> {

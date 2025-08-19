@@ -7,6 +7,12 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 
+/**
+ * Handler for managing VenueProvider users.
+ * Provides methods to create, retrieve, save, and delete VenueProvider users
+ * and supports role-based operations for the "venue_provider" role.
+ */
+
 @Component
 @RequiredArgsConstructor
 public class VenueProviderHandler implements UserRoleHandler<VenueProvider> {

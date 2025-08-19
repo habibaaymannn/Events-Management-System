@@ -1,9 +1,7 @@
 package com.example.cdr.eventsmanagementsystem.Model.Venue;
 
-import com.zaxxer.hikari.metrics.dropwizard.CodaHaleMetricsTracker;
 import lombok.RequiredArgsConstructor;
 
-import java.util.List;
 @RequiredArgsConstructor
 public enum Type {
     // Private venues
