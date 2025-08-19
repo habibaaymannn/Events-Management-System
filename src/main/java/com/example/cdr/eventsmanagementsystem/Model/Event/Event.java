@@ -90,7 +90,7 @@ public class Event {
     private BigDecimal retailPrice; 
 
     @Column(nullable = false)
-    private boolean flagged = false;
+    private boolean flagged;
 
     private String flagReason;
 }

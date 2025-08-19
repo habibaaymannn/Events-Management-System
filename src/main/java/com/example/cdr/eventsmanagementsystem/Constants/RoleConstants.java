@@ -1,6 +1,6 @@
 package com.example.cdr.eventsmanagementsystem.Constants;
 
-public abstract class RoleConstants {
+public final class RoleConstants {
     private RoleConstants() {}
     public static final String ADMIN_ROLE = "admin";
     public static final String ORGANIZER_ROLE = "organizer";

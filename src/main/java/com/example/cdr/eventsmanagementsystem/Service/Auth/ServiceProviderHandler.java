@@ -7,6 +7,12 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 
+/**
+ * Handler for managing serviceProvider users.
+ * Provides methods to create, retrieve, save, and delete ServiceProvider users
+ * and supports role-based operations for the "service_provider" role.
+ */
+
 @Component
 @RequiredArgsConstructor
 public class ServiceProviderHandler implements UserRoleHandler<ServiceProvider> {

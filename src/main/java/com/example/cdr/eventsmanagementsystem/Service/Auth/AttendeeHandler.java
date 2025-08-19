@@ -7,6 +7,12 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 
+/**
+ * Handler for managing Attendee users.
+ * Provides methods to create, retrieve, save, and delete Attendee users
+ * and supports role-based operations for the "attendee" role.
+ */
+
 @Component
 @RequiredArgsConstructor
 public class AttendeeHandler implements UserRoleHandler<Attendee> {

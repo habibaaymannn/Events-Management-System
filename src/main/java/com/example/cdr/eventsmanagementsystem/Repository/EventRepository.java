@@ -20,8 +20,6 @@ public interface EventRepository extends JpaRepository<Event, Long> {
 
     Page<Event> findByStatus(EventStatus status, Pageable pageable);
 
-    Page<Event> findByFlaggedTrue(Pageable pageable);
-
     long countByStartTimeAfterAndStatusNot(LocalDateTime now, EventStatus status);
 
     long countByStartTimeBeforeAndEndTimeAfterAndStatusNot(LocalDateTime startBefore,

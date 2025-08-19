@@ -2,6 +2,7 @@ package com.example.cdr.eventsmanagementsystem.Mapper;
 
 import java.time.LocalDateTime;
 
+import com.example.cdr.eventsmanagementsystem.DTO.Event.EventUpdateDTO;
 import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;
 import org.mapstruct.MappingTarget;
@@ -9,7 +10,6 @@ import org.mapstruct.Named;
 
 import com.example.cdr.eventsmanagementsystem.DTO.Event.EventDTO;
 import com.example.cdr.eventsmanagementsystem.DTO.Event.EventResponseDTO;
-import com.example.cdr.eventsmanagementsystem.DTO.Event.UpdateEventDTO;
 import com.example.cdr.eventsmanagementsystem.Model.Event.Event;
 import com.example.cdr.eventsmanagementsystem.Model.Event.EventStatus;
 import com.example.cdr.eventsmanagementsystem.Model.User.Organizer;
@@ -75,12 +75,12 @@ public interface EventMapper {
     @Mapping(target = "createdDate", ignore = true)
     @Mapping(target = "lastModifiedDate", ignore = true)
     @Mapping(target = "freeCancellationDeadline", ignore = true)
-    void updateEventFromDTO(UpdateEventDTO dto, @MappingTarget Event event);
+    void updateEventFromDTO(EventUpdateDTO dto, @MappingTarget Event event);
 
     @Mapping(source = "organizer.id", target = "organizerId")
     EventDTO toEventDTO(Event event);
 
-    UpdateEventDTO toUpdateEventDTO(Event event);
+    EventUpdateDTO toUpdateEventDTO(Event event);
 
     @Mapping(source = "organizer.id", target = "organizerId")
     @Mapping(source = "organizer", target = "organizerName", qualifiedByName = "getOrganizerName")

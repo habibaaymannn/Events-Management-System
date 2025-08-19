@@ -32,6 +32,6 @@ build/
 
 ### VS Code ###
 .vscode/
-**/k8s/secret.yaml
-**/secret.yaml
-*.secret.*
+
+### secrets ###
+/k8s/secret.yaml
