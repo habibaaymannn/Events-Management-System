@@ -5,6 +5,7 @@ import "react-calendar/dist/Calendar.css";
 import { getAllVenues, createVenue, updateVenue, deleteVenue } from "../../api/venueApi";
 import { updateBookingStatus } from "../../api/bookingApi";
 
+
 const initialVenues = [];
 
 const VenueProviderDashboard = () => {

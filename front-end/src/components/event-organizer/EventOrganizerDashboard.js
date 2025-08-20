@@ -3,6 +3,7 @@ import "./EventOrganizerDashboard.css";
 import { initializeAllDummyData } from "../../utils/initializeDummyData";
 import { bookVenue, bookService, bookCombinedResources } from "../../api/bookingApi";
 
+
 // Import new components
 import EventForm from "./components/EventForm";
 import EventsTable from "./components/EventsTable";

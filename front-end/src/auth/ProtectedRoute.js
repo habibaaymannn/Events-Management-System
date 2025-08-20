@@ -1,6 +1,7 @@
 // src/auth/ProtectedRoute.js
 import React from "react";
 import { Navigate } from "react-router-dom";
+import { getUserRoles } from "../keycloak";
 
 function roleHome(roles = []) {
   if (roles.includes("admin")) return "/admin";
@@ -15,14 +16,13 @@ export default function ProtectedRoute({ allowedRoles = [], children }) {
   const kc = window.keycloak;
 
   if (!kc || !kc.authenticated) {
-    // With onLoad:"login-required" this should be rare; render nothing briefly
+    // keycloak.init handles redirect to login
     return null;
   }
 
-  const roles = kc.tokenParsed?.realm_access?.roles || [];
+  const roles = getUserRoles(); // <-- unified roles (realm + client)
   const hasRole =
     allowedRoles.length === 0 || roles.some((r) => allowedRoles.includes(r));
 
-  // If they don't have the required role, push them to *their* dashboard
   return hasRole ? children : <Navigate to={roleHome(roles)} replace />;
 }

@@ -2,6 +2,7 @@ import React, { useState, useEffect } from "react";
 import { addNewService, getMyServices, respondToBookingRequest } from "../../api/serviceApi";
 import { updateBookingStatus } from "../../api/bookingApi";
 
+
 // Enum values for ServiceDescription and Availability
 const SERVICE_DESCRIPTIONS = [
 	{

@@ -1,4 +1,5 @@
 import { BrowserRouter as Router, Routes, Route, Navigate } from "react-router-dom";
+import GlobalLogout from "./components/common/GlobalLogout";
 import VenueProviderDashboard from "./components/venue-provider/VenueProviderDashboard";
 import ServiceProviderDashboard from "./components/service-provider/ServiceProviderDashboard";
 import EventOrganizerDashboard from "./components/event-organizer/EventOrganizerDashboard";
@@ -25,6 +26,8 @@ function App() {
 
   return (
     <Router>
+      {/* Fixed top-right logout button, shown only when authenticated */}
+      <GlobalLogout />
       <Routes>
         {/* root → send to their dashboard */}
         <Route path="/" element={<Navigate to={roleHome(roles)} replace />} />
