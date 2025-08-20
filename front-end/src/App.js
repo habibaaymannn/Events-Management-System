@@ -10,25 +10,26 @@ import VenueDetails from "./components/venue-provider/VenueDetails";
 import ProtectedRoute from "./auth/ProtectedRoute";
 import "./App.css";
 
+function roleHome(roles = []) {
+  if (roles.includes("admin")) return "/admin";
+  if (roles.includes("organizer")) return "/organizer";
+  if (roles.includes("service_provider")) return "/service-provider";
+  if (roles.includes("venue_provider")) return "/venue-provider";
+  if (roles.includes("attendee")) return "/attendee";
+  return "/unauthorized";
+}
+
 function App() {
   const kc = window.keycloak;
   const roles = kc?.tokenParsed?.realm_access?.roles || [];
 
-  const defaultDashboard = (() => {
-    if (roles.includes("admin")) return "/admin";
-    if (roles.includes("venue_provider")) return "/venue";
-    if (roles.includes("service_provider")) return "/service";
-    if (roles.includes("organizer")) return "/organizer";
-    if (roles.includes("attendee")) return "/attendee";
-    return "/unauthorized";
-  })();
-
   return (
     <Router>
       <Routes>
-        {/* Default route: send user to their role dashboard */}
-        <Route path="/" element={<Navigate to={defaultDashboard} replace />} />
+        {/* root → send to their dashboard */}
+        <Route path="/" element={<Navigate to={roleHome(roles)} replace />} />
 
+        {/* Admin (admins only) */}
         <Route
           path="/admin/*"
           element={
@@ -38,57 +39,37 @@ function App() {
           }
         />
 
-        <Route
-          path="/venue/*"
-          element={
-            <ProtectedRoute allowedRoles={["venue_provider"]}>
-              <VenueProviderDashboard />
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path="/venue/availability"
-          element={
-            <ProtectedRoute allowedRoles={["venue_provider"]}>
-              <SetAvailability />
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path="/venue/book"
-          element={
-            <ProtectedRoute allowedRoles={["venue_provider"]}>
-              <BookVenue />
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path="/venue/details"
-          element={
-            <ProtectedRoute allowedRoles={["venue_provider"]}>
-              <VenueDetails />
-            </ProtectedRoute>
-          }
-        />
-
-        <Route
-          path="/service/*"
-          element={
-            <ProtectedRoute allowedRoles={["service_provider"]}>
-              <ServiceProviderDashboard />
-            </ProtectedRoute>
-          }
-        />
-
+        {/* Organizer */}
         <Route
           path="/organizer/*"
           element={
-            <ProtectedRoute allowedRoles={["organizer"]}>
+            <ProtectedRoute allowedRoles={["organizer", "admin"]}>
               <EventOrganizerDashboard />
             </ProtectedRoute>
           }
         />
 
+        {/* Service Provider */}
+        <Route
+          path="/service-provider/*"
+          element={
+            <ProtectedRoute allowedRoles={["service_provider", "admin"]}>
+              <ServiceProviderDashboard />
+            </ProtectedRoute>
+          }
+        />
+
+        {/* Venue Provider */}
+        <Route
+          path="/venue-provider/*"
+          element={
+            <ProtectedRoute allowedRoles={["venue_provider", "admin"]}>
+              <VenueProviderDashboard />
+            </ProtectedRoute>
+          }
+        />
+
+        {/* Attendee */}
         <Route
           path="/attendee/*"
           element={
