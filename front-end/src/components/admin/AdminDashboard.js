@@ -163,7 +163,7 @@ const AdminDashboard = () => {
             <div
               className="card text-center"
               style={{ cursor: 'pointer', border: '2px solid #3b82f6', transition: 'all 0.3s ease' }}
-              onClick={() => navigate('/user-management')}
+              onClick={() => navigate('/admin/user-management')}
               onMouseEnter={(e) => e.target.style.transform = 'translateY(-4px)'}
               onMouseLeave={(e) => e.target.style.transform = 'translateY(0)'}
             >
@@ -174,7 +174,7 @@ const AdminDashboard = () => {
             <div
               className="card text-center"
               style={{ cursor: 'pointer', border: '2px solid #28a745', transition: 'all 0.3s ease' }}
-              onClick={() => navigate('/event-monitoring')}
+              onClick={() => navigate('/admin/event-monitoring')}
               onMouseEnter={(e) => e.target.style.transform = 'translateY(-4px)'}
               onMouseLeave={(e) => e.target.style.transform = 'translateY(0)'}
             >

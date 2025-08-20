@@ -17,7 +17,7 @@ const KEYCLOAK_CLIENT_ID =
 
 // FYI: issuer-uri is normally `${KEYCLOAK_BASE_URL}/realms/${KEYCLOAK_REALM}`
 export const keycloakSettings = {
-  url: `${KEYCLOAK_BASE_URL}`,
+  url: KEYCLOAK_BASE_URL, 
   realm: KEYCLOAK_REALM,
   clientId: KEYCLOAK_CLIENT_ID,
   // optional switches you can adjust:

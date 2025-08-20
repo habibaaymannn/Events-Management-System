@@ -30,7 +30,7 @@ function App() {
         <Route path="/" element={<Navigate to={defaultDashboard} replace />} />
 
         <Route
-          path="/admin"
+          path="/admin/*"
           element={
             <ProtectedRoute allowedRoles={["admin"]}>
               <AdminDashboard />

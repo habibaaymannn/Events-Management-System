@@ -10,7 +10,7 @@ export async function updateUserRole(userId, role) {
   const url = buildApiUrl(`/v1/admin/users/${userId}/role?role=${encodeURIComponent(role)}`);
   const response = await fetch(url, {
     method: "PUT",
-    headers: getAuthHeaders(),
+    headers: getAuthHeaders(true),
   });
 
   if (!response.ok) {
@@ -49,7 +49,7 @@ export async function deactivateUser(userId) {
   const url = buildApiUrl(`/v1/admin/users/${userId}/deactivate`);
   const response = await fetch(url, {
     method: "POST",
-    headers: getAuthHeaders(),
+    headers: getAuthHeaders(true),
   });
 
   if (!response.ok) {
@@ -67,7 +67,7 @@ export async function flagEvent(eventId, reason) {
   const url = buildApiUrl(`/v1/admin/events/${eventId}/flag?reason=${encodeURIComponent(reason)}`);
   const response = await fetch(url, {
     method: "POST",
-    headers: getAuthHeaders(),
+    headers: getAuthHeaders(true),
   });
 
   if (!response.ok) {
@@ -84,7 +84,7 @@ export async function cancelEvent(eventId) {
   const url = buildApiUrl(`/v1/admin/events/${eventId}/cancel`);
   const response = await fetch(url, {
     method: "POST",
-    headers: getAuthHeaders(),
+    headers: getAuthHeaders(true),
   });
 
   if (!response.ok) {
@@ -238,7 +238,7 @@ export async function createUser(userData) {
   const url = buildApiUrl("/v1/admin/users");
   const response = await fetch(url, {
     method: "POST",
-    headers: getAuthHeaders(),
+    headers: getAuthHeaders(true),
     body: JSON.stringify(userData),
   });
 

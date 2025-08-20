@@ -20,8 +20,7 @@ services:
 
   keycloak:
     container_name: ems-keycloak
-    build:
-      context: Keycloak/.
+    image: quay.io/keycloak/keycloak:26.0.5
     environment:
       KEYCLOAK_ADMIN: ${KEYCLOAK_ADMIN}
       KEYCLOAK_ADMIN_PASSWORD: ${KEYCLOAK_ADMIN_PASSWORD}
@@ -44,7 +43,8 @@ services:
     ports:
       - "8180:8180"
     environment:
-      ISSUER_URI: 'http://keycloak:8080/realms/EMS-realm'
+      #ISSUER_URI: 'http://keycloak:8080/realms/EMS-realm'
+      KC_LOG_LEVEL: info
     depends_on:
       postgres:
         condition: service_healthy
@@ -56,6 +56,7 @@ services:
       - .env
 
   frontend:
+    container_name: ems-frontend
     build: ./front-end
     ports:
       - "3000:3000"

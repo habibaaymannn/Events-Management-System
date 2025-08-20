@@ -23,7 +23,17 @@
       Unlike "/favicon.ico" or "favicon.ico", "%PUBLIC_URL%/favicon.ico" will
       work correctly both with client-side routing and a non-root public URL.
       Learn how to configure a non-root public URL by running `npm run build`.
+
     -->
+    <script>
+      window.__APP_CONFIG__ = {
+        API_BASE: "http://localhost:8180",     // your backend (Swagger success confirms 8180)
+        KEYCLOAK_URL: "http://localhost:8080", // use the port where Keycloak actually listens
+        KEYCLOAK_REALM: "EMS",
+        KEYCLOAK_CLIENT_ID: "ems-frontend"
+      };
+    </script>
+    
     <title>React App</title>
   </head>
   <body>
