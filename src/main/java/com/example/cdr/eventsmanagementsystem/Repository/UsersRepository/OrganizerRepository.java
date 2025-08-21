@@ -7,5 +7,5 @@ import com.example.cdr.eventsmanagementsystem.Model.User.Organizer;
 
 @Repository
 public interface OrganizerRepository extends JpaRepository<Organizer, String> {
-
+    java.util.Optional<Organizer> findByEmail(String email);
 }

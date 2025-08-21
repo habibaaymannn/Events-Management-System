@@ -50,6 +50,12 @@ public abstract class BaseRoleEntity {
     @Column(nullable = false)
     private boolean active = true;
 
+    @Column(name = "stripe_customer_id")
+    private String stripeCustomerId;
+
+    @Column(name = "default_payment_method_id")
+    private String defaultPaymentMethodId;
+
     public String getFullName() {
         return firstName + " " + lastName;
     }

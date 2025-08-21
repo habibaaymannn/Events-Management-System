@@ -1,9 +1,7 @@
 package com.example.cdr.eventsmanagementsystem.Controller;
 
 import java.util.List;
-import com.example.cdr.eventsmanagementsystem.Constants.ControllerConstants;
-import com.example.cdr.eventsmanagementsystem.Constants.RoleConstants;
-import com.example.cdr.eventsmanagementsystem.Service.Booking.BookingServiceInterface;
+
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -13,18 +11,20 @@ import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
+
+import com.example.cdr.eventsmanagementsystem.Constants.ControllerConstants;
+import com.example.cdr.eventsmanagementsystem.Constants.RoleConstants;
 import com.example.cdr.eventsmanagementsystem.DTO.Booking.Request.CancelBookingRequest;
-import com.example.cdr.eventsmanagementsystem.DTO.Booking.Request.CombinedBookingRequest;
-import com.example.cdr.eventsmanagementsystem.DTO.Booking.Request.CompletePaymentRequest;
 import com.example.cdr.eventsmanagementsystem.DTO.Booking.Request.EventBookingRequest;
 import com.example.cdr.eventsmanagementsystem.DTO.Booking.Request.ServiceBookingRequest;
 import com.example.cdr.eventsmanagementsystem.DTO.Booking.Request.VenueBookingRequest;
 import com.example.cdr.eventsmanagementsystem.DTO.Booking.Response.BookingDetailsResponse;
-import com.example.cdr.eventsmanagementsystem.DTO.Booking.Response.CombinedBookingResponse;
 import com.example.cdr.eventsmanagementsystem.DTO.Booking.Response.EventBookingResponse;
 import com.example.cdr.eventsmanagementsystem.DTO.Booking.Response.ServiceBookingResponse;
 import com.example.cdr.eventsmanagementsystem.DTO.Booking.Response.VenueBookingResponse;
 import com.example.cdr.eventsmanagementsystem.Model.Booking.BookingStatus;
+import com.example.cdr.eventsmanagementsystem.Service.Booking.BookingServiceInterface;
+
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
@@ -48,6 +48,16 @@ public class BookingController {
         return ResponseEntity.ok(response);
     }
 
+    // @Operation(summary = "Book an event with saved card", description = "Creates a new event booking using a saved payment method")
+    // @PostMapping("/events/auto-payment")
+    // @PreAuthorize("hasRole('" + RoleConstants.ATTENDEE_ROLE + "')")
+    // public ResponseEntity<EventBookingResponse> bookEventWithSavedCard(
+    //         @RequestBody EventBookingRequest request,
+    //         @RequestParam String paymentMethodId) {
+    //     EventBookingResponse response = bookingService.bookEventWithSavedCard(request, paymentMethodId);
+    //     return ResponseEntity.ok(response);
+    // }
+
     @Operation(summary = "Book a venue", description = "Creates a new venue booking for an organizer")
     @PostMapping("/venues")
     @PreAuthorize("hasRole('" + RoleConstants.ORGANIZER_ROLE + "')")
@@ -56,6 +66,16 @@ public class BookingController {
         VenueBookingResponse response = bookingService.bookVenue(request);
         return ResponseEntity.ok(response);
     }
+
+    // @Operation(summary = "Book a venue with saved card", description = "Creates a new venue booking using a saved payment method")
+    // @PostMapping("/venues/auto-payment")
+    // @PreAuthorize("hasRole('" + RoleConstants.ORGANIZER_ROLE + "')")
+    // public ResponseEntity<VenueBookingResponse> bookVenueWithSavedCard(
+    //         @RequestBody VenueBookingRequest request,
+    //         @RequestParam String paymentMethodId) {
+    //     VenueBookingResponse response = bookingService.bookVenueWithSavedCard(request, paymentMethodId);
+    //     return ResponseEntity.ok(response);
+    // }
 
     @Operation(summary = "Book a service", description = "Creates a new service booking for an organizer")
     @PostMapping("/services")
@@ -66,14 +86,24 @@ public class BookingController {
         return ResponseEntity.ok(response);
     }
 
-    @Operation(summary = "Book combined resources", description = "Creates a new combined booking for multiple resources")
-    @PostMapping("/combined")
-    @PreAuthorize("hasRole('" + RoleConstants.ORGANIZER_ROLE + "')")
-    public ResponseEntity<CombinedBookingResponse> bookResources(
-            @RequestBody CombinedBookingRequest request) {
-        CombinedBookingResponse response = bookingService.bookResources(request);
-        return ResponseEntity.ok(response);
-    }
+    // @Operation(summary = "Book a service with saved card", description = "Creates a new service booking using a saved payment method")
+    // @PostMapping("/services/auto-payment")
+    // @PreAuthorize("hasRole('" + RoleConstants.ORGANIZER_ROLE + "')")
+    // public ResponseEntity<ServiceBookingResponse> bookServiceWithSavedCard(
+    //         @RequestBody ServiceBookingRequest request,
+    //         @RequestParam String paymentMethodId) {
+    //     ServiceBookingResponse response = bookingService.bookServiceWithSavedCard(request, paymentMethodId);
+    //     return ResponseEntity.ok(response);
+    // }
+
+    // @Operation(summary = "Book combined resources", description = "Creates a new combined booking for multiple resources")
+    // @PostMapping("/combined")
+    // @PreAuthorize("hasRole('" + RoleConstants.ORGANIZER_ROLE + "')")
+    // public ResponseEntity<CombinedBookingResponse> bookResources(
+    //         @RequestBody CombinedBookingRequest request) {
+    //     CombinedBookingResponse response = bookingService.bookResources(request);
+    //     return ResponseEntity.ok(response);
+    // }
 
     @Operation(summary = "Cancel a booking", description = "Cancels an existing booking")
     @PostMapping("/cancel")
@@ -120,13 +150,7 @@ public class BookingController {
         return ResponseEntity.ok(response);
     }
 
-    @Operation(summary = "Complete booking payment", description = "Completes the payment process for a booking")
-    @PostMapping("/{bookingId}/complete-payment")
-    public ResponseEntity<BookingDetailsResponse> completePayment(
-            @PathVariable Long bookingId,
-            @RequestBody CompletePaymentRequest request) {
 
-        BookingDetailsResponse response = bookingService.completePayment(bookingId, request.getPaymentMethodId());
-        return ResponseEntity.ok(response);
-    }
+
+    
 }

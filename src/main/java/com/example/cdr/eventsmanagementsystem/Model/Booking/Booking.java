@@ -2,17 +2,20 @@ package com.example.cdr.eventsmanagementsystem.Model.Booking;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
-import com.example.cdr.eventsmanagementsystem.Model.Service.Services;
-import com.fasterxml.jackson.annotation.JsonIgnore;
+
 import org.springframework.data.annotation.CreatedBy;
 import org.springframework.data.annotation.CreatedDate;
 import org.springframework.data.annotation.LastModifiedBy;
 import org.springframework.data.annotation.LastModifiedDate;
+
 import com.example.cdr.eventsmanagementsystem.Model.Event.Event;
+import com.example.cdr.eventsmanagementsystem.Model.Service.Services;
 import com.example.cdr.eventsmanagementsystem.Model.User.Attendee;
 import com.example.cdr.eventsmanagementsystem.Model.User.BaseRoleEntity;
 import com.example.cdr.eventsmanagementsystem.Model.User.Organizer;
 import com.example.cdr.eventsmanagementsystem.Model.Venue.Venue;
+import com.fasterxml.jackson.annotation.JsonIgnore;
+
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
@@ -22,6 +25,9 @@ import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
+import jakarta.persistence.EntityListeners;
+import org.springframework.data.jpa.domain.support.AuditingEntityListener;
+
 import lombok.Getter;
 import lombok.Setter;
 import lombok.ToString;
@@ -31,6 +37,7 @@ import lombok.ToString;
 @Setter
 @ToString
 @Table(name = "bookings")
+@EntityListeners(AuditingEntityListener.class)
 public class Booking {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -68,6 +75,7 @@ public class Booking {
 
     @Column(unique = true)
     private String stripePaymentId;
+    private String stripeSessionId;
     private BigDecimal refundAmount;
     private LocalDateTime refundProcessedAt;
 

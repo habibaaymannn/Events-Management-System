@@ -7,5 +7,5 @@ import com.example.cdr.eventsmanagementsystem.Model.User.Attendee;
 
 @Repository
 public interface AttendeeRepository extends JpaRepository<Attendee, String> {
-
+    java.util.Optional<Attendee> findByEmail(String email);
 }

@@ -110,8 +110,11 @@ public class GlobalExceptionHandler {
     // 409 – conflicts
     @ExceptionHandler(DataIntegrityViolationException.class)
     public ResponseEntity<Map<String, Object>> handleConflict(DataIntegrityViolationException ex, HttpServletRequest req) {
+        String cause = Optional.ofNullable(ex.getMostSpecificCause())
+                .map(Throwable::getMessage)
+                .orElse("A data integrity violation occurred");
         Map<String, Object> body = base(HttpStatus.CONFLICT, req,
-                "Conflict", "A data integrity violation occurred");
+                "Conflict", truncate(cause));
         return ResponseEntity.status(HttpStatus.CONFLICT).body(body);
     }
 

@@ -35,6 +35,9 @@ spring:
           issuer-uri: ${ISSUER_URI}
   stripe:
     api-key: ${SECRET_KEY}
+    webhook:
+      secret: ${STRIPE_WEBHOOK_SECRET}
+      skip-verify: ${STRIPE_WEBHOOK_SKIP_VERIFY:false}
 logging:
   level:
     com.example.cdr.eventsmanagementsystem.Aspect.LoggingAspect: INFO
@@ -45,7 +48,9 @@ server:
     include-stacktrace: never
 app:
   payment:
-    return-url: http://localhost:3000/booking-success
+    return-url: http://localhost:8180/v1/bookings/confirm
+    success-url: http://localhost:8180/v1/bookings/confirm
+    cancel-url: http://localhost:8180
   booking:
     free-cancel-days-before-start: 1
     penalty-percent: 0.20

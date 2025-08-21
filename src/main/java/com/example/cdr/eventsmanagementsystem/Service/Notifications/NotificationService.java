@@ -3,7 +3,7 @@ package com.example.cdr.eventsmanagementsystem.Service.Notifications;
 import com.example.cdr.eventsmanagementsystem.Model.Booking.Booking;
 
 public interface NotificationService {
-    void sendPaymentRequestEmail(Booking booking, String clientSecret);
+    void sendPaymentRequestEmail(Booking booking, String paymentUrl);
     void sendEventBookingConfirmationEmail(Booking booking);
     void sendVenueBookingConfirmationEmail(Booking booking);
     void sendServiceBookingConfirmationEmail(Booking booking);

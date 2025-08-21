@@ -1,18 +1,20 @@
 package com.example.cdr.eventsmanagementsystem.Service.Notifications;
 
+import org.springframework.context.event.EventListener;
+import org.springframework.stereotype.Component;
+
 import com.example.cdr.eventsmanagementsystem.NotificationEvent.BookingCancellation.EventBookingCancelled;
 import com.example.cdr.eventsmanagementsystem.NotificationEvent.BookingCancellation.ServiceBookingCancelled;
 import com.example.cdr.eventsmanagementsystem.NotificationEvent.BookingCancellation.VenueBookingCancelled;
 import com.example.cdr.eventsmanagementsystem.NotificationEvent.BookingConfirmation.EventBookingConfirmed;
-import com.example.cdr.eventsmanagementsystem.NotificationEvent.BookingConfirmation.VenueBookingConfirmed;
-import com.example.cdr.eventsmanagementsystem.NotificationEvent.BookingCreation.VenueBookingCreated;
 import com.example.cdr.eventsmanagementsystem.NotificationEvent.BookingConfirmation.ServiceBookingConfirmed;
+import com.example.cdr.eventsmanagementsystem.NotificationEvent.BookingConfirmation.VenueBookingConfirmed;
 import com.example.cdr.eventsmanagementsystem.NotificationEvent.BookingCreation.EventBookingCreated;
 import com.example.cdr.eventsmanagementsystem.NotificationEvent.BookingCreation.ServiceBookingCreated;
+import com.example.cdr.eventsmanagementsystem.NotificationEvent.BookingCreation.VenueBookingCreated;
 import com.example.cdr.eventsmanagementsystem.NotificationEvent.Payment.BookingPaymentFailed;
+
 import lombok.RequiredArgsConstructor;
-import org.springframework.context.event.EventListener;
-import org.springframework.stereotype.Component;
 
 @Component
 @RequiredArgsConstructor
@@ -22,27 +24,18 @@ public class BookingEventListener {
 
     @EventListener
     public void handleEventBookingCreated(EventBookingCreated event) {
-        notificationService.sendPaymentRequestEmail(
-                event.booking(),
-                event.booking().getStripePaymentId()
-        );
+        notificationService.sendPaymentRequestEmail(event.booking(), event.checkoutUrl());
     }
 
     @EventListener
     public void handleVenueBookingCreated(VenueBookingCreated event) {
-        notificationService.sendPaymentRequestEmail(
-                event.booking(),
-                event.booking().getStripePaymentId()
-        );
+        notificationService.sendPaymentRequestEmail(event.booking(), event.checkoutUrl());
         notificationService.sendVenueBookingEmail(event.booking());
     }
 
     @EventListener
     public void handleServiceBookingCreated(ServiceBookingCreated event) {
-        notificationService.sendPaymentRequestEmail(
-                event.booking(),
-                event.booking().getStripePaymentId()
-        );
+        notificationService.sendPaymentRequestEmail(event.booking(), event.checkoutUrl());
         notificationService.sendServiceBookingEmail(event.booking());
     }
 

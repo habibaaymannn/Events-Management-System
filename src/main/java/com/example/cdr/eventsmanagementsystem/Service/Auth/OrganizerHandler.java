@@ -11,45 +11,50 @@ import org.springframework.transaction.annotation.Transactional;
 @RequiredArgsConstructor
 public class OrganizerHandler implements UserRoleHandler<Organizer> {
 
-    private final OrganizerRepository organizerRepository;
+	private final OrganizerRepository organizerRepository;
 
-    @Override
-    public boolean supports(String role) {
-        return "organizer".equalsIgnoreCase(role);
-    }
+	@Override
+	public boolean supports(String role) {
+		return "organizer".equalsIgnoreCase(role);
+	}
 
-    @Override
-    public Class<Organizer> getRoleClass() {
-        return Organizer.class;
-    }
+	@Override
+	public Class<Organizer> getRoleClass() {
+		return Organizer.class;
+	}
 
-    @Override
-    @Transactional
-    public Organizer findUserById(String userId) {
-        return organizerRepository.findById(userId).orElse(null);
-    }
+	@Override
+	@Transactional
+	public Organizer findUserById(String userId) {
+		return organizerRepository.findById(userId).orElse(null);
+	}
 
-    @Override
-    @Transactional
-    public Organizer createNewUser(String userId, String email, String firstName, String lastName) {
-        Organizer organizer = new Organizer();
-        organizer.setId(userId);
-        organizer.setEmail(email);
-        organizer.setFirstName(firstName);
-        organizer.setLastName(lastName);
-        return organizerRepository.save(organizer);
-    }
+	@Override
+	@Transactional
+	public Organizer createNewUser(String userId, String email, String firstName, String lastName) {
+		Organizer existing = organizerRepository.findByEmail(email).orElse(null);
+		if (existing != null) {
+			existing.setFirstName(firstName);
+			existing.setLastName(lastName);
+			return organizerRepository.save(existing);
+		}
+		Organizer organizer = new Organizer();
+		organizer.setId(userId);
+		organizer.setEmail(email);
+		organizer.setFirstName(firstName);
+		organizer.setLastName(lastName);
+		return organizerRepository.save(organizer);
+	}
 
-    @Override
-    @Transactional
-    public BaseRoleEntity saveUser(BaseRoleEntity user) {
-        return organizerRepository.save((Organizer) user);
-    }
+	@Override
+	@Transactional
+	public BaseRoleEntity saveUser(BaseRoleEntity user) {
+		return organizerRepository.save((Organizer) user);
+	}
 
-    @Override
-    @Transactional
-    public void deleteUser(String userId) {
-
-        organizerRepository.deleteById(userId);
-    }
+	@Override
+	@Transactional
+	public void deleteUser(String userId) {
+		organizerRepository.deleteById(userId);
+	}
 }

@@ -3,11 +3,13 @@ package com.example.cdr.eventsmanagementsystem.Service.Notifications;
 import org.springframework.mail.SimpleMailMessage;
 import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.stereotype.Service;
+
 import com.example.cdr.eventsmanagementsystem.Model.Booking.Booking;
 import com.example.cdr.eventsmanagementsystem.Model.User.BaseRoleEntity;
 import com.example.cdr.eventsmanagementsystem.Model.User.ServiceProvider;
 import com.example.cdr.eventsmanagementsystem.Model.User.VenueProvider;
 import com.example.cdr.eventsmanagementsystem.Service.Auth.UserSyncService;
+
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
@@ -20,7 +22,7 @@ public class EmailNotificationService implements NotificationService {
     private final UserSyncService userSyncService;
 
     @Override
-    public void sendPaymentRequestEmail(Booking booking, String clientSecret) {
+    public void sendPaymentRequestEmail(Booking booking, String paymentUrl) {
         try {
             BaseRoleEntity booker = userSyncService.findUserById(booking.getBookerId());
 
@@ -29,8 +31,7 @@ public class EmailNotificationService implements NotificationService {
                 return;
             }
 
-            String paymentUrl = String.format("http://localhost:8080/payment-page?booking_id=%d&client_secret=%s",
-                    booking.getId(), clientSecret);
+            // paymentUrl is expected to be a Stripe Checkout URL
 
             String content = String.format(
                     "Hello %s,\n\n" +
