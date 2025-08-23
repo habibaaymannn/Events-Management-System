@@ -42,9 +42,9 @@ services:
       context: .
       dockerfile: Dockerfile
     ports:
-      - "8180:8080"
+      - "8180:8180"
     environment:
-      ISSUER_URI: 'http://keycloak:8080/realms/EMS-realm'
+      ISSUER_URI: http://keycloak:8080/realms/EMS-realm
       #      - SPRING_CLOUD_CONFIG_URI=http://config-server:8888
     depends_on:
       postgres:
@@ -55,6 +55,9 @@ services:
 #        condition: service_healthy
     networks:
       - ems-network
+    env_file:
+      - .env
+
 #  config-server:
 #    build:
 #      context: config-server/.
@@ -70,8 +73,6 @@ services:
 #      interval: 5s
 #      retries: 10
 #      timeout: 5s
-    env_file:
-      - .env
 
 volumes:
   postgres_data:

@@ -27,11 +27,11 @@ spring:
           starttls:
             enable: true
     protocol: smtp
-  security:
-    oauth2:
-      resourceserver:
-        jwt:
-          issuer-uri: ${ISSUER_URI}
+  oauth2:
+    resourceserver:
+      jwt:
+        issuer-uri: ${ISSUER_URI}
+        jwk-set-uri: ${spring.oauth2.resourceserver.jwt.issuer-uri}/protocol/openid-connect/certs
   stripe:
     api-key: ${SECRET_KEY}
 logging:
