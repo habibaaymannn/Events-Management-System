@@ -1,8 +1,8 @@
 package com.example.cdr.eventsmanagementsystem.Controller;
 
 import java.util.List;
-import com.example.cdr.eventsmanagementsystem.Constants.EventsControllerConstants;
-import com.example.cdr.eventsmanagementsystem.Constants.RoleConstants;
+import com.example.cdr.eventsmanagementsystem.Constants.ControllerConstants.EventsControllerConstants;
+import com.example.cdr.eventsmanagementsystem.Constants.ControllerConstants.RoleConstants;
 import com.example.cdr.eventsmanagementsystem.DTO.Event.EventUpdateDTO;
 import com.example.cdr.eventsmanagementsystem.Service.Event.EventServiceInterface;
 import org.springframework.data.domain.Page;

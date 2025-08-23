@@ -5,7 +5,8 @@ import com.example.cdr.eventsmanagementsystem.Model.Event.EventStatus;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 /**
- * Interface for managing and retrieving event-related information for admin operations.
+ * Interface for managing
+ * retrieving event-related information for admin operations.
  */
 
 public interface AdminEventsManagement {

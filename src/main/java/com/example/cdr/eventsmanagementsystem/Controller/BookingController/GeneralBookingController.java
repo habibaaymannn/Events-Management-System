@@ -1,7 +1,7 @@
 package com.example.cdr.eventsmanagementsystem.Controller.BookingController;
 
-import com.example.cdr.eventsmanagementsystem.Constants.BookingControllerConstants;
-import com.example.cdr.eventsmanagementsystem.Constants.RoleConstants;
+import com.example.cdr.eventsmanagementsystem.Constants.ControllerConstants.BookingControllerConstants;
+import com.example.cdr.eventsmanagementsystem.Constants.ControllerConstants.RoleConstants;
 import com.example.cdr.eventsmanagementsystem.DTO.Booking.Request.BookingCancelRequest;
 import com.example.cdr.eventsmanagementsystem.DTO.Booking.Response.BookingDetailsResponse;
 import com.example.cdr.eventsmanagementsystem.Model.Booking.BookingStatus;
@@ -22,7 +22,7 @@ public class GeneralBookingController extends BookingController{
 
     @Operation(summary = "Cancel a booking", description = "Cancels an existing booking")
     @PostMapping(BookingControllerConstants.CANCEL_BOOKING)
-    @PreAuthorize("hasAnyRole('" + RoleConstants.ORGANIZER_ROLE + "', '" + RoleConstants.ATTENDEE_ROLE + "')")
+    @PreAuthorize("hasAnyRole(@roleConstants.ORGANIZER_ROLE, @roleConstants.ATTENDEE_ROLE, @roleConstants.VENUE_PROVIDER_ROLE, @roleConstants.SERVICE_PROVIDER_ROLE)")
     public ResponseEntity<Void> cancelBooking(
             @RequestBody BookingCancelRequest request) {
         bookingService.cancelBooking(request);

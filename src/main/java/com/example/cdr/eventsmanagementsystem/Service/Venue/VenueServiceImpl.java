@@ -75,6 +75,7 @@ public class VenueServiceImpl implements VenueServiceInterface {
         venueRepository.deleteById(venueId);
     }
     /// Refactored to their service
+    @Override
     public Page<BookingDetailsResponse> getBookingsForVenueProvider(Pageable pageable) {
         String venueProviderId = AuthUtil.getCurrentUserId();
         Page<Booking> bookings = bookingRepository.findByVenue_VenueProvider_Id(venueProviderId, pageable);

@@ -8,7 +8,8 @@ import java.time.LocalDate;
 import java.util.Map;
 
 /**
- * Interface for retrieving various administrative statistics related to events, bookings, and utilization.
+ * Interface for retrieving various administrative statistics
+ * related to events, bookings, and utilization.
  */
 
 public interface StatisticsManagement {

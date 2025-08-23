@@ -1,4 +1,4 @@
-package com.example.cdr.eventsmanagementsystem.Constants;
+package com.example.cdr.eventsmanagementsystem.Constants.ControllerConstants;
 
 public class VenueControllerConstants {
     public static final String VENUE_BASE_URL = "/v1/venues";

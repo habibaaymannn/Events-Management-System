@@ -1,5 +1,8 @@
-package com.example.cdr.eventsmanagementsystem.Constants;
+package com.example.cdr.eventsmanagementsystem.Constants.ControllerConstants;
 
+import org.springframework.stereotype.Component;
+
+@Component
 public final class RoleConstants {
     private RoleConstants() {}
     public static final String ADMIN_ROLE = "admin";

@@ -288,9 +288,9 @@ public class BookingService implements BookingServiceInterface {
                 .orElseThrow(() -> new EntityNotFoundException("Booking not found"));
 
         String currentUserId = AuthUtil.getCurrentUserId();
-        if (!booking.getBookerId().equals(currentUserId)) {
-            throw new RuntimeException("You can only cancel your own bookings");
-        }
+//        if (!booking.getBookerId().equals(currentUserId)) {
+//            throw new RuntimeException("You can only cancel your own bookings");
+//        }
 
         if (booking.getStripePaymentId() != null && 
             booking.getStatus() == BookingStatus.BOOKED) {

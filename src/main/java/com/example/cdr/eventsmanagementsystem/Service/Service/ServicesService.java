@@ -22,7 +22,8 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 /**
  * Service class for managing services.
- * Provides functionality to create, updateAvailability and respond to booking requests of services
+ * Provides functionality to create, updateAvailability
+ * respond to booking requests of services
  */
 @RequiredArgsConstructor
 @Service
@@ -63,6 +64,7 @@ public class ServicesService implements ServicesServiceInterface{
     }
 
     /// Refactor to its booking service
+    @Override
     public Page<BookingDetailsResponse> getBookingsForServiceProvider(Pageable pageable) {
         String serviceProviderId = AuthUtil.getCurrentUserId();
         Page<Booking> bookings = bookingRepository.findByService_ServiceProvider_Id(serviceProviderId,pageable);
