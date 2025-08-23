@@ -8,7 +8,7 @@ import com.example.cdr.eventsmanagementsystem.Model.Event.EventType;
 import lombok.Data;
 
 @Data
-public class UpdateEventDTO {
+public class EventUpdateDTO {
     // private Long id;
 
     private String name;

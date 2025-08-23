@@ -63,7 +63,7 @@ public class EmailNotificationService implements NotificationService {
             booker.getFirstName(), booking.getId(), booking.getStripePaymentId()
         );
 
-        sendEmail(booker.getEmail(), "Booking Confirmed #" + booking.getId(), content);
+        sendEmail(booker.getEmail(), String.format("Booking Confirmed #" , booking.getId()), content);
     }
     @Override
     public void sendVenueBookingConfirmationEmail(Booking booking) {
@@ -82,7 +82,7 @@ public class EmailNotificationService implements NotificationService {
                 booker.getFirstName(), booking.getId(), booking.getStripePaymentId()
         );
 
-        sendEmail(venueProvider.getEmail(), "Booking Confirmed #" + booking.getId(), content);
+        sendEmail(venueProvider.getEmail(),String.format( "Booking Confirmed #" + booking.getId()), content);
     }
     @Override
     public void sendServiceBookingConfirmationEmail(Booking booking) {
@@ -101,7 +101,7 @@ public class EmailNotificationService implements NotificationService {
                 booker.getFirstName(), booking.getId(), booking.getStripePaymentId()
         );
 
-        sendEmail(serviceProvider.getEmail(), "Booking Confirmed #" + booking.getId(), content);
+        sendEmail(serviceProvider.getEmail(),String.format( "Booking Confirmed #" + booking.getId()), content);
     }
 
     @Override
@@ -119,7 +119,7 @@ public class EmailNotificationService implements NotificationService {
             "Best regards,\nEvents Team",
             booker.getFirstName(), booking.getId()
         );
-        sendEmail(booker.getEmail(), "Booking Cancelled #" + booking.getId(), content);
+        sendEmail(booker.getEmail(), String.format("Booking Cancelled #" + booking.getId()), content);
     }
 
     @Override
@@ -139,7 +139,7 @@ public class EmailNotificationService implements NotificationService {
             booker.getFirstName(), booking.getId(), failureReason
         );
 
-        sendEmail(booker.getEmail(), "Payment Failed - Booking #" + booking.getId(), content);
+        sendEmail(booker.getEmail(),String.format( "Payment Failed - Booking #" + booking.getId()), content);
     }
     @Override
     public void sendVenueBookingEmail(Booking booking) {

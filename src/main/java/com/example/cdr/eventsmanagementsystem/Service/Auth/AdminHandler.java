@@ -7,6 +7,12 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 
+/**
+ * Handler for managing Admin users.
+ * Provides methods to create, retrieve, save, and delete Admin users
+ * and supports role-based operations for the "admin" role.
+ */
+
 @Component
 @RequiredArgsConstructor
 public class AdminHandler implements UserRoleHandler<Admin> {
