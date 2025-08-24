@@ -2,6 +2,7 @@ package com.example.cdr.eventsmanagementsystem.Model.User;
 
 import java.time.LocalDateTime;
 
+import lombok.*;
 import org.springframework.data.annotation.CreatedBy;
 import org.springframework.data.annotation.CreatedDate;
 import org.springframework.data.annotation.LastModifiedBy;
@@ -12,19 +13,15 @@ import jakarta.persistence.Column;
 import jakarta.persistence.EntityListeners;
 import jakarta.persistence.Id;
 import jakarta.persistence.MappedSuperclass;
-import lombok.EqualsAndHashCode;
-import lombok.Getter;
-import lombok.Setter;
 
+@Data
+@AllArgsConstructor
+@NoArgsConstructor
 @MappedSuperclass
-@Getter
-@Setter
-@EqualsAndHashCode(onlyExplicitlyIncluded = true)
 @EntityListeners(AuditingEntityListener.class)
 public abstract class BaseRoleEntity {
     @Id
-    @EqualsAndHashCode.Include
-    private String id; // Keycloak ID
+    private String id; // Keycloak UUID
 
     @Column(nullable = false)
     private String firstName;
@@ -36,16 +33,20 @@ public abstract class BaseRoleEntity {
     private String email;
 
     @CreatedDate
+    @Column(nullable = false, updatable = false)
     private LocalDateTime createdAt;
 
     @LastModifiedDate
+    @Column(insertable = false)
     private LocalDateTime updatedAt;
 
     @CreatedBy
+    @Column(nullable = false, updatable = false)
     private String createdBy;
 
     @LastModifiedBy
-    private String lastModifiedBy;
+    @Column(insertable = false)
+    private String updatedBy;
 
     @Column(nullable = false)
     private boolean active = true;
