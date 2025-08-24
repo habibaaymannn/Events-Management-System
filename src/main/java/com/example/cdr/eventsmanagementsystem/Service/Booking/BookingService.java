@@ -86,8 +86,6 @@ public class BookingService implements BookingServiceInterface {
         booking.setStripePaymentId(paymentIntent.getId());
         booking.setStartTime(event.getStartTime());
         booking.setEndTime(event.getEndTime());
-        booking.setCreatedAt(LocalDateTime.now());
-        booking.setUpdatedAt(LocalDateTime.now());
 
         Booking savedBooking = bookingRepository.save(booking);
 
@@ -134,8 +132,6 @@ public class BookingService implements BookingServiceInterface {
         booking.setStripePaymentId(paymentIntent.getId());
         booking.setStartTime(request.getStartTime());
         booking.setEndTime(request.getEndTime());
-        booking.setCreatedAt(LocalDateTime.now());
-        booking.setUpdatedAt(LocalDateTime.now());
 
         Booking savedBooking = bookingRepository.save(booking);
 
@@ -181,8 +177,6 @@ public class BookingService implements BookingServiceInterface {
         booking.setStripePaymentId(paymentIntent.getId());
         booking.setStartTime(request.getStartTime());
         booking.setEndTime(request.getEndTime());
-        booking.setCreatedAt(LocalDateTime.now());
-        booking.setUpdatedAt(LocalDateTime.now());
 
         Booking savedBooking = bookingRepository.save(booking);
 
@@ -212,8 +206,6 @@ public class BookingService implements BookingServiceInterface {
 
             if ("succeeded".equals(confirmedPayment.getStatus())) {
                 booking.setStatus(BookingStatus.BOOKED);
-                booking.setUpdatedAt(LocalDateTime.now());
-                
                 Booking savedBooking = bookingRepository.save(booking);
 
                 if(booking.getVenue() != null) {
@@ -246,7 +238,6 @@ public class BookingService implements BookingServiceInterface {
 //    public CombinedBookingResponse bookResources(CombinedBookingRequest request) {
 //        CombinedBookingResponse response = new CombinedBookingResponse();
 //        response.setOrganizerId(request.getOrganizerId());
-//        response.setCreatedAt(LocalDateTime.now());
 //
 //        if (request.getVenueId() != null) {
 //            VenueBookingRequest venueRequest = new VenueBookingRequest();

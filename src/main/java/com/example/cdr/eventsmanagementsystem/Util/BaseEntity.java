@@ -1,36 +1,26 @@
-package com.example.cdr.eventsmanagementsystem.Model.User;
+package com.example.cdr.eventsmanagementsystem.Util;
 
-import java.time.LocalDateTime;
-
-import lombok.*;
+import jakarta.persistence.*;
+import lombok.AllArgsConstructor;
+import lombok.Data;
+import lombok.NoArgsConstructor;
 import org.springframework.data.annotation.CreatedBy;
 import org.springframework.data.annotation.CreatedDate;
 import org.springframework.data.annotation.LastModifiedBy;
 import org.springframework.data.annotation.LastModifiedDate;
 import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 
-import jakarta.persistence.Column;
-import jakarta.persistence.EntityListeners;
-import jakarta.persistence.Id;
-import jakarta.persistence.MappedSuperclass;
+import java.time.LocalDateTime;
 
 @Data
 @AllArgsConstructor
 @NoArgsConstructor
 @MappedSuperclass
 @EntityListeners(AuditingEntityListener.class)
-public abstract class BaseRoleEntity {
+public abstract class BaseEntity {
     @Id
-    private String id; // Keycloak UUID
-
-    @Column(nullable = false)
-    private String firstName;
-
-    @Column(nullable = false)
-    private String lastName;
-
-    @Column(nullable = false, unique = true)
-    private String email;
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Long id;
 
     @CreatedDate
     @Column(nullable = false, updatable = false)
@@ -47,15 +37,4 @@ public abstract class BaseRoleEntity {
     @LastModifiedBy
     @Column(insertable = false)
     private String updatedBy;
-
-    @Column(nullable = false)
-    private boolean active = true;
-
-    public String getFullName() {
-        return firstName + " " + lastName;
-    }
-
-    public String getKeycloakId() {
-        return id;
-    }
 }

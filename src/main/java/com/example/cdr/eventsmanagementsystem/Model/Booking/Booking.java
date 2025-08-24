@@ -3,11 +3,8 @@ package com.example.cdr.eventsmanagementsystem.Model.Booking;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import com.example.cdr.eventsmanagementsystem.Model.Service.Services;
+import com.example.cdr.eventsmanagementsystem.Util.BaseEntity;
 import com.fasterxml.jackson.annotation.JsonIgnore;
-import org.springframework.data.annotation.CreatedBy;
-import org.springframework.data.annotation.CreatedDate;
-import org.springframework.data.annotation.LastModifiedBy;
-import org.springframework.data.annotation.LastModifiedDate;
 import com.example.cdr.eventsmanagementsystem.Model.Event.Event;
 import com.example.cdr.eventsmanagementsystem.Model.User.Attendee;
 import com.example.cdr.eventsmanagementsystem.Model.User.BaseRoleEntity;
@@ -17,25 +14,16 @@ import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
 import jakarta.persistence.Enumerated;
-import jakarta.persistence.GeneratedValue;
-import jakarta.persistence.GenerationType;
-import jakarta.persistence.Id;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
-import lombok.Getter;
-import lombok.Setter;
-import lombok.ToString;
+import lombok.Data;
+import lombok.EqualsAndHashCode;
 
 @Entity
-@Getter
-@Setter
-@ToString
+@Data
+@EqualsAndHashCode(callSuper = true)
 @Table(name = "bookings")
-public class Booking {
-    @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;
-
+public class Booking extends BaseEntity {
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
     private BookingType type;
@@ -73,16 +61,7 @@ public class Booking {
 
     private String cancellationReason;
     private LocalDateTime cancelledAt;
-    private String cancelledBy; 
-
-    @CreatedDate 
-    private LocalDateTime createdAt;
-    @LastModifiedDate 
-    private LocalDateTime updatedAt;
-    @CreatedBy 
-    private String createdBy;
-    @LastModifiedBy 
-    private String lastModifiedBy;
+    private String cancelledBy;
 
     public void setAttendeeBooker(Attendee attendee) {
         this.bookerId = attendee.getId();

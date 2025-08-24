@@ -1,7 +1,5 @@
 package com.example.cdr.eventsmanagementsystem.DTO.Booking.Response;
 
-import java.time.LocalDateTime;
-
 import com.example.cdr.eventsmanagementsystem.Model.Booking.BookingStatus;
 
 import lombok.Data;
@@ -14,5 +12,4 @@ public class EventBookingResponse {
     private BookingStatus status;
     private String paymentConfirmation;
     private String paymentUrl; 
-    private LocalDateTime createdAt;
 }

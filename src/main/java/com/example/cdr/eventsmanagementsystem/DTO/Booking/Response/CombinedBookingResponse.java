@@ -11,6 +11,4 @@ public class CombinedBookingResponse {
     private List<Long> serviceBookingIds;
     private String organizerId;
         private String paymentUrl; 
-
-    private LocalDateTime createdAt;
 }

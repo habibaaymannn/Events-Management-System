@@ -3,33 +3,20 @@ package com.example.cdr.eventsmanagementsystem.Model.Venue;
 import com.example.cdr.eventsmanagementsystem.Model.Booking.Booking;
 import com.example.cdr.eventsmanagementsystem.Model.Event.EventType;
 import com.example.cdr.eventsmanagementsystem.Model.User.VenueProvider;
+import com.example.cdr.eventsmanagementsystem.Util.BaseEntity;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
-import lombok.Getter;
-import lombok.Setter;
-import lombok.ToString;
-import org.springframework.data.annotation.CreatedBy;
-import org.springframework.data.annotation.CreatedDate;
-import org.springframework.data.annotation.LastModifiedBy;
-import org.springframework.data.annotation.LastModifiedDate;
-import org.springframework.data.jpa.domain.support.AuditingEntityListener;
-import java.time.LocalDateTime;
+import lombok.*;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
-@Setter
-@Getter
-@ToString
 @Entity
-@EntityListeners(AuditingEntityListener.class)
+@Data
+@EqualsAndHashCode(callSuper = true)
 @Table(name = "venue")
-public class Venue {
-    @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;
-
+public class Venue extends BaseEntity {
     @Column(nullable = false)
     private String name;
 
@@ -49,7 +36,6 @@ public class Venue {
 
     @Embedded
     private Pricing pricing;
-
 
     @ElementCollection
     private List<String> images;
@@ -71,16 +57,4 @@ public class Venue {
     )
     @Enumerated(EnumType.STRING)
     private Set<EventType> supportedEventTypes = new HashSet<>();
-
-    @CreatedDate
-    private LocalDateTime createdAt;
-
-    @LastModifiedDate
-    private LocalDateTime updatedAt;
-
-    @CreatedBy
-    private String createdBy;
-
-    @LastModifiedBy
-    private String lastModifiedBy;
 }

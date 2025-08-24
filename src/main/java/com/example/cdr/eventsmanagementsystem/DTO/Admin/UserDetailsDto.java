@@ -1,7 +1,5 @@
 package com.example.cdr.eventsmanagementsystem.DTO.Admin;
 
-import java.time.LocalDateTime;
-
 import lombok.Data;
 
 @Data
@@ -12,7 +10,6 @@ public class UserDetailsDto {
     private String email;
     private String role;
     private boolean active;
-    private LocalDateTime createdAt;
 }
 
 

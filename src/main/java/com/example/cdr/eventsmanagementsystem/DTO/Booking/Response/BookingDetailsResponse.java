@@ -30,7 +30,4 @@ public class BookingDetailsResponse {
     private String cancellationReason;
     private LocalDateTime cancelledAt;
     private String cancelledBy;
-    
-    private LocalDateTime createdAt;
-    private LocalDateTime updatedAt;
 }
