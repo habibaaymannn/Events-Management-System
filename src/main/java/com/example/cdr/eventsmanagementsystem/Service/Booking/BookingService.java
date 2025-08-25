@@ -3,6 +3,7 @@ package com.example.cdr.eventsmanagementsystem.Service.Booking;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.List;
+import com.example.cdr.eventsmanagementsystem.Model.Booking.BookerType;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
@@ -218,13 +219,13 @@ public class BookingService implements BookingServiceInterface {
 
                 if(booking.getVenue() != null) {
                     eventPublisher.publishEvent(new VenueBookingConfirmed(savedBooking));
-                }else if(booking.getService() != null) {
-                    eventPublisher.publishEvent(new ServiceBookingConfirmed(savedBooking));
-                }else{
-                    eventPublisher.publishEvent(new EventBookingConfirmed(savedBooking));
-
                 }
-                
+                else if(booking.getService() != null) {
+                    eventPublisher.publishEvent(new ServiceBookingConfirmed(savedBooking));
+                }
+                else{
+                    eventPublisher.publishEvent(new EventBookingConfirmed(savedBooking));
+                }
                 return bookingMapper.toBookingDetailsResponse(savedBooking);
             } else {
                 eventPublisher.publishEvent(new BookingPaymentFailed(booking,"Payment was not successful. Status: " + confirmedPayment.getStatus()));
@@ -288,10 +289,28 @@ public class BookingService implements BookingServiceInterface {
                 .orElseThrow(() -> new EntityNotFoundException("Booking not found"));
 
         String currentUserId = AuthUtil.getCurrentUserId();
-//        if (!booking.getBookerId().equals(currentUserId)) {
-//            throw new RuntimeException("You can only cancel your own bookings");
-//        }
 
+        //case 1
+        if (booking.getEvent() != null && booking.getBookerType() == BookerType.ORGANIZER) {
+            // Fetch all attendee bookings for this event
+            List<Booking> attendeeBookings = bookingRepository.findByEventIdAndBookerType(
+                    booking.getEvent().getId(),
+                    BookerType.ATTENDEE
+            );
+
+            for (Booking attendeeBooking : attendeeBookings) {
+                attendeeBooking.setStatus(BookingStatus.CANCELLED);
+                attendeeBooking.setCancellationReason(request.getReason());
+                attendeeBooking.setCancelledAt(LocalDateTime.now());
+                attendeeBooking.setCancelledBy(currentUserId);
+
+                bookingRepository.save(attendeeBooking);
+
+                eventPublisher.publishEvent(new EventBookingCancelled(attendeeBooking, request.getReason())
+                );
+            }
+        }
+        // case 2
         if (booking.getStripePaymentId() != null && 
             booking.getStatus() == BookingStatus.BOOKED) {
             
@@ -308,9 +327,11 @@ public class BookingService implements BookingServiceInterface {
 
         if (savedBooking.getVenue() != null) {
             eventPublisher.publishEvent(new VenueBookingCancelled(savedBooking, request.getReason()));
-        } else if (savedBooking.getService() != null) {
+        }
+        else if (savedBooking.getService() != null) {
             eventPublisher.publishEvent(new ServiceBookingCancelled(savedBooking, request.getReason()));
-        } else if (savedBooking.getEvent() != null) {
+        }
+        else if (savedBooking.getEvent() != null) {
             eventPublisher.publishEvent(new EventBookingCancelled(savedBooking, request.getReason()));
         }
         
@@ -320,7 +341,7 @@ public class BookingService implements BookingServiceInterface {
     public BookingDetailsResponse getBookingById(Long bookingId) {
         Booking booking = bookingRepository.findById(bookingId)
                 .orElseThrow(() -> new EntityNotFoundException("Booking not found"));
-        
+
         return bookingMapper.toBookingDetailsResponse(booking);
     }
 

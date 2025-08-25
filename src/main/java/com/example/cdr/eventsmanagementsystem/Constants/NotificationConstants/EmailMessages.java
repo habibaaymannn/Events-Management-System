@@ -67,4 +67,22 @@ public class EmailMessages {
         
         Best regards,
         Events Team""";
+    public static final String SERVICE_STATUS_UPDATE = """
+        Hello %s,
+        
+        Your Service Booking #%d has been %s by %s.
+        
+        Best regards,
+        Events Team""";
+    public static final String EVENT_REMINDER = """
+        Hello %s,
+        
+        This is a reminder for your upcoming event:
+        Event: %s.
+        Date: %s.
+
+        Don't miss it out!
+        
+        Best regards,
+        Events Team""";
 }

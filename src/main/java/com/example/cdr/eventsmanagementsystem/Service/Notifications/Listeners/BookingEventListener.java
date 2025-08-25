@@ -9,6 +9,7 @@ import com.example.cdr.eventsmanagementsystem.NotificationEvent.BookingCreation.
 import com.example.cdr.eventsmanagementsystem.NotificationEvent.BookingConfirmation.ServiceBookingConfirmed;
 import com.example.cdr.eventsmanagementsystem.NotificationEvent.BookingCreation.EventBookingCreated;
 import com.example.cdr.eventsmanagementsystem.NotificationEvent.BookingCreation.ServiceBookingCreated;
+import com.example.cdr.eventsmanagementsystem.NotificationEvent.BookingUpdates.ServiceBookingUpdate;
 import com.example.cdr.eventsmanagementsystem.NotificationEvent.Payment.BookingPaymentFailed;
 import com.example.cdr.eventsmanagementsystem.Service.Notifications.NotificationService;
 import lombok.RequiredArgsConstructor;
@@ -52,6 +53,12 @@ public class BookingEventListener {
     public void handleVenueBookingConfirmed(VenueBookingConfirmed event) {
         notificationService.sendVenueBookingConfirmationEmail(event.booking());
     }
+
+    @EventListener
+    public void handleServiceBookingUpdate(ServiceBookingUpdate event) {
+        notificationService.sendServiceUpdateEmail(event.booking());
+    }
+
     @EventListener
     public void handleEventBookingCancelled(EventBookingCancelled event) {
         notificationService.sendBookingCancellationEmail(event.booking());

@@ -1,5 +1,6 @@
 package com.example.cdr.eventsmanagementsystem.Service.Venue;
 
+import com.example.cdr.eventsmanagementsystem.Model.Venue.Availability;
 import org.springframework.security.access.AccessDeniedException;
 import java.util.Objects;
 import com.example.cdr.eventsmanagementsystem.DTO.Booking.Response.BookingDetailsResponse;
@@ -30,14 +31,13 @@ import lombok.RequiredArgsConstructor;
 @Slf4j
 @RequiredArgsConstructor
 @Service
-public class VenueServiceImpl implements VenueServiceInterface {
+public class VenueService {
     private final VenueRepository venueRepository;
     private final VenueMapper venueMapper;
     private final UserSyncService userSyncService;
     private final BookingRepository bookingRepository;
     private final BookingMapper bookingMapper;
 
-    @Override
     @Transactional
     public VenueDTO addVenue(VenueDTO dto) {
 
@@ -49,7 +49,6 @@ public class VenueServiceImpl implements VenueServiceInterface {
 
     }
 
-    @Override
     @Transactional
     public VenueDTO updateVenue(Long venueId, VenueDTO dto) {
         Venue venue = venueRepository.findById(venueId)
@@ -63,7 +62,23 @@ public class VenueServiceImpl implements VenueServiceInterface {
         Venue updatedVenue = venueRepository.save(venue);
         return venueMapper.toVenueDTO(updatedVenue);
     }
-    @Override
+
+    @Transactional
+    public VenueDTO updateAvailability(Long venueId) {
+        String keycloakId = AuthUtil.getCurrentUserId();
+        Venue venue = venueRepository.findById(venueId)
+                .orElseThrow(() -> new IllegalArgumentException("Venue not found"));
+
+        if (!venue.getVenueProvider().getKeycloakId().equals(keycloakId)) {
+            throw new AccessDeniedException("You are not allowed to update this Venue");
+        }
+        venue.setAvailability(venue.getAvailability() == Availability.AVAILABLE
+                ? Availability.UNAVAILABLE
+                : Availability.AVAILABLE);
+
+        return venueMapper.toVenueDTO(venueRepository.save(venue));
+    }
+
     @Transactional
     public void deleteVenue(Long venueId) {
         Venue venue = venueRepository.findById(venueId)
@@ -75,29 +90,12 @@ public class VenueServiceImpl implements VenueServiceInterface {
         venueRepository.deleteById(venueId);
     }
     /// Refactored to their service
-    @Override
     public Page<BookingDetailsResponse> getBookingsForVenueProvider(Pageable pageable) {
         String venueProviderId = AuthUtil.getCurrentUserId();
         Page<Booking> bookings = bookingRepository.findByVenue_VenueProvider_Id(venueProviderId, pageable);
         return bookings.map(bookingMapper::toBookingDetailsResponse);
     }
 
-    /// Refactored to their service
-    @Override
-    @Transactional
-    public void cancelBooking(Long bookingId) throws AccessDeniedException {
-        String venueProviderId = AuthUtil.getCurrentUserId();
-        Booking booking = bookingRepository.findById(bookingId)
-                .orElseThrow(() -> new EntityNotFoundException("Booking not found"));
-
-        if (Objects.isNull(booking.getVenue()) ||
-                !booking.getVenue().getVenueProvider().getKeycloakId().equals(venueProviderId)) {
-            throw new AccessDeniedException("You are not allowed to cancel this venue booking");
-        }
-
-        booking.setStatus(BookingStatus.CANCELLED);
-        bookingRepository.save(booking);
-    }
     private void verifyAccess(Venue venue,String venueProviderId) throws AccessDeniedException {
         if (Objects.isNull(venue.getVenueProvider())||
                 !venue.getVenueProvider().getKeycloakId().equals(venueProviderId)) {

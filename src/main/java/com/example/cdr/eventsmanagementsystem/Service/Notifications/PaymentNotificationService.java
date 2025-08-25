@@ -14,7 +14,6 @@ import java.util.Objects;
 @Slf4j
 @RequiredArgsConstructor
 public class PaymentNotificationService {
-    private final NotificationChannel emailNotification;
     private final NotificationHelper notificationHelper;
 
     private final String PaymentPageUrl = "http://localhost:8080/payment-page?booking_id=%d&client_secret=%s";
@@ -28,7 +27,7 @@ public class PaymentNotificationService {
             String content = String.format(EmailMessages.PAYMENT_REQUEST,
                     booker.getFirstName(), booking.getId(), paymentUrl);
 
-            emailNotification.send(booker.getEmail(), "Complete Payment - Booking #" + booking.getId(), content);
+            notificationHelper.send(booker.getEmail(), "Complete Payment - Booking #" + booking.getId(), content);
         } catch (Exception e) {
             log.error("Failed to send payment request email for booking {}", booking.getId(), e);
         }
@@ -40,6 +39,6 @@ public class PaymentNotificationService {
         String content = String.format(EmailMessages.PAYMENT_FAILED,
                 booker.getFirstName(), booking.getId(), failureReason);
 
-        emailNotification.send(booker.getEmail(),String.format( "Payment Failed - Booking #" + booking.getId()), content);
+        notificationHelper.send(booker.getEmail(),String.format( "Payment Failed - Booking #" + booking.getId()), content);
     }
 }

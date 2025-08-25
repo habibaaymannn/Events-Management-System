@@ -10,6 +10,7 @@ import org.springframework.stereotype.Service;
 @RequiredArgsConstructor
 public class VenueNotificationService {
     private final NotificationHelper notificationHelper;
+
     public void sendVenueBookingEmail(Booking booking) {
         // Notify venue provider (new booking)
         notificationHelper.sendProviderBookingNotification(booking, BookingType.VENUE, "venue");

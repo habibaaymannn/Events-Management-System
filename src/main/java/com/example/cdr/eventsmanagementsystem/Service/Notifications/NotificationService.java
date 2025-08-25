@@ -15,5 +15,6 @@ public interface NotificationService {
 
     void sendServiceBookingEmail(Booking booking);
     void sendServiceBookingConfirmationEmail(Booking booking);
+    void sendServiceUpdateEmail(Booking booking);
     void sendServiceCancellationEmail(Booking booking, String reason);
 }

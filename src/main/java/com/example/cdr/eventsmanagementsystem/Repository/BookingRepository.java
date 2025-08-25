@@ -3,6 +3,8 @@ package com.example.cdr.eventsmanagementsystem.Repository;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
+
+import com.example.cdr.eventsmanagementsystem.Model.Booking.BookerType;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
@@ -18,6 +20,9 @@ import com.example.cdr.eventsmanagementsystem.Model.Booking.BookingStatus;
 public interface BookingRepository extends JpaRepository<Booking, Long> {
     List<Booking> findByBookerId(String bookerId);
     List<Booking> findByEvent_Id(Long eventId);
+
+    List<Booking> findByEventIdAndBookerType(Long eventId, BookerType bookerType);
+
 
     Page<Booking> findByService_ServiceProvider_Id(String serviceProviderId, Pageable pageable);
     Page<Booking> findByVenue_VenueProvider_Id(String venueProviderId,Pageable pageable);
@@ -35,6 +40,15 @@ public interface BookingRepository extends JpaRepository<Booking, Long> {
            "group by function('date', b.cancelledAt) order by function('date', b.cancelledAt)")
     List<LocalDateCount> countDailyCancellationsBetween(@Param("start") LocalDate start,
                                                         @Param("end") LocalDate end);
+
+    @Query("SELECT b FROM Booking b JOIN b.event e " +
+            "WHERE b.status = :status " +
+            "AND e.startTime BETWEEN :start AND :end " +
+            "AND b.isEmailSent = false")
+    List<Booking> findUpcomingBookings(@Param("status") BookingStatus status,
+                                       @Param("start") LocalDateTime start,
+                                       @Param("end") LocalDateTime end);
+
 
     Page<Booking> findByStatusAndUpdatedAtBetweenAndStripePaymentIdIsNotNull(
             BookingStatus status,

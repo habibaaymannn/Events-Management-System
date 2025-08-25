@@ -7,6 +7,5 @@ public class ServiceControllerConstants {
     public static final String UPDATE_SERVICE_AVAILABILITY = "/{serviceId}/availability";
     public static final String GET_SERVICE_BOOKINGS_URL = "/bookings";
     public static final String ACCEPT_OR_REJECT_SERVICE_BOOKING_URL = "/bookings/{bookingId}/status";
-    public static final String CANCEL_SERVICE_BOOKING_URL = "/bookings/{bookingId}/cancel";
 
 }

@@ -4,7 +4,7 @@ import java.util.List;
 import com.example.cdr.eventsmanagementsystem.Constants.ControllerConstants.EventsControllerConstants;
 import com.example.cdr.eventsmanagementsystem.Constants.ControllerConstants.RoleConstants;
 import com.example.cdr.eventsmanagementsystem.DTO.Event.EventUpdateDTO;
-import com.example.cdr.eventsmanagementsystem.Service.Event.EventServiceInterface;
+import com.example.cdr.eventsmanagementsystem.Service.Event.EventService;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
@@ -30,7 +30,7 @@ import lombok.RequiredArgsConstructor;
 @RequestMapping(EventsControllerConstants.EVENT_BASE_URL)
 @Tag(name = "Event", description = "Event management APIs")
 public class EventController {
-    private final EventServiceInterface eventService;
+    private final EventService eventService;
 
     @Operation(summary = "Create a new event", description = "Creates a new event with the provided details")
     @PostMapping(EventsControllerConstants.CREATE_EVENT_URL)

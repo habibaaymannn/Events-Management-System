@@ -6,5 +6,5 @@ public class VenueControllerConstants {
     public static final String UPDATE_VENUE_URL = "/{venueId}";
     public static final String DELETE_VENUE_URL = "/{venueId}";
     public static final String GET_VENUE_BOOKINGS_URL = "/bookings";
-    public static final String CANCEL_VENUE_BOOKING_URL = "/bookings/{bookingId}/cancel";
+    public static final String UPDATE_VENUE_AVAILABILITY = "/{venueId}/availability";
 }

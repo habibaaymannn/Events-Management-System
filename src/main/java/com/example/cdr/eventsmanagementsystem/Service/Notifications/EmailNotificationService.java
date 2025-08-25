@@ -60,14 +60,12 @@ public class EmailNotificationService implements NotificationService {
         // Notify service provider
         serviceNotificationService.sendServiceCancellationEmail(booking, reason);}
 
-    /// notify organizer if service provider rejects
-    public void sendServiceRejectionEmail(Booking booking, String reason) {
-
+    @Override
+    public void sendServiceUpdateEmail(Booking booking) {
+        // notify organizer the status update(accept/reject)
+        serviceNotificationService.sendServiceBookingUpdateEmail(booking);
     }
-    /// notify organizer if service provider accepts
-    public void sendServiceAcceptanceEmail(Booking booking) {
 
-    }
     /// event
     @Override
     public void sendEventBookingConfirmationEmail(Booking booking) {

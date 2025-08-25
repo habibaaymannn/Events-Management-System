@@ -24,7 +24,7 @@ import lombok.RequiredArgsConstructor;
 public class AdminService implements AdminServiceInterface {
 
     private final AdminUserManagement userManagement;
-    private final AdminEventsManagement eventManagement;
+    private final AdminEventManagement eventManagement;
     private final StatisticsManagement statisticsManagement;
 
     /// let keycloak handle it
