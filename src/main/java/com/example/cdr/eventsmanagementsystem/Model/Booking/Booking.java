@@ -66,6 +66,8 @@ public class Booking {
     private LocalDateTime startTime;
     private LocalDateTime endTime;
 
+    private boolean isEmailSent;
+
     @Column(unique = true)
     private String stripePaymentId;
     private BigDecimal refundAmount;

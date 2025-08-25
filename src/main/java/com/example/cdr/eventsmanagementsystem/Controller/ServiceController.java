@@ -1,12 +1,12 @@
 package com.example.cdr.eventsmanagementsystem.Controller;
 
-import com.example.cdr.eventsmanagementsystem.Constants.RoleConstants;
-import com.example.cdr.eventsmanagementsystem.Constants.ServiceControllerConstants;
+import com.example.cdr.eventsmanagementsystem.Constants.ControllerConstants.RoleConstants;
+import com.example.cdr.eventsmanagementsystem.Constants.ControllerConstants.ServiceControllerConstants;
 import com.example.cdr.eventsmanagementsystem.DTO.Booking.Response.BookingDetailsResponse;
 import com.example.cdr.eventsmanagementsystem.DTO.Service.ServicesDTO;
 import com.example.cdr.eventsmanagementsystem.Model.Booking.Booking;
 import com.example.cdr.eventsmanagementsystem.Model.Booking.BookingStatus;
-import com.example.cdr.eventsmanagementsystem.Service.Service.ServicesServiceInterface;
+import com.example.cdr.eventsmanagementsystem.Service.Service.ServicesService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
@@ -21,8 +21,9 @@ import org.springframework.web.bind.annotation.*;
 @RequiredArgsConstructor
 @RequestMapping(ServiceControllerConstants.SERVICE_BASE_URL)
 @Tag(name = "Service", description = "Service provider APIs for managing services and bookings")
-public class ServiceController {
-    private final ServicesServiceInterface servicesService;
+public class
+ServiceController {
+    private final ServicesService servicesService;
 
     @Operation(summary = "Add a new service")
     @PreAuthorize("hasRole('" + RoleConstants.SERVICE_PROVIDER_ROLE + "')")
@@ -55,11 +56,5 @@ public class ServiceController {
     public Booking acceptOrRejectBooking(@PathVariable Long bookingId,@RequestParam BookingStatus status)   {
         return servicesService.respondToBookingRequests(bookingId, status);
     }
-    @Operation(summary = "Cancel a booking as a service provider")
-    @PreAuthorize("hasRole('" + RoleConstants.SERVICE_PROVIDER_ROLE + "')")
-    @PostMapping(ServiceControllerConstants.CANCEL_SERVICE_BOOKING_URL)
-    public ResponseEntity<Void> cancelBooking(@PathVariable Long bookingId)  {
-        servicesService.cancelBooking(bookingId);
-        return ResponseEntity.ok().build();
-    }
+
 }

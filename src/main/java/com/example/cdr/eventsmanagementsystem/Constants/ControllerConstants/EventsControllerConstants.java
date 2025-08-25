@@ -1,4 +1,4 @@
-package com.example.cdr.eventsmanagementsystem.Constants;
+package com.example.cdr.eventsmanagementsystem.Constants.ControllerConstants;
 
 public class EventsControllerConstants {
     public static final String EVENT_BASE_URL = "/v1/events";

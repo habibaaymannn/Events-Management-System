@@ -1,6 +1,6 @@
 package com.example.cdr.eventsmanagementsystem.Controller.AdminController;
 
-import com.example.cdr.eventsmanagementsystem.Constants.AdminControllerConstants;
+import com.example.cdr.eventsmanagementsystem.Constants.ControllerConstants.AdminControllerConstants;
 import com.example.cdr.eventsmanagementsystem.DTO.Admin.UserCreateDto;
 import com.example.cdr.eventsmanagementsystem.DTO.Admin.UserDetailsDto;
 import com.example.cdr.eventsmanagementsystem.Service.User.AdminServiceInterface;

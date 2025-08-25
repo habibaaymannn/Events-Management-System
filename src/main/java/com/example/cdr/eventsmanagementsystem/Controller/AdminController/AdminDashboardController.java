@@ -1,6 +1,6 @@
 package com.example.cdr.eventsmanagementsystem.Controller.AdminController;
 
-import com.example.cdr.eventsmanagementsystem.Constants.AdminControllerConstants;
+import com.example.cdr.eventsmanagementsystem.Constants.ControllerConstants.AdminControllerConstants;
 import com.example.cdr.eventsmanagementsystem.DTO.Admin.DashboardStatisticsDto;
 import com.example.cdr.eventsmanagementsystem.Service.User.AdminServiceInterface;
 import io.swagger.v3.oas.annotations.Operation;

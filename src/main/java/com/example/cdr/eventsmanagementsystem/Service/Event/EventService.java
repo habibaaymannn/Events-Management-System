@@ -25,13 +25,12 @@ import jakarta.persistence.EntityNotFoundException;
 
 @RequiredArgsConstructor
 @Service
-public class EventService implements EventServiceInterface {
+public class EventService {
     private final EventRepository eventRepository;
     private final EventMapper eventMapper;
     private final UserSyncService userSyncService;
 
 
-    @Override
     public EventResponseDTO createEvent(EventDTO eventDTO) {
         Organizer organizer = ensureCurrentUserAsOrganizer();
         Event event = eventMapper.toEventWithDefaults(eventDTO, organizer);
@@ -43,14 +42,12 @@ public class EventService implements EventServiceInterface {
         return userSyncService.ensureUserExists(Organizer.class);
     }
 
-    @Override
     public EventResponseDTO getEventById(Long id) {
         Event event = eventRepository.findById(id)
                 .orElseThrow(() -> new EntityNotFoundException("Event not found with id: " + id));
         return eventMapper.toEventResponseDTO(event);
     }
 
-    @Override
     public EventResponseDTO updateEvent(Long eventId, EventUpdateDTO updateDTO) {
         Event existingEvent = eventRepository.findById(eventId)
                 .orElseThrow(() -> new EntityNotFoundException("Event not found"));
@@ -61,7 +58,6 @@ public class EventService implements EventServiceInterface {
         return eventMapper.toEventResponseDTO(savedEvent);
     }
 
-    @Override
     public void deleteEvent(Long id) {
         if (!eventRepository.existsById(id)) {
             throw new EntityNotFoundException("Event not found with id: " + id);
@@ -69,13 +65,11 @@ public class EventService implements EventServiceInterface {
         eventRepository.deleteById(id);
     }
 
-    @Override
     public Page<EventResponseDTO> getAllEvents(Pageable pageable) {
         Page<Event> eventPage = eventRepository.findAll(pageable);
         return eventPage.map(eventMapper::toEventResponseDTO);
     }
 
-    @Override
     public List<EventResponseDTO> getEventsByType(EventType type) {
         List<Event> events = eventRepository.findByType(type);
         return events.stream().map(eventMapper::toEventResponseDTO).toList();

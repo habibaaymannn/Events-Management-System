@@ -1,7 +1,7 @@
 package com.example.cdr.eventsmanagementsystem.Controller.BookingController;
 
-import com.example.cdr.eventsmanagementsystem.Constants.BookingControllerConstants;
-import com.example.cdr.eventsmanagementsystem.Constants.RoleConstants;
+import com.example.cdr.eventsmanagementsystem.Constants.ControllerConstants.BookingControllerConstants;
+import com.example.cdr.eventsmanagementsystem.Constants.ControllerConstants.RoleConstants;
 import com.example.cdr.eventsmanagementsystem.DTO.Booking.Request.VenueBookingRequest;
 import com.example.cdr.eventsmanagementsystem.DTO.Booking.Response.VenueBookingResponse;
 import com.example.cdr.eventsmanagementsystem.Service.Booking.BookingService;

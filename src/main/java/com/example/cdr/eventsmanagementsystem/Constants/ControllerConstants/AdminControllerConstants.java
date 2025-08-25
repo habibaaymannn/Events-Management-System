@@ -1,4 +1,4 @@
-package com.example.cdr.eventsmanagementsystem.Constants;
+package com.example.cdr.eventsmanagementsystem.Constants.ControllerConstants;
 
 public class AdminControllerConstants {
 
