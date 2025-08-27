@@ -3,7 +3,7 @@
   "enabled": true,
   "displayName": "EMS Realm",
   "internationalizationEnabled": false,
-  "registrationAllowed": false,
+  "registrationAllowed": true,
   "rememberMe": true,
   "resetPasswordAllowed": true,
   "editUsernameAllowed": false,
@@ -204,6 +204,12 @@
   "defaultDefaultClientScopes": ["roles", "web-origins", "profile", "email"],
   "defaultOptionalClientScopes": ["address", "phone", "offline_access", "microprofile-jwt"],
 
+  "attributes": {
+    "userProfileEnabled": "true",
+    "userProfileMetadata": "{\"attributes\":[{\"name\":\"userType\",\"displayName\":\"Role\",\"required\":{\"roles\":[\"user\"]},\"permissions\":{\"view\":[\"admin\",\"user\"],\"edit\":[\"admin\",\"user\"]},\"annotations\":{\"inputType\":\"select\",\"selectOptions\":\"organizer|Organizer,service_provider|Service Provider,venue_provider|Venue Provider,attendee|Attendee\"},\"validations\":{\"options\":{\"options\":\"organizer,service_provider,venue_provider,attendee\",\"forbidOthers\":true}}},{\"name\":\"firstName\",\"required\":{\"roles\":[\"user\"]}},{\"name\":\"lastName\",\"required\":{\"roles\":[\"user\"]}},{\"name\":\"email\",\"required\":{\"roles\":[\"user\"]}}]}",
+    "userProfileConfiguration": "{\"attributes\":[{\"name\":\"userType\",\"displayName\":\"Role\",\"required\":{\"roles\":[\"user\"]},\"permissions\":{\"view\":[\"admin\",\"user\"],\"edit\":[\"admin\",\"user\"]},\"annotations\":{\"inputType\":\"select\",\"selectOptions\":\"organizer|Organizer,service_provider|Service Provider,venue_provider|Venue Provider,attendee|Attendee\"},\"validations\":{\"options\":{\"options\":\"organizer,service_provider,venue_provider,attendee\",\"forbidOthers\":true}}},{\"name\":\"firstName\",\"required\":{\"roles\":[\"user\"]}},{\"name\":\"lastName\",\"required\":{\"roles\":[\"user\"]}},{\"name\":\"email\",\"required\":{\"roles\":[\"user\"]}}]}"
+  },
+
   "clients": [
     {
       "clientId": "ems-frontend",
@@ -279,5 +285,6 @@
 
   "smtpServer": {},
   "loginTheme": "",
-  "eventsEnabled": false
+  "eventsEnabled": true,
+  "eventsListeners": ["role-assignment-listener", "jboss-logging"]
 }

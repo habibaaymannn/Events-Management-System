@@ -20,7 +20,8 @@ services:
 
   keycloak:
     container_name: ems-keycloak
-    image: quay.io/keycloak/keycloak:26.0.5
+    build:
+      context: Keycloak/.
     environment:
       KEYCLOAK_ADMIN: ${KEYCLOAK_ADMIN}
       KEYCLOAK_ADMIN_PASSWORD: ${KEYCLOAK_ADMIN_PASSWORD}
@@ -34,6 +35,7 @@ services:
       - start-dev
       - --import-realm
       - --features=scripts,admin-fine-grained-authz
+      - --spi-import-export-import-strategy=OVERWRITE_EXISTING
 
   backend:
     container_name: ems-backend
