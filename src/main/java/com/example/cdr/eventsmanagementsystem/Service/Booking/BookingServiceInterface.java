@@ -15,7 +15,6 @@ public interface BookingServiceInterface {
     EventBookingResponse bookEvent(EventBookingRequest request);
     VenueBookingResponse bookVenue(VenueBookingRequest request);
     ServiceBookingResponse bookService(ServiceBookingRequest request);
-//    CombinedBookingResponse bookResources(CombinedBookingRequest request);
 
     void cancelBooking(BookingCancelRequest request);
     BookingDetailsResponse getBookingById(Long bookingId);

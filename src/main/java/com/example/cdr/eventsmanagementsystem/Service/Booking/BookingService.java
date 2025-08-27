@@ -64,7 +64,7 @@ public class BookingService implements BookingServiceInterface {
     private final StripeServiceInterface stripeService;
     private final UserSyncService userSyncService;
     private final ApplicationEventPublisher eventPublisher;
-    
+
     @Override
     @Transactional
     public EventBookingResponse bookEvent(EventBookingRequest request) {
@@ -148,7 +148,7 @@ public class BookingService implements BookingServiceInterface {
             request.getCurrency().toString(),
             "Venue booking for: " + venue.getName(),
             savedBooking.getId(),
-            SETUP_FUTURE_USAGE_ON_SESSION, 
+            SETUP_FUTURE_USAGE_ON_SESSION,
             request.getIsCaptured() != null ? request.getIsCaptured() : false
         );
         savedBooking.setStripeSessionId(sessionVenue.getId());
@@ -207,6 +207,51 @@ public class BookingService implements BookingServiceInterface {
         ServiceBookingResponse response = bookingMapper.toServiceBookingResponse(savedBooking);
         response.setPaymentUrl(sessionService.getUrl());
         return response;
+    }
+
+    @Override
+    @Transactional
+    public BookingDetailsResponse completePayment(Long bookingId, String paymentMethodId) {
+        Booking booking = bookingRepository.findById(bookingId)
+                .orElseThrow(() -> new EntityNotFoundException("Booking not found"));
+
+        if (booking.getStatus() != BookingStatus.PENDING) {
+            throw new IllegalStateException("Booking is not in PENDING status");
+        }
+
+        try {
+            PaymentIntent confirmedPayment = stripeService.confirmPaymentIntent(
+                booking.getStripePaymentId(),
+                paymentMethodId
+            );
+
+            if ("succeeded".equals(confirmedPayment.getStatus())) {
+                booking.setStatus(BookingStatus.BOOKED);
+                Booking savedBooking = bookingRepository.save(booking);
+
+                if(booking.getVenue() != null) {
+                    eventPublisher.publishEvent(new VenueBookingConfirmed(savedBooking));
+                }else if(booking.getService() != null) {
+                    eventPublisher.publishEvent(new ServiceBookingConfirmed(savedBooking));
+                }else{
+                    eventPublisher.publishEvent(new EventBookingConfirmed(savedBooking));
+
+                }
+                
+                return bookingMapper.toBookingDetailsResponse(savedBooking);
+            } else {
+                eventPublisher.publishEvent(new BookingPaymentFailed(booking,"Payment was not successful. Status: " + confirmedPayment.getStatus()));
+                throw new RuntimeException("Payment was not successful. Status: " + confirmedPayment.getStatus());
+            }
+        } catch (Exception e) {
+            eventPublisher.publishEvent(new BookingPaymentFailed(booking,"Payment failed: " + e.getMessage()));
+            throw new RuntimeException("Payment failed: " + e.getMessage(), e);
+        }
+    }
+
+    private String buildPaymentUrl(Long bookingId, String clientSecret) {
+        return String.format("%s?booking_id=%d&client_secret=%s", paymentPageUrl,
+                            bookingId, clientSecret);
     }
 
     @Override
