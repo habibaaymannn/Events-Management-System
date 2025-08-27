@@ -206,8 +206,25 @@
 
   "attributes": {
     "userProfileEnabled": "true",
-    "userProfileMetadata": "{\"attributes\":[{\"name\":\"userType\",\"displayName\":\"Role\",\"required\":{\"roles\":[\"user\"]},\"permissions\":{\"view\":[\"admin\",\"user\"],\"edit\":[\"admin\",\"user\"]},\"annotations\":{\"inputType\":\"select\",\"selectOptions\":\"organizer|Organizer,service_provider|Service Provider,venue_provider|Venue Provider,attendee|Attendee\"},\"validations\":{\"options\":{\"options\":\"organizer,service_provider,venue_provider,attendee\",\"forbidOthers\":true}}},{\"name\":\"firstName\",\"required\":{\"roles\":[\"user\"]}},{\"name\":\"lastName\",\"required\":{\"roles\":[\"user\"]}},{\"name\":\"email\",\"required\":{\"roles\":[\"user\"]}}]}",
-    "userProfileConfiguration": "{\"attributes\":[{\"name\":\"userType\",\"displayName\":\"Role\",\"required\":{\"roles\":[\"user\"]},\"permissions\":{\"view\":[\"admin\",\"user\"],\"edit\":[\"admin\",\"user\"]},\"annotations\":{\"inputType\":\"select\",\"selectOptions\":\"organizer|Organizer,service_provider|Service Provider,venue_provider|Venue Provider,attendee|Attendee\"},\"validations\":{\"options\":{\"options\":\"organizer,service_provider,venue_provider,attendee\",\"forbidOthers\":true}}},{\"name\":\"firstName\",\"required\":{\"roles\":[\"user\"]}},{\"name\":\"lastName\",\"required\":{\"roles\":[\"user\"]}},{\"name\":\"email\",\"required\":{\"roles\":[\"user\"]}}]}"
+    "declarativeUserProfileEnabled": "true",
+    "userProfileMetadata": "{\"attributes\":[{\"name\":\"username\",\"required\":{\"roles\":[\"user\"]}},{\"name\":\"firstName\",\"required\":{\"roles\":[\"user\"]}},{\"name\":\"lastName\",\"required\":{\"roles\":[\"user\"]}},{\"name\":\"email\",\"required\":{\"roles\":[\"user\"]}},{\"name\":\"userType\",\"displayName\":\"Role\",\"required\":{\"roles\":[\"user\"]},\"permissions\":{\"view\":[\"admin\",\"user\"],\"edit\":[\"admin\",\"user\"]},\"annotations\":{\"inputType\":\"select\",\"selectOptions\":\"organizer|Organizer,service_provider|Service Provider,venue_provider|Venue Provider,attendee|Attendee\"},\"validations\":{\"options\":{\"options\":[\"organizer\",\"service_provider\",\"venue_provider\",\"attendee\"]}}}]}",
+    "userProfileConfiguration": "{\"attributes\":[{\"name\":\"username\",\"required\":{\"roles\":[\"user\"]}},{\"name\":\"firstName\",\"required\":{\"roles\":[\"user\"]}},{\"name\":\"lastName\",\"required\":{\"roles\":[\"user\"]}},{\"name\":\"email\",\"required\":{\"roles\":[\"user\"]}},{\"name\":\"userType\",\"displayName\":\"Role\",\"required\":{\"roles\":[\"user\"]},\"permissions\":{\"view\":[\"admin\",\"user\"] ,\"edit\":[\"admin\",\"user\"]},\"annotations\":{\"inputType\":\"select\",\"selectOptions\":\"organizer|Organizer,service_provider|Service Provider,venue_provider|Venue Provider,attendee|Attendee\"},\"validations\":{\"options\":{\"options\":[\"organizer\",\"service_provider\",\"venue_provider\",\"attendee\"]}}}]}"
+  },
+
+  "components": {
+    "org.keycloak.userprofile.UserProfileProvider": [
+      {
+        "name": "declarative-user-profile",
+        "providerId": "declarative-user-profile",
+        "subType": "declarative-user-profile",
+        "subComponents": {},
+        "config": {
+          "kc.user.profile.config": [
+            "{\"attributes\":[{\"name\":\"username\",\"required\":{\"roles\":[\"user\"]}},{\"name\":\"firstName\",\"required\":{\"roles\":[\"user\"]}},{\"name\":\"lastName\",\"required\":{\"roles\":[\"user\"]}},{\"name\":\"email\",\"required\":{\"roles\":[\"user\"]}},{\"name\":\"userType\",\"displayName\":\"Role\",\"required\":{\"roles\":[\"user\"]},\"permissions\":{\"view\":[\"admin\",\"user\"],\"edit\":[\"admin\",\"user\"]},\"annotations\":{\"inputType\":\"select\",\"selectOptions\":\"organizer|Organizer,service_provider|Service Provider,venue_provider|Venue Provider,attendee|Attendee\"},\"validations\":{\"options\":{\"options\":[\"organizer\",\"service_provider\",\"venue_provider\",\"attendee\"]}}}]}"
+          ]
+        }
+      }
+    ]
   },
 
   "clients": [

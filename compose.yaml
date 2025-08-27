@@ -34,7 +34,7 @@ services:
     command:
       - start-dev
       - --import-realm
-      - --features=scripts,admin-fine-grained-authz
+      - --features=preview,scripts,admin-fine-grained-authz
       - --spi-import-export-import-strategy=OVERWRITE_EXISTING
 
   backend:
