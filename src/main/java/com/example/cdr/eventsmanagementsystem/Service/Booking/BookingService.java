@@ -233,45 +233,6 @@ public class BookingService implements BookingServiceInterface {
                             bookingId, clientSecret);
     }
 
-//    @Override
-//    @Transactional
-//    public CombinedBookingResponse bookResources(CombinedBookingRequest request) {
-//        CombinedBookingResponse response = new CombinedBookingResponse();
-//        response.setOrganizerId(request.getOrganizerId());
-//
-//        if (request.getVenueId() != null) {
-//            VenueBookingRequest venueRequest = new VenueBookingRequest();
-//            venueRequest.setVenueId(request.getVenueId());
-//            venueRequest.setOrganizerId(request.getOrganizerId());
-//            venueRequest.setCurrency(request.getCurrency());
-//            venueRequest.setStartTime(request.getStartTime());
-//            venueRequest.setEndTime(request.getEndTime());
-//
-//            VenueBookingResponse venueResponse = bookVenue(venueRequest);
-//            response.setVenueBookingId(venueResponse.getBookingId());
-//        }
-//
-//        if (request.getServiceIds() != null && !request.getServiceIds().isEmpty()) {
-//            List<Long> serviceBookingIds = request.getServiceIds().stream()
-//                    .map(serviceId -> {
-//                        ServiceBookingRequest serviceRequest = new ServiceBookingRequest();
-//                        serviceRequest.setServiceId(serviceId);
-//                        serviceRequest.setOrganizerId(request.getOrganizerId());
-//                        serviceRequest.setCurrency(request.getCurrency());
-//                        serviceRequest.setStartTime(request.getStartTime());
-//                        serviceRequest.setEndTime(request.getEndTime());
-//
-//                        ServiceBookingResponse serviceResponse = bookService(serviceRequest);
-//                        return serviceResponse.getBookingId();
-//                    })
-//                    .collect(Collectors.toList());
-//
-//            response.setServiceBookingIds(serviceBookingIds);
-//        }
-//
-//        return response;
-//    }
-
     @Override
     @Transactional
     public void cancelBooking(BookingCancelRequest request) {
