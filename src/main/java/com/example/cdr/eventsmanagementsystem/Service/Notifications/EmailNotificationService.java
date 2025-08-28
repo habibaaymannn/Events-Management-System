@@ -1,5 +1,12 @@
 package com.example.cdr.eventsmanagementsystem.Service.Notifications;
 
+import com.example.cdr.eventsmanagementsystem.Model.Booking.ServiceBooking;
+import com.example.cdr.eventsmanagementsystem.Model.Booking.VenueBooking;
+import com.example.cdr.eventsmanagementsystem.Model.Service.Services;
+import com.example.cdr.eventsmanagementsystem.Model.Venue.Venue;
+import com.example.cdr.eventsmanagementsystem.Repository.ServiceRepository;
+import com.example.cdr.eventsmanagementsystem.Repository.VenueRepository;
+import jakarta.persistence.EntityNotFoundException;
 import org.springframework.mail.SimpleMailMessage;
 import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.stereotype.Service;
@@ -14,15 +21,15 @@ import lombok.extern.slf4j.Slf4j;
 @Slf4j
 @Service
 @RequiredArgsConstructor
-public class EmailNotificationService implements NotificationService {
-    
+public class EmailNotificationService {
     private final JavaMailSender mailSender;
     private final UserSyncService userSyncService;
+    private final VenueRepository venueRepository;
+    private final ServiceRepository serviceRepository;
 
-    @Override
     public void sendPaymentRequestEmail(Booking booking, String clientSecret) {
         try {
-            BaseRoleEntity booker = userSyncService.findUserById(booking.getBookerId());
+            BaseRoleEntity booker = userSyncService.findUserById(booking.getCreatedBy());
 
             if (booker == null) {
                 log.error("User not found for payment email: booking {}", booking.getId());
@@ -47,9 +54,8 @@ public class EmailNotificationService implements NotificationService {
         }
     }
 
-    @Override
     public void sendEventBookingConfirmationEmail(Booking booking) {
-        BaseRoleEntity booker = userSyncService.findUserById(booking.getBookerId());
+        BaseRoleEntity booker = userSyncService.findUserById(booking.getCreatedBy());
         if (booker == null) {
             log.error("User not found for confirmation email: booking {}", booking.getId());
             return;
@@ -65,10 +71,11 @@ public class EmailNotificationService implements NotificationService {
 
         sendEmail(booker.getEmail(), String.format("Booking Confirmed #" , booking.getId()), content);
     }
-    @Override
-    public void sendVenueBookingConfirmationEmail(Booking booking) {
-        VenueProvider venueProvider = booking.getVenue().getVenueProvider();
-        BaseRoleEntity booker = userSyncService.findUserById(booking.getBookerId());
+
+    public void sendVenueBookingConfirmationEmail(VenueBooking booking) {
+        Venue venue = venueRepository.findById(booking.getVenueId()).orElseThrow(() -> new EntityNotFoundException("Venue not found"));
+        VenueProvider venueProvider = venue.getVenueProvider();
+        BaseRoleEntity booker = userSyncService.findUserById(booking.getCreatedBy());
         if (booker == null) {
             log.error("User not found for confirmation email: booking {}", booking.getId());
             return;
@@ -84,10 +91,12 @@ public class EmailNotificationService implements NotificationService {
 
         sendEmail(venueProvider.getEmail(),String.format( "Booking Confirmed #" + booking.getId()), content);
     }
-    @Override
-    public void sendServiceBookingConfirmationEmail(Booking booking) {
-        ServiceProvider serviceProvider = booking.getService().getServiceProvider();
-        BaseRoleEntity booker = userSyncService.findUserById(booking.getBookerId());
+
+    public void sendServiceBookingConfirmationEmail(ServiceBooking booking) {
+        Services service = serviceRepository.findById(booking.getServiceId()).orElseThrow(() -> new EntityNotFoundException("Service not found"));
+        ServiceProvider serviceProvider = service.getServiceProvider();
+
+        BaseRoleEntity booker = userSyncService.findUserById(booking.getCreatedBy());
         if (booker == null) {
             log.error("User not found for confirmation email: booking {}", booking.getId());
             return;
@@ -104,9 +113,8 @@ public class EmailNotificationService implements NotificationService {
         sendEmail(serviceProvider.getEmail(),String.format( "Booking Confirmed #" + booking.getId()), content);
     }
 
-    @Override
     public void sendBookingCancellationEmail(Booking booking) {
-        BaseRoleEntity booker = userSyncService.findUserById(booking.getBookerId());
+        BaseRoleEntity booker = userSyncService.findUserById(booking.getCreatedBy());
         if (booker == null) {
             log.error("User not found for confirmation email: booking {}", booking.getId());
             return;
@@ -122,9 +130,8 @@ public class EmailNotificationService implements NotificationService {
         sendEmail(booker.getEmail(), String.format("Booking Cancelled #" + booking.getId()), content);
     }
 
-    @Override
     public void sendPaymentFailureEmail(Booking booking, String failureReason) {
-        BaseRoleEntity booker = userSyncService.findUserById(booking.getBookerId());
+        BaseRoleEntity booker = userSyncService.findUserById(booking.getCreatedBy());
         if (booker == null) {
             return;
         }
@@ -141,10 +148,11 @@ public class EmailNotificationService implements NotificationService {
 
         sendEmail(booker.getEmail(),String.format( "Payment Failed - Booking #" + booking.getId()), content);
     }
-    @Override
-    public void sendVenueBookingEmail(Booking booking) {
-        BaseRoleEntity booker = userSyncService.findUserById(booking.getBookerId());
-        VenueProvider venueProvider = booking.getVenue().getVenueProvider();
+
+    public void sendVenueBookingEmail(VenueBooking booking) {
+        BaseRoleEntity booker = userSyncService.findUserById(booking.getCreatedBy());
+        Venue venue = venueRepository.findById(booking.getVenueId()).orElseThrow(() -> new EntityNotFoundException("Venue not found"));
+        VenueProvider venueProvider = venue.getVenueProvider();
         String content = String.format(
                 "Hello %s,\n\n" +
                         "You have a new booking request for your venue '%s'.\n" +
@@ -154,7 +162,7 @@ public class EmailNotificationService implements NotificationService {
                         "The booking will be confirmed once payment is completed.\n\n" +
                         "Best regards,\nEvents Team",
                 venueProvider.getFirstName(),
-                booking.getVenue().getName(),
+                venue.getName(),
                 booking.getId(),
                 booking.getStartTime(),
                 booking.getEndTime(),
@@ -162,10 +170,11 @@ public class EmailNotificationService implements NotificationService {
         );
         sendEmail(venueProvider.getEmail(), "New Booking Request for Your Venue", content);
     }
-    @Override
-    public void sendVenueCancellationEmail(Booking booking,String reason) {
-        BaseRoleEntity booker = userSyncService.findExistingUser(booking.getBookerId(), booking.getBookerType().toString());
-        VenueProvider venueProvider = booking.getVenue().getVenueProvider();
+
+    public void sendVenueCancellationEmail(VenueBooking booking,String reason) {
+        BaseRoleEntity booker = userSyncService.findUserById(booking.getCreatedBy());
+        Venue venue = venueRepository.findById(booking.getVenueId()).orElseThrow(() -> new EntityNotFoundException("Venue not found"));
+        VenueProvider venueProvider = venue.getVenueProvider();
         String content = String.format(
                 "Hello %s,\n\n" +
                         "A booking for your venue '%s' has been cancelled.\n" +
@@ -175,7 +184,7 @@ public class EmailNotificationService implements NotificationService {
                         "Cancellation Reason: %s\n\n" +
                         "Best regards,\nEvents Team",
                 venueProvider.getFirstName(),
-                booking.getVenue().getName(),
+                venue.getName(),
                 booking.getId(),
                 booking.getStartTime(),
                 booking.getEndTime(),
@@ -185,10 +194,11 @@ public class EmailNotificationService implements NotificationService {
         );
         sendEmail(venueProvider.getEmail(),  "Booking Cancelled for Your Venue: ",content);
     }
-    @Override
-    public void sendServiceBookingEmail(Booking booking) {
-        BaseRoleEntity booker = userSyncService.findExistingUser(booking.getBookerId(), booking.getBookerType().toString());
-        ServiceProvider serviceProvider = booking.getService().getServiceProvider();
+
+    public void sendServiceBookingEmail(ServiceBooking booking) {
+        BaseRoleEntity booker = userSyncService.findUserById(booking.getCreatedBy());
+        Services service = serviceRepository.findById(booking.getServiceId()).orElseThrow(() -> new EntityNotFoundException("Service not found"));
+        ServiceProvider serviceProvider = service.getServiceProvider();
         String content = String.format(
                 "Hello %s,\n\n" +
                         "You have a new booking request for your service '%s'.\n" +
@@ -198,7 +208,7 @@ public class EmailNotificationService implements NotificationService {
                         "The booking will be confirmed once payment is completed.\n\n" +
                         "Best regards,\nEvents Team",
                 serviceProvider.getFirstName(),
-                booking.getService().getName(),
+                service.getName(),
                 booking.getId(),
                 booking.getStartTime(),
                 booking.getEndTime(),
@@ -206,10 +216,11 @@ public class EmailNotificationService implements NotificationService {
         );
         sendEmail(serviceProvider.getEmail(), "New Booking Request for Your Service", content);
     }
-    @Override
-    public void sendServiceCancellationEmail(Booking booking,String reason) {
-        BaseRoleEntity booker = userSyncService.findExistingUser(booking.getBookerId(), booking.getBookerType().toString());
-        ServiceProvider serviceProvider = booking.getService().getServiceProvider();
+
+    public void sendServiceCancellationEmail(ServiceBooking booking,String reason) {
+        BaseRoleEntity booker = userSyncService.findUserById(booking.getCreatedBy());
+        Services service = serviceRepository.findById(booking.getServiceId()).orElseThrow(() -> new EntityNotFoundException("Service not found"));
+        ServiceProvider serviceProvider = service.getServiceProvider();
         String content = String.format(
                 "Hello %s,\n\n" +
                         "A booking for your service '%s' has been cancelled.\n" +
@@ -219,7 +230,7 @@ public class EmailNotificationService implements NotificationService {
                         "Cancellation Reason: %s\n\n" +
                         "Best regards,\nEvents Team",
                 serviceProvider.getFirstName(),
-                booking.getService().getName(),
+                service.getName(),
                 booking.getId(),
                 booking.getStartTime(),
                 booking.getEndTime(),
@@ -229,7 +240,7 @@ public class EmailNotificationService implements NotificationService {
         );
         sendEmail(serviceProvider.getEmail(),  "Booking Cancelled for Your Service: ",content);
     }
-    @Override
+
     public void sendEmail(String to, String subject, String content) {
         SimpleMailMessage message = new SimpleMailMessage();
         message.setTo(to);
