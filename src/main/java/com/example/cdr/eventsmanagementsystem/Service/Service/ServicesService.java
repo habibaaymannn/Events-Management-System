@@ -1,24 +1,14 @@
 package com.example.cdr.eventsmanagementsystem.Service.Service;
 
-import com.example.cdr.eventsmanagementsystem.DTO.Booking.Response.BookingDetailsResponse;
 import com.example.cdr.eventsmanagementsystem.DTO.Service.ServicesDTO;
-import com.example.cdr.eventsmanagementsystem.DTO.Venue.VenueDTO;
-import com.example.cdr.eventsmanagementsystem.Mapper.BookingMapper;
 import com.example.cdr.eventsmanagementsystem.Mapper.ServiceMapper;
-import com.example.cdr.eventsmanagementsystem.Model.Booking.Booking;
-import com.example.cdr.eventsmanagementsystem.Model.Booking.BookingStatus;
 import com.example.cdr.eventsmanagementsystem.Model.Service.Availability;
 import com.example.cdr.eventsmanagementsystem.Model.User.ServiceProvider;
-import com.example.cdr.eventsmanagementsystem.Model.Venue.Venue;
-import com.example.cdr.eventsmanagementsystem.NotificationEvent.BookingUpdates.ServiceBookingUpdate;
-import com.example.cdr.eventsmanagementsystem.Repository.BookingRepository;
 import com.example.cdr.eventsmanagementsystem.Repository.ServiceRepository;
 import com.example.cdr.eventsmanagementsystem.Model.Service.Services;
 import com.example.cdr.eventsmanagementsystem.Service.Auth.UserSyncService;
 import com.example.cdr.eventsmanagementsystem.Util.AuthUtil;
-import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
-import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.security.access.AccessDeniedException;
@@ -33,11 +23,13 @@ import org.springframework.transaction.annotation.Transactional;
 @Service
 public class ServicesService {
     private final ServiceRepository serviceRepository;
-    private final BookingRepository bookingRepository;
     private final UserSyncService userSyncService;
     private final ServiceMapper serviceMapper;
-    private final BookingMapper bookingMapper;
-    private final ApplicationEventPublisher eventPublisher;
+
+    public Page<ServicesDTO> getAllServices(Pageable pageable) {
+        Page<Services> services = serviceRepository.findAll(pageable);
+        return services.map(serviceMapper::toServiceDTO);
+    }
 
     @Transactional
     public ServicesDTO addService(ServicesDTO dto) {
@@ -62,31 +54,5 @@ public class ServicesService {
         service.setAvailability(Availability.valueOf(availability.toUpperCase()));
 
         return serviceMapper.toServiceDTO(serviceRepository.save(service));
-    }
-    public Page<ServicesDTO> getAllServices(Pageable pageable) {
-        Page<Services> services = serviceRepository.findAll(pageable);
-        return services.map(serviceMapper::toServiceDTO);
-    }
-
-    /// Refactor to its booking service
-    public Page<BookingDetailsResponse> getBookingsForServiceProvider(Pageable pageable) {
-        String serviceProviderId = AuthUtil.getCurrentUserId();
-        Page<Booking> bookings = bookingRepository.findByService_ServiceProvider_Id(serviceProviderId,pageable);
-        return bookings.map(bookingMapper::toBookingDetailsResponse);
-    }
-    /// Refactor to its booking service
-    @Transactional
-    public Booking respondToBookingRequests (Long bookingId, BookingStatus status) {
-        String serviceProviderId = AuthUtil.getCurrentUserId();
-        Booking booking = bookingRepository.findById(bookingId)
-                .orElseThrow(() -> new EntityNotFoundException("Booking not found"));
-
-        if(!booking.getService().getServiceProvider().getKeycloakId().equals(serviceProviderId)) {
-            throw new AccessDeniedException("You are not allowed to respond to this service");
-        }
-        booking.setStatus(status);
-        Booking savedBooking = bookingRepository.save(booking);
-        eventPublisher.publishEvent(new ServiceBookingUpdate(savedBooking));
-        return savedBooking;
     }
 }

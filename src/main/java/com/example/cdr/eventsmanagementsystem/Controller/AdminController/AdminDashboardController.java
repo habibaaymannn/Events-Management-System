@@ -2,7 +2,7 @@ package com.example.cdr.eventsmanagementsystem.Controller.AdminController;
 
 import com.example.cdr.eventsmanagementsystem.Constants.ControllerConstants.AdminControllerConstants;
 import com.example.cdr.eventsmanagementsystem.DTO.Admin.DashboardStatisticsDto;
-import com.example.cdr.eventsmanagementsystem.Service.User.AdminServiceInterface;
+import com.example.cdr.eventsmanagementsystem.Service.User.AdminService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
@@ -21,7 +21,7 @@ import java.util.Map;
 @RequiredArgsConstructor
 @Tag(name = "Admin - Dashboard", description = "Admin dashboard & statistics APIs")
 public class AdminDashboardController extends AdminController {
-    private final AdminServiceInterface adminService;
+    private final AdminService adminService;
 
     @Operation(summary = "Get dashboard statistics", description = "Retrieves statistics for the dashboard")
     @GetMapping(AdminControllerConstants.ADMIN_DASHBOARD_URL)

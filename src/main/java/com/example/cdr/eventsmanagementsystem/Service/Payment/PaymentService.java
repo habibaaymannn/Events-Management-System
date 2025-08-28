@@ -3,37 +3,31 @@ package com.example.cdr.eventsmanagementsystem.Service.Payment;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
+import com.example.cdr.eventsmanagementsystem.DTO.Booking.Response.BookingResponse;
+import com.example.cdr.eventsmanagementsystem.Model.Booking.*;
+import com.example.cdr.eventsmanagementsystem.Service.Notifications.NotificationUtil;
+import com.example.cdr.eventsmanagementsystem.Util.BookingUtil;
+import com.stripe.param.PaymentIntentConfirmParams;
+import com.example.cdr.eventsmanagementsystem.DTO.Booking.Response.CheckoutSessionResponse;
+import com.example.cdr.eventsmanagementsystem.DTO.Payment.AuthorizePaymentRequest;
+import com.example.cdr.eventsmanagementsystem.DTO.Payment.CapturePaymentRequest;
+import com.example.cdr.eventsmanagementsystem.DTO.Payment.PaymentConfirmationResponse;
+import com.example.cdr.eventsmanagementsystem.DTO.Payment.RefundRequest;
+import com.example.cdr.eventsmanagementsystem.Model.User.BaseRoleEntity;
+import com.example.cdr.eventsmanagementsystem.NotificationEvent.Payment.BookingPaymentFailed;
+import com.example.cdr.eventsmanagementsystem.Service.Auth.UserSyncService;
+import com.example.cdr.eventsmanagementsystem.Service.Booking.StripeServiceInterface;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-
-import com.example.cdr.eventsmanagementsystem.DTO.Booking.Response.BookingDetailsResponse;
-import com.example.cdr.eventsmanagementsystem.DTO.Booking.Response.CheckoutSessionResponse;
-import com.example.cdr.eventsmanagementsystem.DTO.Payment.AuthorizePaymentRequest;
-import com.example.cdr.eventsmanagementsystem.DTO.Payment.CapturePaymentRequest;
-import com.example.cdr.eventsmanagementsystem.DTO.Payment.PaymentConfirmationResponse;
-import com.example.cdr.eventsmanagementsystem.DTO.Payment.RefundRequest;
-import com.example.cdr.eventsmanagementsystem.Mapper.BookingMapper;
-import com.example.cdr.eventsmanagementsystem.Model.Booking.Booking;
-import com.example.cdr.eventsmanagementsystem.Model.Booking.BookingStatus;
-import com.example.cdr.eventsmanagementsystem.Model.Booking.PaymentStatus;
-import com.example.cdr.eventsmanagementsystem.Model.User.BaseRoleEntity;
-import com.example.cdr.eventsmanagementsystem.NotificationEvent.BookingConfirmation.EventBookingConfirmed;
-import com.example.cdr.eventsmanagementsystem.NotificationEvent.BookingConfirmation.ServiceBookingConfirmed;
-import com.example.cdr.eventsmanagementsystem.NotificationEvent.BookingConfirmation.VenueBookingConfirmed;
-import com.example.cdr.eventsmanagementsystem.NotificationEvent.Payment.BookingPaymentFailed;
-import com.example.cdr.eventsmanagementsystem.Repository.BookingRepository;
-import com.example.cdr.eventsmanagementsystem.Service.Auth.UserSyncService;
-import com.example.cdr.eventsmanagementsystem.Service.Booking.StripeServiceInterface;
 import com.stripe.model.Customer;
 import com.stripe.model.PaymentIntent;
 import com.stripe.model.checkout.Session;
-
-import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
+
 @Service
 @RequiredArgsConstructor
 public class PaymentService {
@@ -41,20 +35,17 @@ public class PaymentService {
     private static final Logger log = LoggerFactory.getLogger(PaymentService.class);
     private final UserSyncService userSyncService;
     private final StripeServiceInterface stripeService;
-    private final BookingRepository bookingRepository;
-    private final BookingMapper bookingMapper;
     private final ApplicationEventPublisher eventPublisher;
+    private final NotificationUtil notificationUtil;
+    private final BookingUtil bookingUtil;
 
     @Transactional
-    public BookingDetailsResponse authorizePayment(Long bookingId, AuthorizePaymentRequest request) {
-        Booking booking = bookingRepository.findById(bookingId)
-                .orElseThrow(() -> new EntityNotFoundException("Booking not found"));
-        
+    public BookingResponse authorizePayment(Long bookingId, BookingType type, AuthorizePaymentRequest request) {
+        Booking booking = bookingUtil.findBookingByTypeAndId(bookingId, type);
+
         if (booking.getStatus() != BookingStatus.PENDING) {
             throw new IllegalStateException("Booking must be in PENDING status for authorization. Current status: " + booking.getStatus());
-        }
-        
-        if (booking.getPaymentStatus() == PaymentStatus.CAPTURED) {
+        } else if (booking.getPaymentStatus() == PaymentStatus.CAPTURED) {
             throw new IllegalStateException("Payment is already captured. Cannot authorize a completed payment.");
         }
         
@@ -79,7 +70,7 @@ public class PaymentService {
             }
             
             if (request.getPaymentMethodId() != null) {
-                com.stripe.param.PaymentIntentConfirmParams confirmParams = com.stripe.param.PaymentIntentConfirmParams.builder()
+                PaymentIntentConfirmParams confirmParams = PaymentIntentConfirmParams.builder()
                         .setPaymentMethod(request.getPaymentMethodId())
                         .build();
                 intent = intent.confirm(confirmParams);
@@ -89,8 +80,8 @@ public class PaymentService {
                 booking.setPaymentStatus(PaymentStatus.AUTHORIZED);
                 booking.setAmount(request.getAmount() != null ? request.getAmount() : booking.getAmount());
                 booking.setCurrency(request.getCurrency() != null ? request.getCurrency() : booking.getCurrency());
-                Booking saved = bookingRepository.save(booking);
-                return bookingMapper.toBookingDetailsResponse(saved);
+                bookingUtil.saveBooking(booking);
+                return bookingUtil.toBookingResponse(booking);
             }
             throw new RuntimeException("Authorization failed. Status: " + intent.getStatus());
         } catch (Exception e) {
@@ -100,10 +91,9 @@ public class PaymentService {
     }
 
     @Transactional
-    public BookingDetailsResponse capturePayment(Long bookingId, CapturePaymentRequest request) {
-        Booking booking = bookingRepository.findById(bookingId)
-                .orElseThrow(() -> new EntityNotFoundException("Booking not found"));
-        
+    public BookingResponse capturePayment(Long bookingId, BookingType type, CapturePaymentRequest request) {
+        Booking booking = bookingUtil.findBookingByTypeAndId(bookingId, type);
+
         if (booking.getPaymentStatus() != PaymentStatus.AUTHORIZED) {
             throw new IllegalStateException("Payment must be AUTHORIZED to capture. Current status: " + booking.getPaymentStatus());
         }
@@ -113,11 +103,9 @@ public class PaymentService {
             if ("succeeded".equals(captured.getStatus())) {
                 booking.setPaymentStatus(PaymentStatus.CAPTURED);
                 booking.setStatus(BookingStatus.BOOKED);
-                Booking saved = bookingRepository.save(booking);
-                if(booking.getVenue() != null) eventPublisher.publishEvent(new VenueBookingConfirmed(saved));
-                else if (booking.getService() != null) eventPublisher.publishEvent(new ServiceBookingConfirmed(saved));
-                else eventPublisher.publishEvent(new EventBookingConfirmed(saved));
-                return bookingMapper.toBookingDetailsResponse(saved);
+                bookingUtil.saveBooking(booking);
+                notificationUtil.publishEvent(booking);
+                return bookingUtil.toBookingResponse(booking);
             }
             throw new RuntimeException("Capture failed. Status: " + captured.getStatus());
         } catch (Exception e) {
@@ -127,10 +115,9 @@ public class PaymentService {
     }
 
     @Transactional
-    public BookingDetailsResponse voidPayment(Long bookingId) {
-        Booking booking = bookingRepository.findById(bookingId)
-                .orElseThrow(() -> new EntityNotFoundException("Booking not found"));
-        
+    public BookingResponse voidPayment(Long bookingId, BookingType type) {
+        Booking booking = bookingUtil.findBookingByTypeAndId(bookingId, type);
+
         if (booking.getPaymentStatus() != PaymentStatus.AUTHORIZED) {
             throw new IllegalStateException("Payment must be AUTHORIZED to void. Current status: " + booking.getPaymentStatus());
         }
@@ -140,8 +127,8 @@ public class PaymentService {
             if ("canceled".equals(cancelled.getStatus())) {
                 booking.setPaymentStatus(PaymentStatus.VOIDED);
                 booking.setStatus(BookingStatus.CANCELLED);
-                Booking saved = bookingRepository.save(booking);
-                return bookingMapper.toBookingDetailsResponse(saved);
+                bookingUtil.saveBooking(booking);
+                return bookingUtil.toBookingResponse(booking);
             }
             throw new RuntimeException("Void failed. Status: " + cancelled.getStatus());
         } catch (Exception e) {
@@ -151,16 +138,16 @@ public class PaymentService {
     }
 
     @Transactional
-    public BookingDetailsResponse refundPayment(Long bookingId, RefundRequest request) {
-        Booking booking = bookingRepository.findById(bookingId)
-                .orElseThrow(() -> new EntityNotFoundException("Booking not found"));
+    public BookingResponse refundPayment(Long bookingId, BookingType type, RefundRequest request) {
+        Booking booking = bookingUtil.findBookingByTypeAndId(bookingId, type);
+
         try {
             stripeService.createRefund(booking.getStripePaymentId(), request.getAmount(), request.getReason());
             booking.setRefundAmount(request.getAmount());
             booking.setRefundProcessedAt(LocalDateTime.now());
             booking.setPaymentStatus(request.getAmount() == null ? PaymentStatus.REFUNDED : PaymentStatus.PARTIALLY_REFUNDED);
-            Booking saved = bookingRepository.save(booking);
-            return bookingMapper.toBookingDetailsResponse(saved);
+            bookingUtil.saveBooking(booking);
+            return bookingUtil.toBookingResponse(booking);
         } catch (Exception e) {
             eventPublisher.publishEvent(new BookingPaymentFailed(booking, "Refund failed: " + e.getMessage()));
             throw new RuntimeException("Refund failed: " + e.getMessage(), e);
@@ -202,7 +189,7 @@ public class PaymentService {
     }
 
     @Transactional
-    public PaymentConfirmationResponse confirmPayment(String sessionId, String setupSessionId, Boolean canceled, Boolean setupCanceled) {
+    public PaymentConfirmationResponse confirmPayment(BookingType type, String sessionId, String setupSessionId, Boolean canceled, Boolean setupCanceled) {
         log.info("Processing payment confirmation - sessionId: {}, setupSessionId: {}, canceled: {}, setupCanceled: {}", 
                 sessionId, setupSessionId, canceled, setupCanceled);
 
@@ -249,8 +236,7 @@ public class PaymentService {
                 log.info("Payment session retrieved: {}, status: {}, payment_status: {}", 
                         sessionId, session.getStatus(), session.getPaymentStatus());
 
-                Booking booking = bookingRepository.findByStripeSessionId(sessionId)
-                        .orElseThrow(() -> new EntityNotFoundException("No booking found for session: " + sessionId));
+                Booking booking = bookingUtil.findBookingByStripeSessionIdAndType(sessionId, type);
 
                 PaymentConfirmationResponse.PaymentDetails paymentDetails = null;
                 boolean requiresCapture = false;
@@ -311,17 +297,10 @@ public class PaymentService {
                 }
                 
                 if (shouldUpdateBooking) {
-                    booking = bookingRepository.save(booking);
-                    log.info("Booking {} updated with status: {} and payment status: {}", 
+                    bookingUtil.saveBooking(booking);
+                    notificationUtil.publishEvent(booking);
+                    log.info("Booking {} updated with status: {} and payment status: {}",
                             booking.getId(), booking.getStatus(), booking.getPaymentStatus());
-                    
-                    if (booking.getVenue() != null) {
-                        eventPublisher.publishEvent(new VenueBookingConfirmed(booking));
-                    } else if (booking.getService() != null) {
-                        eventPublisher.publishEvent(new ServiceBookingConfirmed(booking));
-                    } else {
-                        eventPublisher.publishEvent(new EventBookingConfirmed(booking));
-                    }
                 }
 
                 PaymentConfirmationResponse.PaymentConfirmationResponseBuilder responseBuilder = PaymentConfirmationResponse.builder()

@@ -1,9 +1,9 @@
 package com.example.cdr.eventsmanagementsystem.Service.Notifications;
 
+import com.example.cdr.eventsmanagementsystem.Model.Booking.EventBooking;
 import org.springframework.stereotype.Service;
 
 import com.example.cdr.eventsmanagementsystem.Model.Booking.Booking;
-import com.example.cdr.eventsmanagementsystem.Model.Booking.BookingType;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -32,22 +32,19 @@ public class EmailNotificationService implements NotificationService {
 
     /// providers
     @Override
-    public void sendProviderBookingEmail(Booking booking, BookingType bookingType) {
+    public void sendProviderBookingEmail(Booking booking) {
         // Notify providers (new booking)
-        providerNotificationService.sendNewBookingRequestEmail(booking,BookingType.VENUE);
-        providerNotificationService.sendNewBookingRequestEmail(booking,BookingType.SERVICE);
+        providerNotificationService.sendNewBookingRequestEmail(booking);
     }
     @Override
-    public void sendProviderConfirmationEmail(Booking booking, BookingType bookingType){
+    public void sendProviderConfirmationEmail(Booking booking){
         // Notify providers of booking confirmation
-        providerNotificationService.sendBookingConfirmationEmail(booking,BookingType.VENUE);
-        providerNotificationService.sendBookingConfirmationEmail(booking,BookingType.SERVICE);
+        providerNotificationService.sendBookingConfirmationEmail(booking);
     }
     @Override
     public void sendProviderCancellationEmail(Booking booking, String reason) {
         // Notify providers of booking cancellation
-        providerNotificationService.sendBookingCancellationEmail(booking,BookingType.VENUE, reason);
-        providerNotificationService.sendBookingCancellationEmail(booking, BookingType.SERVICE,reason);
+        providerNotificationService.sendBookingCancellationEmail(booking, reason);
     }
 
     /// organizer
@@ -66,14 +63,14 @@ public class EmailNotificationService implements NotificationService {
         organizerNotificationService.sendBookingCancellationEmail(booking);
     }
     @Override
-    public void sendEventCancellationEmail(Booking booking) {
+    public void sendEventCancellationEmail(EventBooking booking) {
         // notify organizer when event is cancelled
         organizerNotificationService.sendEventCancellationEmail(booking);
     }
 
     /// attendee
     @Override
-    public void sendAttendeeCancellationEmail(Booking booking) {
+    public void sendAttendeeCancellationEmail(EventBooking booking) {
         attendeeNotificationService.sendBookingCancellationEmail(booking);
     }
 }

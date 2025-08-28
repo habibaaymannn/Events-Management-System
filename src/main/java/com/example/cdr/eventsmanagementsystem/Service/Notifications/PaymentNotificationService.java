@@ -3,6 +3,7 @@ package com.example.cdr.eventsmanagementsystem.Service.Notifications;
 import com.example.cdr.eventsmanagementsystem.Model.Booking.Booking;
 import com.example.cdr.eventsmanagementsystem.Model.User.BaseRoleEntity;
 import com.example.cdr.eventsmanagementsystem.Constants.NotificationConstants.EmailConstants;
+import com.example.cdr.eventsmanagementsystem.Util.AuthUtil;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -14,12 +15,13 @@ import java.util.Objects;
 @RequiredArgsConstructor
 public class PaymentNotificationService {
     private final NotificationUtil notificationUtil;
+    private final AuthUtil authUtil;
 
     private final String PaymentPageUrl = "http://localhost:8180/payment-page?booking_id=%d&client_secret=%s";
 
     public void sendPaymentRequestEmail(Booking booking, String clientSecret) {
         try {
-            BaseRoleEntity booker = notificationUtil.getUser(booking.getBookerId(), "payment email", booking.getId());
+            BaseRoleEntity booker = authUtil.getUser(booking.getCreatedBy());
             if (Objects.isNull(booker)) return;
 
             String paymentUrl = String.format(PaymentPageUrl, booking.getId(), clientSecret);
@@ -31,7 +33,7 @@ public class PaymentNotificationService {
         }
     }
     public void sendPaymentFailureEmail(Booking booking, String failureReason) {
-        BaseRoleEntity booker = notificationUtil.getUser(booking.getBookerId(), "payment failure", booking.getId());
+        BaseRoleEntity booker = authUtil.getUser(booking.getCreatedBy());
         if (Objects.isNull(booker)) return;
 
         String content = String.format(EmailConstants.PAYMENT_FAILED, booker.getFirstName(), booking.getId(), failureReason);

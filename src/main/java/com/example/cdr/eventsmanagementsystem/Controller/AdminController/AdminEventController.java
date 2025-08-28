@@ -3,7 +3,7 @@ package com.example.cdr.eventsmanagementsystem.Controller.AdminController;
 import com.example.cdr.eventsmanagementsystem.Constants.ControllerConstants.AdminControllerConstants;
 import com.example.cdr.eventsmanagementsystem.DTO.Admin.EventDetailsDto;
 import com.example.cdr.eventsmanagementsystem.Model.Event.EventStatus;
-import com.example.cdr.eventsmanagementsystem.Service.User.AdminServiceInterface;
+import com.example.cdr.eventsmanagementsystem.Service.User.AdminService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
@@ -22,7 +22,7 @@ import org.springframework.web.bind.annotation.*;
 @RequiredArgsConstructor
 @Tag(name = "Admin - Events", description = "Admin event management APIs")
 public class AdminEventController extends AdminController {
-    private final AdminServiceInterface adminService;
+    private final AdminService adminService;
 
     @Operation(summary = "Get all events", description = "Retrieves all events with pagination")
     @GetMapping(AdminControllerConstants.ADMIN_EVENTS_URL)

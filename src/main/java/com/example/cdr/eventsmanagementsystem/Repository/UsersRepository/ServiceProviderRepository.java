@@ -8,6 +8,6 @@ import com.example.cdr.eventsmanagementsystem.Model.User.ServiceProvider;
 
 @Repository
 public interface ServiceProviderRepository extends JpaRepository<ServiceProvider, String> {
-    @Query("select count(distinct s.serviceProvider.id) from Booking b join b.service s where b.service is not null and b.status = 'BOOKED'")
+    @Query("select count(distinct s.serviceProvider.id) from ServiceBooking b join Services s on b.serviceId = s.id where b.status = 'BOOKED'")
     long countDistinctBookedProviders();
 }

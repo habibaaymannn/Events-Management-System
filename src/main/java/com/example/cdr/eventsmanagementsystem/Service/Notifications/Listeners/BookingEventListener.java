@@ -30,23 +30,23 @@ public class BookingEventListener {
     @EventListener
     public void handleVenueBookingCreated(VenueBookingCreated event) {
         notificationService.sendPaymentRequestEmail(event.booking(), event.booking().getStripePaymentId());
-        notificationService.sendProviderBookingEmail(event.booking(), event.booking().getType());
+        notificationService.sendProviderBookingEmail(event.booking());
     }
 
     @EventListener
     public void handleServiceBookingCreated(ServiceBookingCreated event) {
         notificationService.sendPaymentRequestEmail(event.booking(), event.booking().getStripePaymentId());
-        notificationService.sendProviderBookingEmail(event.booking(),event.booking().getType());
+        notificationService.sendProviderBookingEmail(event.booking());
     }
 
     @EventListener
     public void handleProviderServiceBookingConfirmed(ServiceBookingConfirmed event) {
-        notificationService.sendProviderConfirmationEmail(event.booking(), event.booking().getType());
+        notificationService.sendProviderConfirmationEmail(event.booking());
     }
 
     @EventListener
     public void handleProviderVenueBookingConfirmed(VenueBookingConfirmed event) {
-        notificationService.sendProviderConfirmationEmail(event.booking(), event.booking().getType());
+        notificationService.sendProviderConfirmationEmail(event.booking());
     }
 
     @EventListener

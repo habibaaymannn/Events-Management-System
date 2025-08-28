@@ -3,7 +3,7 @@ package com.example.cdr.eventsmanagementsystem.Controller.AdminController;
 import com.example.cdr.eventsmanagementsystem.Constants.ControllerConstants.AdminControllerConstants;
 import com.example.cdr.eventsmanagementsystem.DTO.Admin.UserCreateDto;
 import com.example.cdr.eventsmanagementsystem.DTO.Admin.UserDetailsDto;
-import com.example.cdr.eventsmanagementsystem.Service.User.AdminServiceInterface;
+import com.example.cdr.eventsmanagementsystem.Service.User.AdminService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
@@ -17,7 +17,7 @@ import org.springframework.web.bind.annotation.*;
 @RequiredArgsConstructor
 @Tag(name = "Admin - users", description = "Admin user management APIs")
 public class AdminUserController extends AdminController {
-    private final AdminServiceInterface adminService;
+    private final AdminService adminService;
     @Operation(summary = "Get all users", description = "Retrieves all users with pagination")
     @GetMapping(AdminControllerConstants.ADMIN_USERS_URL)
     public Page<UserDetailsDto> getAllUsers(@PageableDefault(page = 0, size = 10)Pageable pageable) {

@@ -1,5 +1,5 @@
 package com.example.cdr.eventsmanagementsystem.NotificationEvent.BookingConfirmation;
 
-import com.example.cdr.eventsmanagementsystem.Model.Booking.Booking;
+import com.example.cdr.eventsmanagementsystem.Model.Booking.VenueBooking;
 
-public record VenueBookingConfirmed(Booking booking) {}
+public record VenueBookingConfirmed(VenueBooking booking) {}

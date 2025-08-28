@@ -1,42 +1,35 @@
 package com.example.cdr.eventsmanagementsystem.Service.Payment;
 
-import org.springframework.beans.factory.annotation.Value;
-import org.springframework.context.ApplicationEventPublisher;
-import org.springframework.stereotype.Service;
-
-import static com.example.cdr.eventsmanagementsystem.Constants.PaymentConstants.CHECKOUT_SESSION_COMPLETED;
-import static com.example.cdr.eventsmanagementsystem.Constants.PaymentConstants.PAYMENT_INTENT_SUCCEEDED;
-import com.example.cdr.eventsmanagementsystem.Model.Booking.Booking;
-import com.example.cdr.eventsmanagementsystem.Model.Booking.BookingStatus;
-import com.example.cdr.eventsmanagementsystem.Model.Booking.PaymentStatus;
-import com.example.cdr.eventsmanagementsystem.NotificationEvent.BookingConfirmation.EventBookingConfirmed;
-import com.example.cdr.eventsmanagementsystem.NotificationEvent.BookingConfirmation.ServiceBookingConfirmed;
-import com.example.cdr.eventsmanagementsystem.NotificationEvent.BookingConfirmation.VenueBookingConfirmed;
-import com.example.cdr.eventsmanagementsystem.Repository.BookingRepository;
 import com.example.cdr.eventsmanagementsystem.Service.Booking.StripeServiceInterface;
+import com.example.cdr.eventsmanagementsystem.Model.Booking.*;
+import com.example.cdr.eventsmanagementsystem.Service.Notifications.NotificationUtil;
+import com.example.cdr.eventsmanagementsystem.Util.BookingUtil;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.stereotype.Service;
 import com.stripe.exception.SignatureVerificationException;
 import com.stripe.model.Event;
 import com.stripe.model.PaymentIntent;
 import com.stripe.model.checkout.Session;
 import com.stripe.net.ApiResource;
 import com.stripe.net.Webhook;
-
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+
+import static com.example.cdr.eventsmanagementsystem.Constants.PaymentConstants.CHECKOUT_SESSION_COMPLETED;
+import static com.example.cdr.eventsmanagementsystem.Constants.PaymentConstants.PAYMENT_INTENT_SUCCEEDED;
 
 @Service
 @RequiredArgsConstructor
 @Slf4j
 public class StripeWebhookService {
-
-    private final BookingRepository bookingRepository;
-    private final ApplicationEventPublisher eventPublisher;
     private final StripeServiceInterface stripeService;
+    private final BookingUtil bookingUtil;
+    private final NotificationUtil notificationUtil;
 
     @Value("${app.payment.webhook-secret:}")
     private String webhookSecret;
 
-    public Event constructEvent(String payload, String sigHeader) throws SignatureVerificationException {
+    public Event constructEvent(String payload, String sigHeader) {
         if (webhookSecret == null || webhookSecret.isBlank()) {
             throw new IllegalStateException("webhook secret missing");
         }
@@ -48,24 +41,24 @@ public class StripeWebhookService {
         }
     }
 
-    public void processEvent(Event event) {
+    public void processEvent(Event event, BookingType type) {
         switch (event.getType()) {
             case CHECKOUT_SESSION_COMPLETED:
-                handleCheckoutSessionCompleted(event);
+                handleCheckoutSessionCompleted(event, type);
                 break;
             case PAYMENT_INTENT_SUCCEEDED:
-                handlePaymentIntentSucceeded(event);
+                handlePaymentIntentSucceeded(event, type);
                 break;
             default:
                 break;
         }
     }
 
-    private void handleCheckoutSessionCompleted(Event event) {
+    private void handleCheckoutSessionCompleted(Event event, BookingType type) {
         Session session = (Session) event.getDataObjectDeserializer().getObject().orElse(null);
         if (session == null) return;
 
-        Booking booking = bookingRepository.findByStripeSessionId(session.getId()).orElse(null);
+        Booking booking = bookingUtil.findBookingByStripeSessionIdAndType(session.getId(), type);
         if (booking == null) return;
 
         String paymentIntentId = session.getPaymentIntent();
@@ -94,7 +87,7 @@ public class StripeWebhookService {
             confirmBooking(booking);
         } else {
             log.info("Saving booking without status change - Payment Intent Status: " + pi.getStatus());
-            bookingRepository.save(booking);
+            bookingUtil.saveBooking(booking);
         }
     }
 
@@ -104,13 +97,12 @@ public class StripeWebhookService {
         }
     }
 
-    private void handlePaymentIntentSucceeded(Event event) {
+    private void handlePaymentIntentSucceeded(Event event, BookingType type) {
         var obj = event.getDataObjectDeserializer().getObject().orElse(null);
-        if (!(obj instanceof PaymentIntent)) return;
-        
-        PaymentIntent paymentIntent = (PaymentIntent) obj;
-        Booking booking = bookingRepository.findByStripePaymentId(paymentIntent.getId()).orElse(null);
-        
+        if (!(obj instanceof PaymentIntent paymentIntent)) return;
+
+        Booking booking = bookingUtil.findBookingByStripePaymentIdAndType(paymentIntent.getId(), type);
+
         if (booking != null && booking.getStatus() != BookingStatus.BOOKED) {
             confirmBooking(booking);
         }
@@ -120,20 +112,9 @@ public class StripeWebhookService {
         if (booking.getStatus() != BookingStatus.BOOKED) {
             log.info("Updating booking status from " + booking.getStatus() + " to BOOKED for booking ID: " + booking.getId());
             booking.setStatus(BookingStatus.BOOKED);
-            bookingRepository.save(booking);
-            publishConfirmed(booking);
+            notificationUtil.publishEvent(booking);
         } else {
             log.info("Booking already has BOOKED status for booking ID: " + booking.getId());
-        }
-    }
-
-    private void publishConfirmed(Booking booking) {
-        if (booking.getVenue() != null) {
-            eventPublisher.publishEvent(new VenueBookingConfirmed(booking));
-        } else if (booking.getService() != null) {
-            eventPublisher.publishEvent(new ServiceBookingConfirmed(booking));
-        } else {
-            eventPublisher.publishEvent(new EventBookingConfirmed(booking));
         }
     }
 }

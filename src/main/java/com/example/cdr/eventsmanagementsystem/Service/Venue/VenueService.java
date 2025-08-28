@@ -3,8 +3,7 @@ package com.example.cdr.eventsmanagementsystem.Service.Venue;
 import com.example.cdr.eventsmanagementsystem.Model.Venue.Availability;
 import org.springframework.security.access.AccessDeniedException;
 import java.util.Objects;
-import com.example.cdr.eventsmanagementsystem.DTO.Booking.Response.BookingDetailsResponse;
-import com.example.cdr.eventsmanagementsystem.Mapper.BookingMapper;
+
 import jakarta.persistence.EntityNotFoundException;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
@@ -13,10 +12,8 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import com.example.cdr.eventsmanagementsystem.DTO.Venue.VenueDTO;
 import com.example.cdr.eventsmanagementsystem.Mapper.VenueMapper;
-import com.example.cdr.eventsmanagementsystem.Model.Booking.Booking;
 import com.example.cdr.eventsmanagementsystem.Model.User.VenueProvider;
 import com.example.cdr.eventsmanagementsystem.Model.Venue.Venue;
-import com.example.cdr.eventsmanagementsystem.Repository.BookingRepository;
 import com.example.cdr.eventsmanagementsystem.Repository.VenueRepository;
 import com.example.cdr.eventsmanagementsystem.Service.Auth.UserSyncService;
 import com.example.cdr.eventsmanagementsystem.Util.AuthUtil;
@@ -34,18 +31,19 @@ public class VenueService {
     private final VenueRepository venueRepository;
     private final VenueMapper venueMapper;
     private final UserSyncService userSyncService;
-    private final BookingRepository bookingRepository;
-    private final BookingMapper bookingMapper;
+
+    public Page<VenueDTO> getAllVenues(Pageable pageable) {
+        Page<Venue> venues = venueRepository.findAll(pageable);
+        return venues.map(venueMapper::toVenueDTO);
+    }
 
     @Transactional
     public VenueDTO addVenue(VenueDTO dto) {
-
         Venue newVenue = venueMapper.toVenue(dto);
         VenueProvider venueProvider = userSyncService.ensureUserExists(VenueProvider.class);
         newVenue.setVenueProvider(venueProvider);
         Venue savedVenue = venueRepository.save(newVenue);
         return venueMapper.toVenueDTO(savedVenue);
-
     }
 
     @Transactional
@@ -85,17 +83,6 @@ public class VenueService {
         verifyAccess(venue, venueProviderId);
 
         venueRepository.deleteById(venueId);
-    }
-    public Page<VenueDTO> getAllVenues(Pageable pageable) {
-        Page<Venue> venues = venueRepository.findAll(pageable);
-        return venues.map(venueMapper::toVenueDTO);
-    }
-
-    /// Refactored to their service
-    public Page<BookingDetailsResponse> getBookingsForVenueProvider(Pageable pageable) {
-        String venueProviderId = AuthUtil.getCurrentUserId();
-        Page<Booking> bookings = bookingRepository.findByVenue_VenueProvider_Id(venueProviderId, pageable);
-        return bookings.map(bookingMapper::toBookingDetailsResponse);
     }
 
     private void verifyAccess(Venue venue,String venueProviderId) throws AccessDeniedException {

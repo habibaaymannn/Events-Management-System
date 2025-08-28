@@ -1,10 +1,10 @@
 package com.example.cdr.eventsmanagementsystem.DTO.Booking.Request;
 
 import lombok.Data;
+import lombok.EqualsAndHashCode;
 
 @Data
-public class EventBookingRequest extends BaseBookingDTO {    
+@EqualsAndHashCode(callSuper = true)
+public class EventBookingRequest extends BaseBookingDTO {
     protected Long eventId;
-
-    private Integer ticketQuantity = 1;
 }

@@ -1,12 +1,15 @@
 package com.example.cdr.eventsmanagementsystem.Service.Notifications;
 
-import com.example.cdr.eventsmanagementsystem.Model.Booking.BookerType;
-import com.example.cdr.eventsmanagementsystem.Model.Booking.Booking;
 import com.example.cdr.eventsmanagementsystem.Model.Booking.BookingStatus;
+import com.example.cdr.eventsmanagementsystem.Model.Booking.EventBooking;
 import com.example.cdr.eventsmanagementsystem.Model.Event.Event;
 import com.example.cdr.eventsmanagementsystem.Model.User.BaseRoleEntity;
 import com.example.cdr.eventsmanagementsystem.Constants.NotificationConstants.EmailConstants;
-import com.example.cdr.eventsmanagementsystem.Repository.BookingRepository;
+import com.example.cdr.eventsmanagementsystem.Model.User.Organizer;
+import com.example.cdr.eventsmanagementsystem.Repository.EventBookingRepository;
+import com.example.cdr.eventsmanagementsystem.Repository.EventRepository;
+import com.example.cdr.eventsmanagementsystem.Util.AuthUtil;
+import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
@@ -20,31 +23,28 @@ import java.util.Objects;
 @Service
 @RequiredArgsConstructor
 public class AttendeeNotificationService {
+    private final EventBookingRepository bookingRepository;
+    private final EventRepository eventRepository;
     private final NotificationUtil notificationUtil;
-    private final BookingRepository bookingRepository;
+    private final AuthUtil authUtil;
 
-    public void sendBookingCancellationEmail(Booking booking) {
-        String cancelledBy = booking.getCancelledBy();
-        // case 1: Organizer cancels the event - notify all attendees
-        if (Objects.nonNull(booking.getEvent()) && Objects.equals(cancelledBy, booking.getEvent().getOrganizer().getId())) {
-            List<Booking> attendeeBookings = bookingRepository.findByEventIdAndBookerType(booking.getEvent().getId(), BookerType.ATTENDEE);
-
-            for (Booking attendeeBooking : attendeeBookings) {
-                BaseRoleEntity attendee = notificationUtil.getUser(attendeeBooking.getBookerId(), "event cancellation", attendeeBooking.getId());
-
-                if (Objects.nonNull(attendee)) {
-                    String content = String.format(EmailConstants.BOOKING_CANCELLED, attendee.getFirstName(), booking.getId());
-                    notificationUtil.send(attendee.getEmail(), "Event Cancelled: " + booking.getEvent().getName(), content);
-                }
+    public void sendBookingCancellationEmail(EventBooking eventBooking) {
+        String cancelledBy = eventBooking.getCancelledBy();
+        Organizer organizer = eventRepository.findById(eventBooking.getEventId()).map(Event::getOrganizer).orElseThrow(() -> new EntityNotFoundException("Event not found"));
+        if (Objects.equals(cancelledBy, organizer.getId())) {
+            // Case 1: Organizer cancels the event - notify all attendees
+            List<EventBooking> attendeeBookings = bookingRepository.findByEventId(eventBooking.getEventId());
+            for (EventBooking attendeeBooking : attendeeBookings) {
+                BaseRoleEntity attendee = authUtil.getUser(attendeeBooking.getCreatedBy());
+                String content = String.format(EmailConstants.BOOKING_CANCELLED, attendee.getFirstName(), eventBooking.getId());
+                String name = eventRepository.findById(eventBooking.getEventId()).map(Event::getName).orElse("Unknown Event");
+                notificationUtil.send(attendee.getEmail(), "Event Cancelled: " + name, content);
             }
-        }
-        // case 2: Attendee cancels their own booking - notify that attendee
-        else if (booking.getBookerType() == BookerType.ATTENDEE && Objects.equals(cancelledBy, booking.getBookerId())) {
-            BaseRoleEntity attendee = notificationUtil.getUser(booking.getBookerId(), "booking cancellation", booking.getId());
-            if (Objects.nonNull(attendee)) {
-                String content = String.format(EmailConstants.BOOKING_CANCELLED, attendee.getFirstName(), booking.getId());
-                notificationUtil.send(attendee.getEmail(), "Booking Cancelled #" + booking.getId(), content);
-            }
+        } else if (Objects.equals(cancelledBy, eventBooking.getCreatedBy())) {
+            // Case 2: Attendee cancels their own booking - notify that attendee
+            BaseRoleEntity attendee = authUtil.getUser(eventBooking.getCreatedBy());
+            String content = String.format(EmailConstants.BOOKING_CANCELLED, attendee.getFirstName(), eventBooking.getId());
+            notificationUtil.send(attendee.getEmail(), "Booking Cancelled #" + eventBooking.getId(), content);
         }
     }
 
@@ -55,16 +55,16 @@ public class AttendeeNotificationService {
         LocalDateTime startOfDay = tomorrow.atStartOfDay();
         LocalDateTime endOfDay = tomorrow.atTime(23, 59, 59);
 
-        List<Booking> bookings = bookingRepository.findUpcomingBookings(BookingStatus.BOOKED, startOfDay, endOfDay);
+        List<EventBooking> bookings = bookingRepository.findByStatusAndStartTimeBetween(BookingStatus.BOOKED, startOfDay, endOfDay);
 
-        for (Booking booking : bookings) {
+        for (EventBooking booking : bookings) {
             sendEventReminderEmail(booking);
         }
     }
 
-    public void sendEventReminderEmail(Booking booking) {
-        Event event = booking.getEvent();
-        BaseRoleEntity attendee = notificationUtil.getUser(booking.getBookerId(), "reminder", booking.getId());
+    public void sendEventReminderEmail(EventBooking booking) {
+        Event event = eventRepository.findById(booking.getEventId()).orElseThrow(() -> new EntityNotFoundException("Event not found"));
+        BaseRoleEntity attendee = authUtil.getUser(booking.getCreatedBy());
 
         String content = String.format(
                 EmailConstants.EVENT_REMINDER,
