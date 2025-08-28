@@ -1,0 +1,204 @@
+.venues-table {
+  width: 100%;
+  border-collapse: collapse;
+  background: white;
+  border-radius: 12px;
+  overflow: hidden;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  margin-top: 1rem;
+}
+
+.venues-table thead {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+}
+
+.venues-table thead th {
+  padding: 18px 15px;
+  text-align: left;
+  font-weight: 600;
+  font-size: 0.95rem;
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+  border: none;
+}
+
+.venues-table tbody tr {
+  transition: all 0.3s ease;
+  cursor: pointer;
+  border-bottom: 1px solid #e9ecef;
+}
+
+.venues-table tbody tr:hover {
+  background: linear-gradient(135deg, #f8f9ff 0%, #f0f2ff 100%);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 20px rgba(102, 126, 234, 0.15);
+}
+
+.venues-table tbody tr:last-child {
+  border-bottom: none;
+}
+
+.venues-table tbody td {
+  padding: 20px 15px;
+  vertical-align: middle;
+  font-size: 0.9rem;
+  color: #2c3e50;
+  border: none;
+}
+
+.venue-name-content {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.venue-name-content strong {
+  color: #2c3e50;
+  font-size: 1rem;
+  font-weight: 600;
+}
+
+.click-hint {
+  font-size: 0.75rem;
+  color: #6c757d;
+  opacity: 0;
+  transition: opacity 0.3s ease;
+}
+
+.venue-row:hover .click-hint {
+  opacity: 1;
+}
+
+.capacity-range {
+  font-weight: 600;
+  color: #495057;
+}
+
+.capacity-label {
+  font-size: 0.8rem;
+  color: #6c757d;
+  margin-left: 4px;
+}
+
+.price-info {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.price-amount {
+  font-weight: 700;
+  color: #28a745;
+  font-size: 1rem;
+}
+
+.price-type {
+  font-size: 0.8rem;
+  color: #6c757d;
+}
+
+.action-btn {
+  padding: 8px 16px;
+  border: none;
+  border-radius: 6px;
+  font-size: 0.85rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  min-width: 100px;
+}
+
+.availability-btn {
+  background: linear-gradient(135deg, #007bff, #0056b3);
+  color: white;
+}
+
+.availability-btn:hover {
+  background: linear-gradient(135deg, #0056b3, #004085);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(0, 123, 255, 0.3);
+}
+
+.book-btn {
+  background: linear-gradient(135deg, #28a745, #1e7e34);
+  color: white;
+}
+
+.book-btn:hover {
+  background: linear-gradient(135deg, #1e7e34, #155724);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(40, 167, 69, 0.3);
+}
+
+.remove-btn {
+  background: linear-gradient(135deg, #dc3545, #c82333);
+  color: white;
+}
+
+.remove-btn:hover {
+  background: linear-gradient(135deg, #c82333, #a71e2a);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(220, 53, 69, 0.3);
+}
+
+.action-btn:active {
+  transform: translateY(0);
+}
+
+/* Responsive design */
+@media (max-width: 1024px) {
+  .venues-table {
+    font-size: 0.85rem;
+  }
+  
+  .venues-table thead th,
+  .venues-table tbody td {
+    padding: 12px 8px;
+  }
+  
+  .action-btn {
+    padding: 6px 12px;
+    font-size: 0.8rem;
+    min-width: 80px;
+  }
+}
+
+@media (max-width: 768px) {
+  .venues-table {
+    display: block;
+    overflow-x: auto;
+    white-space: nowrap;
+  }
+  
+  .venue-name-content {
+    min-width: 150px;
+  }
+}
+
+/* Loading state */
+.venues-table.loading {
+  opacity: 0.7;
+  pointer-events: none;
+}
+
+/* Empty state */
+.venues-table tbody tr.empty-row {
+  text-align: center;
+  background: #f8f9fa;
+}
+
+.venues-table tbody tr.empty-row:hover {
+  background: #f8f9fa;
+  transform: none;
+  box-shadow: none;
+  cursor: default;
+}
+
+.venues-table tbody tr.empty-row td {
+  padding: 40px;
+  color: #6c757d;
+  font-style: italic;
+}
