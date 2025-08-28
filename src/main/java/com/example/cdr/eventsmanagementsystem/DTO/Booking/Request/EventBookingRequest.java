@@ -6,9 +6,9 @@ import lombok.Data;
 public class EventBookingRequest extends BaseBookingDTO {    
     protected Long eventId;
 
-    private String attendeeId; 
-    
     private Integer ticketQuantity = 1;
     
-    private PaymentDetailsDTO paymentDetails;
+    // private String attendeeId; 
+    
+    // private PaymentDetailsDTO paymentDetails;
 }

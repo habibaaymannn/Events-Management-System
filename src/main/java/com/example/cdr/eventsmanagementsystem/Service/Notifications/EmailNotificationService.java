@@ -3,11 +3,13 @@ package com.example.cdr.eventsmanagementsystem.Service.Notifications;
 import org.springframework.mail.SimpleMailMessage;
 import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.stereotype.Service;
+
 import com.example.cdr.eventsmanagementsystem.Model.Booking.Booking;
 import com.example.cdr.eventsmanagementsystem.Model.User.BaseRoleEntity;
 import com.example.cdr.eventsmanagementsystem.Model.User.ServiceProvider;
 import com.example.cdr.eventsmanagementsystem.Model.User.VenueProvider;
 import com.example.cdr.eventsmanagementsystem.Service.Auth.UserSyncService;
+
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
@@ -22,7 +24,10 @@ public class EmailNotificationService implements NotificationService {
     @Override
     public void sendPaymentRequestEmail(Booking booking, String clientSecret) {
         try {
-            BaseRoleEntity booker = userSyncService.findUserById(booking.getBookerId());
+            BaseRoleEntity booker = userSyncService.findExistingUser(
+                    booking.getBookerId(),
+                    booking.getBookerType().toString().toLowerCase()
+            );
 
             if (booker == null) {
                 log.error("User not found for payment email: booking {}", booking.getId());
@@ -49,7 +54,10 @@ public class EmailNotificationService implements NotificationService {
 
     @Override
     public void sendEventBookingConfirmationEmail(Booking booking) {
-        BaseRoleEntity booker = userSyncService.findUserById(booking.getBookerId());
+        BaseRoleEntity booker = userSyncService.findExistingUser(
+                booking.getBookerId(),
+                booking.getBookerType().toString().toLowerCase()
+        );
         if (booker == null) {
             log.error("User not found for confirmation email: booking {}", booking.getId());
             return;
@@ -68,7 +76,10 @@ public class EmailNotificationService implements NotificationService {
     @Override
     public void sendVenueBookingConfirmationEmail(Booking booking) {
         VenueProvider venueProvider = booking.getVenue().getVenueProvider();
-        BaseRoleEntity booker = userSyncService.findUserById(booking.getBookerId());
+        BaseRoleEntity booker = userSyncService.findExistingUser(
+                booking.getBookerId(),
+                booking.getBookerType().toString().toLowerCase()
+        );
         if (booker == null) {
             log.error("User not found for confirmation email: booking {}", booking.getId());
             return;

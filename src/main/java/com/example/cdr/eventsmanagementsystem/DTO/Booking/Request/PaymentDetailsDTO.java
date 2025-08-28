@@ -6,17 +6,17 @@ import lombok.Data;
 
 @Data
 public class PaymentDetailsDTO {
-    private String paymentMethodId; // Stripe Payment Method ID
+    // private String paymentMethodId;
     
-    private String paymentIntentId; // For confirming existing payment intent
+    // private String paymentIntentId;
     
-    private BigDecimal amount;
+    // private BigDecimal amount;
     
-    private String currency = "usd";
+    // private String currency;
     
-    private boolean savePaymentMethod;
+    // private boolean savePaymentMethod;
     
-    private String customerEmail;
+    // private String customerEmail;
     
-    private String customerName;
+    // private String customerName;
 }

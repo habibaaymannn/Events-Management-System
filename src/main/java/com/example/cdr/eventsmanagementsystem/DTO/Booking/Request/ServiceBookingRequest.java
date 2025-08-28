@@ -6,7 +6,7 @@ import lombok.Data;
 public class ServiceBookingRequest extends BaseBookingDTO {
     private Long serviceId;
     
-    private String organizerId;  
+    // private String organizerId;  
     
     private Long eventId; 
 }

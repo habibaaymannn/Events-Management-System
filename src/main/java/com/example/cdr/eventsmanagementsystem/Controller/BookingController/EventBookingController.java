@@ -1,18 +1,20 @@
 package com.example.cdr.eventsmanagementsystem.Controller.BookingController;
 
-import com.example.cdr.eventsmanagementsystem.Constants.BookingControllerConstants;
-import com.example.cdr.eventsmanagementsystem.Constants.RoleConstants;
-import com.example.cdr.eventsmanagementsystem.DTO.Booking.Request.EventBookingRequest;
-import com.example.cdr.eventsmanagementsystem.DTO.Booking.Response.EventBookingResponse;
-import com.example.cdr.eventsmanagementsystem.Service.Booking.BookingService;
-import io.swagger.v3.oas.annotations.Operation;
-import io.swagger.v3.oas.annotations.tags.Tag;
-import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RestController;
+
+import com.example.cdr.eventsmanagementsystem.Constants.BookingControllerConstants;
+import com.example.cdr.eventsmanagementsystem.Constants.RoleConstants;
+import com.example.cdr.eventsmanagementsystem.DTO.Booking.Request.EventBookingRequest;
+import com.example.cdr.eventsmanagementsystem.DTO.Booking.Response.EventBookingResponse;
+import com.example.cdr.eventsmanagementsystem.Service.Booking.BookingService;
+
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.tags.Tag;
+import lombok.RequiredArgsConstructor;
 
 @RestController
 @RequiredArgsConstructor
@@ -20,7 +22,7 @@ import org.springframework.web.bind.annotation.RestController;
 public class EventBookingController extends BookingController{
     private final BookingService bookingService;
 
-    @Operation(summary = "Book an event", description = "Creates a new event booking for an attendee")
+    @Operation(summary = "Book an event", description = "Creates a new event booking for an attendee. Use 'authorizeOnly=true' for 'Reserve Now, Pay Later' or 'authorizeOnly=false' for immediate payment.")
     @PostMapping(BookingControllerConstants.EVENT_BOOKING)
     @PreAuthorize("hasRole('" + RoleConstants.ATTENDEE_ROLE + "')")
     public ResponseEntity<EventBookingResponse> bookEvent(

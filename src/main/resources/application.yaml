@@ -45,7 +45,8 @@ server:
     include-stacktrace: never
 app:
   payment:
-    return-url: http://localhost:3000/booking-success
+    return-url: http://localhost:8180/v1/payments/confirm
+    webhook-secret: ${STRIPE_WEBHOOK_SECRET:}
   booking:
     free-cancel-days-before-start: 1
     penalty-percent: 0.20

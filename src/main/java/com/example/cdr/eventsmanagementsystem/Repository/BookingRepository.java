@@ -3,6 +3,7 @@ package com.example.cdr.eventsmanagementsystem.Repository;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
+
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
@@ -18,6 +19,8 @@ import com.example.cdr.eventsmanagementsystem.Model.Booking.BookingStatus;
 public interface BookingRepository extends JpaRepository<Booking, Long> {
     List<Booking> findByBookerId(String bookerId);
     List<Booking> findByEvent_Id(Long eventId);
+    java.util.Optional<Booking> findByStripeSessionId(String stripeSessionId);
+    java.util.Optional<Booking> findByStripePaymentId(String stripePaymentId);
 
     Page<Booking> findByService_ServiceProvider_Id(String serviceProviderId, Pageable pageable);
     Page<Booking> findByVenue_VenueProvider_Id(String venueProviderId,Pageable pageable);

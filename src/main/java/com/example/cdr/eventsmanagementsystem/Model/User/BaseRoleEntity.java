@@ -2,7 +2,6 @@ package com.example.cdr.eventsmanagementsystem.Model.User;
 
 import java.time.LocalDateTime;
 
-import lombok.*;
 import org.springframework.data.annotation.CreatedBy;
 import org.springframework.data.annotation.CreatedDate;
 import org.springframework.data.annotation.LastModifiedBy;
@@ -13,6 +12,9 @@ import jakarta.persistence.Column;
 import jakarta.persistence.EntityListeners;
 import jakarta.persistence.Id;
 import jakarta.persistence.MappedSuperclass;
+import lombok.AllArgsConstructor;
+import lombok.Data;
+import lombok.NoArgsConstructor;
 
 @Data
 @AllArgsConstructor
@@ -50,6 +52,15 @@ public abstract class BaseRoleEntity {
 
     @Column(nullable = false)
     private boolean active = true;
+
+    @Column
+    private String stripeCustomerId;
+
+    @Column
+    private String defaultPaymentMethodId;
+
+    @Column(nullable = false)
+    private boolean autoPayEnabled = false;
 
     public String getFullName() {
         return firstName + " " + lastName;
