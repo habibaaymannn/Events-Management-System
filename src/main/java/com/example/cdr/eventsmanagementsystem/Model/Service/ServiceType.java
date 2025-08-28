@@ -1,6 +1,5 @@
 package com.example.cdr.eventsmanagementsystem.Model.Service;
 
-import java.util.List;
 
 public enum ServiceType {
     CATERING,

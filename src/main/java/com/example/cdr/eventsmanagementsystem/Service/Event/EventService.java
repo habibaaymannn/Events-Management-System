@@ -1,34 +1,35 @@
 package com.example.cdr.eventsmanagementsystem.Service.Event;
 
 import java.util.List;
+
+import com.example.cdr.eventsmanagementsystem.DTO.Event.EventUpdateDTO;
+import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import com.example.cdr.eventsmanagementsystem.DTO.Event.EventDTO;
 import com.example.cdr.eventsmanagementsystem.DTO.Event.EventResponseDTO;
-import com.example.cdr.eventsmanagementsystem.DTO.Event.UpdateEventDTO;
 import com.example.cdr.eventsmanagementsystem.Mapper.EventMapper;
 import com.example.cdr.eventsmanagementsystem.Model.Event.Event;
 import com.example.cdr.eventsmanagementsystem.Model.Event.EventType;
 import com.example.cdr.eventsmanagementsystem.Model.User.Organizer;
 import com.example.cdr.eventsmanagementsystem.Repository.EventRepository;
-import com.example.cdr.eventsmanagementsystem.Repository.UsersRepository.OrganizerRepository;
 import com.example.cdr.eventsmanagementsystem.Service.Auth.UserSyncService;
 import jakarta.persistence.EntityNotFoundException;
 
+/**
+ * Service class for managing events.
+ * Provides functionality to create, retrieve, update, delete, and list events,
+ * as well as retrieve events by type.
+ */
+
+@RequiredArgsConstructor
 @Service
 public class EventService implements EventServiceInterface {
     private final EventRepository eventRepository;
     private final EventMapper eventMapper;
     private final UserSyncService userSyncService;
-    private final OrganizerRepository organizerRepository;
 
-    public EventService(EventRepository eventRepository, EventMapper eventMapper, UserSyncService userSyncService, OrganizerRepository organizerRepository) {
-        this.eventRepository = eventRepository;
-        this.eventMapper = eventMapper;
-        this.userSyncService = userSyncService;
-        this.organizerRepository = organizerRepository;
-    }
 
     @Override
     public EventResponseDTO createEvent(EventDTO eventDTO) {
@@ -40,24 +41,6 @@ public class EventService implements EventServiceInterface {
 
     private Organizer ensureCurrentUserAsOrganizer() {
         return userSyncService.ensureUserExists(Organizer.class);
-//        String userId = AuthUtil.getCurrentUserId();
-//        String email = userSyncService.getCurrentUserEmail();
-//        String firstName = userSyncService.getCurrentUserFirstName();
-//        String lastName = userSyncService.getCurrentUserLastName();
-//
-//        Organizer organizer = organizerRepository.findById(userId).orElse(null);
-//
-//        if (organizer == null) {
-//            organizer = new Organizer();
-//            organizer.setId(userId);
-//            organizer.setEmail(email);
-//            organizer.setFirstName(firstName);
-//            organizer.setLastName(lastName);
-//
-//            organizer = organizerRepository.save(organizer);
-//        }
-//
-//        return organizer;
     }
 
     @Override
@@ -68,7 +51,7 @@ public class EventService implements EventServiceInterface {
     }
 
     @Override
-    public EventResponseDTO updateEvent(Long eventId, UpdateEventDTO updateDTO) {
+    public EventResponseDTO updateEvent(Long eventId, EventUpdateDTO updateDTO) {
         Event existingEvent = eventRepository.findById(eventId)
                 .orElseThrow(() -> new EntityNotFoundException("Event not found"));
 

@@ -67,8 +67,7 @@ public class LoggingAspect {
         StringBuilder sb = new StringBuilder();
         for (int i = 0; i < args.length; i++) {
             if (i > 0) sb.append(", ");
-            sb.append(paramNames[i]).append("=");
-            sb.append(getSafeValue(args[i]));
+            sb.append(paramNames[i]).append("=").append(getSafeValue(args[i]));
         }
         return sb.toString();
     }

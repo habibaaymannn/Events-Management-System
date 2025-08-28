@@ -1,6 +1,5 @@
 package com.example.cdr.eventsmanagementsystem.DTO.Venue;
 
-import com.example.cdr.eventsmanagementsystem.Model.Event.EventType;
 import com.example.cdr.eventsmanagementsystem.Model.Venue.Capacity;
 import com.example.cdr.eventsmanagementsystem.Model.Venue.Pricing;
 import jakarta.validation.constraints.NotBlank;

@@ -26,6 +26,4 @@ public class EventResponseDTO {
     private List<String> serviceProviderNames;
     private BigDecimal retailPrice;
     private LocalDateTime freeCancellationDeadline;
-    private LocalDateTime createdDate;
-    private LocalDateTime lastModifiedDate;
 }

@@ -5,12 +5,8 @@ import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 
+import com.example.cdr.eventsmanagementsystem.Util.BaseEntity;
 import com.fasterxml.jackson.annotation.JsonIgnore;
-import org.springframework.data.annotation.CreatedBy;
-import org.springframework.data.annotation.CreatedDate;
-import org.springframework.data.annotation.LastModifiedBy;
-import org.springframework.data.annotation.LastModifiedDate;
-import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 
 import com.example.cdr.eventsmanagementsystem.Model.Booking.Booking;
 import com.example.cdr.eventsmanagementsystem.Model.User.Admin;
@@ -19,27 +15,20 @@ import com.example.cdr.eventsmanagementsystem.Model.Venue.Venue;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
-import jakarta.persistence.EntityListeners;
 import jakarta.persistence.EnumType;
 import jakarta.persistence.Enumerated;
-import jakarta.persistence.GeneratedValue;
-import static jakarta.persistence.GenerationType.IDENTITY;
-import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.OneToMany;
 import jakarta.persistence.Table;
 import lombok.Data;
+import lombok.EqualsAndHashCode;
 
 @Entity
 @Data
-@EntityListeners(AuditingEntityListener.class)
+@EqualsAndHashCode(callSuper = true)
 @Table(name = "events")
-public class Event {
-    @Id
-    @GeneratedValue(strategy = IDENTITY)
-    private Long id;
-
+public class Event extends BaseEntity {
     @Column(nullable = false)
     private String name;
 
@@ -57,18 +46,6 @@ public class Event {
 
     @Enumerated(EnumType.STRING)
     private EventStatus status = EventStatus.DRAFT;
-    
-    @CreatedBy
-    private String createdBy;
-    
-    @LastModifiedBy 
-    private String lastModifiedBy;
-    
-    @CreatedDate
-    private LocalDateTime createdDate;
-    
-    @LastModifiedDate
-    private LocalDateTime lastModifiedDate;
     
     @ManyToOne
     @JoinColumn(name = "organizer_id")
@@ -90,7 +67,7 @@ public class Event {
     private BigDecimal retailPrice; 
 
     @Column(nullable = false)
-    private boolean flagged = false;
+    private boolean flagged;
 
     private String flagReason;
 }

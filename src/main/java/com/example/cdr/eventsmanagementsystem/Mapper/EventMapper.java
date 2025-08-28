@@ -2,6 +2,7 @@ package com.example.cdr.eventsmanagementsystem.Mapper;
 
 import java.time.LocalDateTime;
 
+import com.example.cdr.eventsmanagementsystem.DTO.Event.EventUpdateDTO;
 import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;
 import org.mapstruct.MappingTarget;
@@ -9,7 +10,6 @@ import org.mapstruct.Named;
 
 import com.example.cdr.eventsmanagementsystem.DTO.Event.EventDTO;
 import com.example.cdr.eventsmanagementsystem.DTO.Event.EventResponseDTO;
-import com.example.cdr.eventsmanagementsystem.DTO.Event.UpdateEventDTO;
 import com.example.cdr.eventsmanagementsystem.Model.Event.Event;
 import com.example.cdr.eventsmanagementsystem.Model.Event.EventStatus;
 import com.example.cdr.eventsmanagementsystem.Model.User.Organizer;
@@ -23,10 +23,6 @@ public interface EventMapper {
     @Mapping(target = "admin", ignore = true)
     @Mapping(target = "bookings", ignore = true)
     @Mapping(target = "status", ignore = true)
-    @Mapping(target = "createdBy", ignore = true)
-    @Mapping(target = "lastModifiedBy", ignore = true)
-    @Mapping(target = "createdDate", ignore = true)
-    @Mapping(target = "lastModifiedDate", ignore = true)
     Event toEvent(EventDTO dto);
 
     default Event toEventWithDefaults(EventDTO dto, Organizer organizer) {
@@ -34,10 +30,6 @@ public interface EventMapper {
         
         if (organizer != null) {
             event.setOrganizer(organizer);
-            if (organizer.getId() != null) {
-                event.setCreatedBy(organizer.getId());
-                event.setLastModifiedBy(organizer.getId());
-            }
         }
 
         if (event.getStatus() == null) {
@@ -55,12 +47,6 @@ public interface EventMapper {
         if (event.getFreeCancellationDeadline() == null) {
             event.setFreeCancellationDeadline(LocalDateTime.now().plusDays(1));
         }
-
-        if (event.getCreatedDate() == null) {
-            event.setCreatedDate(LocalDateTime.now());
-        }
-        event.setLastModifiedDate(LocalDateTime.now());
-        
         return event;
     }
 
@@ -70,17 +56,13 @@ public interface EventMapper {
     @Mapping(target = "admin", ignore = true)
     @Mapping(target = "bookings", ignore = true)
     @Mapping(target = "status", ignore = true)
-    @Mapping(target = "createdBy", ignore = true)
-    @Mapping(target = "lastModifiedBy", ignore = true)
-    @Mapping(target = "createdDate", ignore = true)
-    @Mapping(target = "lastModifiedDate", ignore = true)
     @Mapping(target = "freeCancellationDeadline", ignore = true)
-    void updateEventFromDTO(UpdateEventDTO dto, @MappingTarget Event event);
+    void updateEventFromDTO(EventUpdateDTO dto, @MappingTarget Event event);
 
     @Mapping(source = "organizer.id", target = "organizerId")
     EventDTO toEventDTO(Event event);
 
-    UpdateEventDTO toUpdateEventDTO(Event event);
+    EventUpdateDTO toUpdateEventDTO(Event event);
 
     @Mapping(source = "organizer.id", target = "organizerId")
     @Mapping(source = "organizer", target = "organizerName", qualifiedByName = "getOrganizerName")

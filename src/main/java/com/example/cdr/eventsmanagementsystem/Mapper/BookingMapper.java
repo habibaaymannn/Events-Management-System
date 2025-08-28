@@ -23,10 +23,6 @@ public interface BookingMapper {
     @Mapping(target = "venue", ignore = true)
     @Mapping(target = "service", ignore = true)
     @Mapping(target = "stripePaymentId", ignore = true)
-    @Mapping(target = "createdAt", ignore = true)
-    @Mapping(target = "updatedAt", ignore = true)
-    @Mapping(target = "createdBy", ignore = true)
-    @Mapping(target = "lastModifiedBy", ignore = true)
     @Mapping(target = "refundAmount", ignore = true)
     @Mapping(target = "refundProcessedAt", ignore = true)
     @Mapping(target = "cancellationReason", ignore = true)
@@ -39,7 +35,6 @@ public interface BookingMapper {
     @Mapping(source = "event.id", target = "eventId")
     @Mapping(source = "bookerId", target = "attendeeId")       
     @Mapping(source = "stripePaymentId", target = "paymentConfirmation")
-    @Mapping(source = "createdAt", target = "createdAt")
     EventBookingResponse toEventBookingResponse(Booking booking);
 
     @Mapping(target = "id", ignore = true)
@@ -50,10 +45,6 @@ public interface BookingMapper {
     @Mapping(target = "event", ignore = true)
     @Mapping(target = "service", ignore = true)
     @Mapping(target = "stripePaymentId", ignore = true)
-    @Mapping(target = "createdAt", ignore = true)
-    @Mapping(target = "updatedAt", ignore = true)
-    @Mapping(target = "createdBy", ignore = true)
-    @Mapping(target = "lastModifiedBy", ignore = true)
     @Mapping(target = "refundAmount", ignore = true)
     @Mapping(target = "refundProcessedAt", ignore = true)
     @Mapping(target = "cancellationReason", ignore = true)
@@ -66,7 +57,6 @@ public interface BookingMapper {
     @Mapping(source = "id", target = "bookingId")
     @Mapping(source = "venue.id", target = "venueId")
     @Mapping(source = "bookerId", target = "organizerId")     
-    @Mapping(source = "createdAt", target = "createdAt")
     VenueBookingResponse toVenueBookingResponse(Booking booking);
 
     @Mapping(target = "id", ignore = true)
@@ -77,10 +67,6 @@ public interface BookingMapper {
     @Mapping(target = "event", ignore = true)
     @Mapping(target = "venue", ignore = true)
     @Mapping(target = "stripePaymentId", ignore = true)
-    @Mapping(target = "createdAt", ignore = true)
-    @Mapping(target = "updatedAt", ignore = true)
-    @Mapping(target = "createdBy", ignore = true)
-    @Mapping(target = "lastModifiedBy", ignore = true)
     @Mapping(target = "refundAmount", ignore = true)
     @Mapping(target = "refundProcessedAt", ignore = true)
     @Mapping(target = "cancellationReason", ignore = true)
@@ -93,7 +79,6 @@ public interface BookingMapper {
     @Mapping(source = "id", target = "bookingId")
     @Mapping(source = "service.id", target = "serviceId")
     @Mapping(source = "bookerId", target = "organizerId")      
-    @Mapping(source = "createdAt", target = "createdAt")
     ServiceBookingResponse toServiceBookingResponse(Booking booking);
 
     @Mapping(source = "venue.id", target = "venueId")

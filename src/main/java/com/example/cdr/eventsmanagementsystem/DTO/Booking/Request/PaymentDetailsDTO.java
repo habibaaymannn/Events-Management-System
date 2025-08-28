@@ -14,7 +14,7 @@ public class PaymentDetailsDTO {
     
     private String currency = "usd";
     
-    private boolean savePaymentMethod = false;
+    private boolean savePaymentMethod;
     
     private String customerEmail;
     

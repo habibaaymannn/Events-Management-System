@@ -25,7 +25,7 @@ public interface BookingRepository extends JpaRepository<Booking, Long> {
     long countByVenueIsNotNullAndStatus(BookingStatus status);
 
     @Query("select function('date', b.createdAt) as date, count(b) as count from Booking b "+
-           "where b.createdAt is not null and function('date', b.createdAt) >= :start and function('date', b.createdAt) <= :end "+
+           "where function('date', b.createdAt) >= :start and function('date', b.createdAt) <= :end "+
            "group by function('date', b.createdAt) order by function('date', b.createdAt)")
     List<LocalDateCount> countDailyBookingsBetween(@Param("start") LocalDate start,
                                                    @Param("end") LocalDate end);

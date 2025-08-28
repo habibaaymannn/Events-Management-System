@@ -3,21 +3,12 @@ package com.example.cdr.eventsmanagementsystem.Service.Booking;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.List;
-import java.util.stream.Collectors;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import com.example.cdr.eventsmanagementsystem.DTO.Booking.Request.CancelBookingRequest;
-import com.example.cdr.eventsmanagementsystem.DTO.Booking.Request.CombinedBookingRequest;
-import com.example.cdr.eventsmanagementsystem.DTO.Booking.Request.EventBookingRequest;
-import com.example.cdr.eventsmanagementsystem.DTO.Booking.Request.ServiceBookingRequest;
-import com.example.cdr.eventsmanagementsystem.DTO.Booking.Request.VenueBookingRequest;
-import com.example.cdr.eventsmanagementsystem.DTO.Booking.Response.BookingDetailsResponse;
-import com.example.cdr.eventsmanagementsystem.DTO.Booking.Response.CombinedBookingResponse;
-import com.example.cdr.eventsmanagementsystem.DTO.Booking.Response.EventBookingResponse;
-import com.example.cdr.eventsmanagementsystem.DTO.Booking.Response.ServiceBookingResponse;
-import com.example.cdr.eventsmanagementsystem.DTO.Booking.Response.VenueBookingResponse;
+import com.example.cdr.eventsmanagementsystem.DTO.Booking.Request.*;
+import com.example.cdr.eventsmanagementsystem.DTO.Booking.Response.*;
 import com.example.cdr.eventsmanagementsystem.Mapper.BookingMapper;
 import com.example.cdr.eventsmanagementsystem.Model.Booking.Booking;
 import com.example.cdr.eventsmanagementsystem.Model.Booking.BookingStatus;
@@ -43,7 +34,6 @@ import com.example.cdr.eventsmanagementsystem.Service.Auth.UserSyncService;
 import com.example.cdr.eventsmanagementsystem.Util.AuthUtil;
 import com.stripe.model.Customer;
 import com.stripe.model.PaymentIntent;
-
 import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -62,7 +52,7 @@ public class BookingService implements BookingServiceInterface {
     private final UserSyncService userSyncService;
     private final ApplicationEventPublisher eventPublisher;
     
-    @Value("${app.payment.page-url:http://localhost:8080/payment-page}")
+    @Value("${app.paym ent.page-url:http://localhost:8080/payment-page}")
     private String paymentPageUrl;
 
     @Override
@@ -96,8 +86,6 @@ public class BookingService implements BookingServiceInterface {
         booking.setStripePaymentId(paymentIntent.getId());
         booking.setStartTime(event.getStartTime());
         booking.setEndTime(event.getEndTime());
-        booking.setCreatedAt(LocalDateTime.now());
-        booking.setUpdatedAt(LocalDateTime.now());
 
         Booking savedBooking = bookingRepository.save(booking);
 
@@ -144,8 +132,6 @@ public class BookingService implements BookingServiceInterface {
         booking.setStripePaymentId(paymentIntent.getId());
         booking.setStartTime(request.getStartTime());
         booking.setEndTime(request.getEndTime());
-        booking.setCreatedAt(LocalDateTime.now());
-        booking.setUpdatedAt(LocalDateTime.now());
 
         Booking savedBooking = bookingRepository.save(booking);
 
@@ -191,8 +177,6 @@ public class BookingService implements BookingServiceInterface {
         booking.setStripePaymentId(paymentIntent.getId());
         booking.setStartTime(request.getStartTime());
         booking.setEndTime(request.getEndTime());
-        booking.setCreatedAt(LocalDateTime.now());
-        booking.setUpdatedAt(LocalDateTime.now());
 
         Booking savedBooking = bookingRepository.save(booking);
 
@@ -222,8 +206,6 @@ public class BookingService implements BookingServiceInterface {
 
             if ("succeeded".equals(confirmedPayment.getStatus())) {
                 booking.setStatus(BookingStatus.BOOKED);
-                booking.setUpdatedAt(LocalDateTime.now());
-                
                 Booking savedBooking = bookingRepository.save(booking);
 
                 if(booking.getVenue() != null) {
@@ -251,49 +233,48 @@ public class BookingService implements BookingServiceInterface {
                             bookingId, clientSecret);
     }
 
+//    @Override
+//    @Transactional
+//    public CombinedBookingResponse bookResources(CombinedBookingRequest request) {
+//        CombinedBookingResponse response = new CombinedBookingResponse();
+//        response.setOrganizerId(request.getOrganizerId());
+//
+//        if (request.getVenueId() != null) {
+//            VenueBookingRequest venueRequest = new VenueBookingRequest();
+//            venueRequest.setVenueId(request.getVenueId());
+//            venueRequest.setOrganizerId(request.getOrganizerId());
+//            venueRequest.setCurrency(request.getCurrency());
+//            venueRequest.setStartTime(request.getStartTime());
+//            venueRequest.setEndTime(request.getEndTime());
+//
+//            VenueBookingResponse venueResponse = bookVenue(venueRequest);
+//            response.setVenueBookingId(venueResponse.getBookingId());
+//        }
+//
+//        if (request.getServiceIds() != null && !request.getServiceIds().isEmpty()) {
+//            List<Long> serviceBookingIds = request.getServiceIds().stream()
+//                    .map(serviceId -> {
+//                        ServiceBookingRequest serviceRequest = new ServiceBookingRequest();
+//                        serviceRequest.setServiceId(serviceId);
+//                        serviceRequest.setOrganizerId(request.getOrganizerId());
+//                        serviceRequest.setCurrency(request.getCurrency());
+//                        serviceRequest.setStartTime(request.getStartTime());
+//                        serviceRequest.setEndTime(request.getEndTime());
+//
+//                        ServiceBookingResponse serviceResponse = bookService(serviceRequest);
+//                        return serviceResponse.getBookingId();
+//                    })
+//                    .collect(Collectors.toList());
+//
+//            response.setServiceBookingIds(serviceBookingIds);
+//        }
+//
+//        return response;
+//    }
+
     @Override
     @Transactional
-    public CombinedBookingResponse bookResources(CombinedBookingRequest request) {
-        CombinedBookingResponse response = new CombinedBookingResponse();
-        response.setOrganizerId(request.getOrganizerId());
-        response.setCreatedAt(LocalDateTime.now());
-
-        if (request.getVenueId() != null) {
-            VenueBookingRequest venueRequest = new VenueBookingRequest();
-            venueRequest.setVenueId(request.getVenueId());
-            venueRequest.setOrganizerId(request.getOrganizerId());
-            venueRequest.setCurrency(request.getCurrency());
-            venueRequest.setStartTime(request.getStartTime());
-            venueRequest.setEndTime(request.getEndTime());
-
-            VenueBookingResponse venueResponse = bookVenue(venueRequest);
-            response.setVenueBookingId(venueResponse.getBookingId());
-        }
-
-        if (request.getServiceIds() != null && !request.getServiceIds().isEmpty()) {
-            List<Long> serviceBookingIds = request.getServiceIds().stream()
-                    .map(serviceId -> {
-                        ServiceBookingRequest serviceRequest = new ServiceBookingRequest();
-                        serviceRequest.setServiceId(serviceId);
-                        serviceRequest.setOrganizerId(request.getOrganizerId());
-                        serviceRequest.setCurrency(request.getCurrency());
-                        serviceRequest.setStartTime(request.getStartTime());
-                        serviceRequest.setEndTime(request.getEndTime());
-
-                        ServiceBookingResponse serviceResponse = bookService(serviceRequest);
-                        return serviceResponse.getBookingId();
-                    })
-                    .collect(Collectors.toList());
-
-            response.setServiceBookingIds(serviceBookingIds);
-        }
-
-        return response;
-    }
-
-    @Override
-    @Transactional
-    public void cancelBooking(CancelBookingRequest request) {
+    public void cancelBooking(BookingCancelRequest request) {
         Booking booking = bookingRepository.findById(request.getBookingId())
                 .orElseThrow(() -> new EntityNotFoundException("Booking not found"));
 

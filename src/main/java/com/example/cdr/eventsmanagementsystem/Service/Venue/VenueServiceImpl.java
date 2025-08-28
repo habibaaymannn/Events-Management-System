@@ -4,7 +4,6 @@ import org.springframework.security.access.AccessDeniedException;
 import java.util.Objects;
 import com.example.cdr.eventsmanagementsystem.DTO.Booking.Response.BookingDetailsResponse;
 import com.example.cdr.eventsmanagementsystem.Mapper.BookingMapper;
-import com.example.cdr.eventsmanagementsystem.Repository.UsersRepository.VenueProviderRepository;
 import jakarta.persistence.EntityNotFoundException;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
@@ -24,15 +23,16 @@ import com.example.cdr.eventsmanagementsystem.Util.AuthUtil;
 import lombok.RequiredArgsConstructor;
 
 /**
- * This class includes the functionalities of the venue provider
+ * Service class for managing venues.
+ * Provides functionality to create, update and delete venues
  */
+
 @Slf4j
 @RequiredArgsConstructor
 @Service
-public class VenueService implements VenueServiceInterface {
+public class VenueServiceImpl implements VenueServiceInterface {
     private final VenueRepository venueRepository;
     private final VenueMapper venueMapper;
-    private final VenueProviderRepository venueProviderRepository;
     private final UserSyncService userSyncService;
     private final BookingRepository bookingRepository;
     private final BookingMapper bookingMapper;
@@ -51,7 +51,7 @@ public class VenueService implements VenueServiceInterface {
 
     @Override
     @Transactional
-    public VenueDTO updateVenue(Long venueId, VenueDTO dto) throws AccessDeniedException {
+    public VenueDTO updateVenue(Long venueId, VenueDTO dto) {
         Venue venue = venueRepository.findById(venueId)
                 .orElseThrow(() -> new EntityNotFoundException("Venue not found"));
 
@@ -65,7 +65,7 @@ public class VenueService implements VenueServiceInterface {
     }
     @Override
     @Transactional
-    public void deleteVenue(Long venueId) throws AccessDeniedException {
+    public void deleteVenue(Long venueId) {
         Venue venue = venueRepository.findById(venueId)
                 .orElseThrow(() -> new EntityNotFoundException("Venue not found"));
 
