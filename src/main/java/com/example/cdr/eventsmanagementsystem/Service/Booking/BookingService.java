@@ -305,9 +305,6 @@ public class BookingService implements BookingServiceInterface {
                 attendeeBooking.setCancelledBy(currentUserId);
 
                 bookingRepository.save(attendeeBooking);
-
-                eventPublisher.publishEvent(new EventBookingCancelled(attendeeBooking, request.getReason())
-                );
             }
         }
         // case 2
@@ -334,7 +331,7 @@ public class BookingService implements BookingServiceInterface {
         else if (savedBooking.getEvent() != null) {
             eventPublisher.publishEvent(new EventBookingCancelled(savedBooking, request.getReason()));
         }
-        
+
     }
 
     @Override

@@ -1,6 +1,8 @@
 package com.example.cdr.eventsmanagementsystem.Constants.NotificationConstants;
 
-public class EmailMessages {
+public final class EmailConstants {
+    private EmailConstants() {}
+
     public static final String PAYMENT_REQUEST = """
         Hello %s,
         
@@ -8,24 +10,6 @@ public class EmailMessages {
         %s
         
         Payment expires in 24 hours.
-        
-        Best regards,
-        Events Team""";
-
-    public static final String BOOKING_CONFIRMED = """
-        Hello %s,
-        
-        Your %s booking #%d is confirmed!
-        Payment ID: %s
-        
-        Best regavrds,
-        Events Team""";
-
-    public static final String BOOKING_CANCELLED = """
-        Hello %s,
-        
-        Your booking #%d has been cancelled.
-        Refund will be processed within 5-10 business days.
         
         Best regards,
         Events Team""";
@@ -39,6 +23,24 @@ public class EmailMessages {
         
         Please try again or contact support if the issue persists.
         Your booking will remain pending for 24 hours.
+        
+        Best regards,
+        Events Team""";
+
+    public static final String BOOKING_CONFIRMED = """
+        Hello %s,
+        
+        Your %s booking #%d is confirmed!
+        Payment ID: %s
+        
+        Best regards,
+        Events Team""";
+
+    public static final String BOOKING_CANCELLED = """
+        Hello %s,
+        
+        Your booking #%d has been cancelled.
+        Refund will be processed within 5-10 business days.
         
         Best regards,
         Events Team""";
@@ -85,4 +87,31 @@ public class EmailMessages {
         
         Best regards,
         Events Team""";
+    public static final String PROVIDER_CONFIRMATION = """
+        Hello %s,
+        
+        A booking for your %s '%s' has been confirmed!
+        Booking ID: %d
+        Booked by: %s
+        
+        Best regards,
+        Events Team""";
+    public static final String EVENT_CANCELLED = """
+        Dear %s,
+        
+        Your event has been cancelled.
+        Event Name: %s
+        Event Id: %s
+        
+        Best regards,
+        The Event Management Team""";
+    public static final String ATTENDEE_CANCELLED_BOOKING = """
+        Dear %s,
+       
+        A booking for your event has been cancelled.
+        Event Name: %s
+        Event Id: %s
+       
+        Best regards,
+        The Event Management Team""";
 }

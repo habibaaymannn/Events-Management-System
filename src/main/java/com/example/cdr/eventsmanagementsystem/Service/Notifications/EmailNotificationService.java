@@ -1,5 +1,6 @@
 package com.example.cdr.eventsmanagementsystem.Service.Notifications;
 
+import com.example.cdr.eventsmanagementsystem.Model.Booking.BookingType;
 import org.springframework.stereotype.Service;
 import com.example.cdr.eventsmanagementsystem.Model.Booking.Booking;
 import lombok.RequiredArgsConstructor;
@@ -10,10 +11,10 @@ import lombok.extern.slf4j.Slf4j;
 @RequiredArgsConstructor
 public class EmailNotificationService implements NotificationService {
 
-    private final EventNotificationService eventNotificationService;
-    private final VenueNotificationService venueNotificationService;
-    private final ServiceNotificationService serviceNotificationService;
+    private final AttendeeNotificationService attendeeNotificationService;
     private final PaymentNotificationService paymentNotificationService;
+    private final ProviderNotificationService providerNotificationService;
+    private final OrganizerNotificationService organizerNotificationService;
 
     /// Payment
     @Override
@@ -27,55 +28,51 @@ public class EmailNotificationService implements NotificationService {
        paymentNotificationService.sendPaymentFailureEmail(booking, failureReason);
     }
 
-    /// venue
+    /// providers
     @Override
-    public void sendVenueBookingEmail(Booking booking) {
-        // Notify venue provider (new booking)
-        venueNotificationService.sendVenueBookingEmail(booking);
+    public void sendProviderBookingEmail(Booking booking, BookingType bookingType) {
+        // Notify providers (new booking)
+        providerNotificationService.sendNewBookingRequestEmail(booking,BookingType.VENUE);
+        providerNotificationService.sendNewBookingRequestEmail(booking,BookingType.SERVICE);
     }
     @Override
-    public void sendVenueBookingConfirmationEmail(Booking booking) {
-        // confirm to organizer
-        venueNotificationService.sendVenueBookingConfirmationEmail(booking);
+    public void sendProviderConfirmationEmail(Booking booking, BookingType bookingType){
+        // Notify providers of booking confirmation
+        providerNotificationService.sendBookingConfirmationEmail(booking,BookingType.VENUE);
+        providerNotificationService.sendBookingConfirmationEmail(booking,BookingType.SERVICE);
     }
     @Override
-    public void sendVenueCancellationEmail(Booking booking,String reason) {
-        // notify venue provider
-        venueNotificationService.sendVenueCancellationEmail(booking, reason);
+    public void sendProviderCancellationEmail(Booking booking, String reason) {
+        // Notify providers of booking cancellation
+        providerNotificationService.sendBookingCancellationEmail(booking,BookingType.VENUE, reason);
+        providerNotificationService.sendBookingCancellationEmail(booking, BookingType.SERVICE,reason);
     }
 
-    /// service
+    /// organizer
     @Override
-    public void sendServiceBookingEmail(Booking booking) {
-        // Notify service provider of a new booking request
-        serviceNotificationService.sendServiceBookingEmail(booking);
+    public void sendBookingConfirmationEmail(Booking booking){
+        organizerNotificationService.sendBookingConfirmationEmail(booking);
     }
-    @Override
-    public void sendServiceBookingConfirmationEmail(Booking booking) {
-        // confirm to organizer
-        serviceNotificationService.sendServiceBookingConfirmationEmail(booking);
-    }
-    @Override
-    public void sendServiceCancellationEmail(Booking booking,String reason) {
-        // Notify service provider
-        serviceNotificationService.sendServiceCancellationEmail(booking, reason);}
-
     @Override
     public void sendServiceUpdateEmail(Booking booking) {
         // notify organizer the status update(accept/reject)
-        serviceNotificationService.sendServiceBookingUpdateEmail(booking);
+        organizerNotificationService.sendServiceBookingUpdateEmail(booking);
     }
-
-    /// event
-    @Override
-    public void sendEventBookingConfirmationEmail(Booking booking) {
-        // notify organizer
-        eventNotificationService.sendEventBookingConfirmationEmail(booking);}
-
     @Override
     public void sendBookingCancellationEmail(Booking booking) {
-        // notify organizer when their booking is cancelled
-        eventNotificationService.sendBookingCancellationEmail(booking);
+        // notify organizer when their venue/service booking is cancelled
+        organizerNotificationService.sendBookingCancellationEmail(booking);
+    }
+    @Override
+    public void sendEventCancellationEmail(Booking booking) {
+        // notify organizer when event is cancelled
+        organizerNotificationService.sendEventCancellationEmail(booking);
+    }
+
+    /// attendee
+    @Override
+    public void sendAttendeeCancellationEmail(Booking booking) {
+        attendeeNotificationService.sendBookingCancellationEmail(booking);
     }
 }
 
