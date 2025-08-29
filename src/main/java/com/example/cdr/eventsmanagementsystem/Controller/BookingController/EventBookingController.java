@@ -14,6 +14,11 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RestController;
 
+/**
+ * REST controller for booking.
+ * Provides endpoint to book an event by attendees
+ */
+
 @RestController
 @RequiredArgsConstructor
 @Tag(name = "Booking - Events", description = "Event booking APIs")

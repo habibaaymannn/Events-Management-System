@@ -8,9 +8,15 @@ import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
-import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.web.PageableDefault;
 import org.springframework.web.bind.annotation.*;
+
+/**
+ * REST controller for admin event management.
+ * Provides endpoints to retrieve all events, filter events by status,
+ * and cancel events.
+ */
 
 @RestController
 @RequiredArgsConstructor
@@ -20,18 +26,14 @@ public class AdminEventController extends AdminController {
 
     @Operation(summary = "Get all events", description = "Retrieves all events with pagination")
     @GetMapping(AdminControllerConstants.ADMIN_EVENTS_URL)
-    public Page<EventDetailsDto> getAllEvents(@RequestParam(defaultValue = "0") int page,
-                                              @RequestParam(defaultValue = "10") int size) {
-        Pageable pageable = PageRequest.of(page, size);
+    public Page<EventDetailsDto> getAllEvents(@PageableDefault(page = 0, size = 10)Pageable pageable) {
         return adminService.getAllEvents(pageable);
     }
 
     @Operation(summary = "Get events by status", description = "Retrieves events by their status with pagination")
     @GetMapping(AdminControllerConstants.ADMIN_EVENTS_BY_STATUS_URL)
     public Page<EventDetailsDto> getEventsByStatus(@RequestParam EventStatus status,
-                                                   @RequestParam(defaultValue = "0") int page,
-                                                   @RequestParam(defaultValue = "10") int size) {
-        Pageable pageable = PageRequest.of(page, size);
+                                                   @PageableDefault(page = 0, size = 10)Pageable pageable) {
         return adminService.getEventsByStatus(status, pageable);
     }
 

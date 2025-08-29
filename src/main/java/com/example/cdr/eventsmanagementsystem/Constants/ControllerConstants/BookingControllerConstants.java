@@ -1,6 +1,6 @@
 package com.example.cdr.eventsmanagementsystem.Constants.ControllerConstants;
 
-public class BookingControllerConstants {
+public final class BookingControllerConstants {
     public static final String BOOKING_BASE_URL = "/v1/bookings";
 
     // Event Booking
@@ -26,4 +26,5 @@ public class BookingControllerConstants {
     // Update Booking Status
     public static final String UPDATE_BOOKING_STATUS = "/{bookingId}/status/{status}";
 
+    private BookingControllerConstants() {}
 }

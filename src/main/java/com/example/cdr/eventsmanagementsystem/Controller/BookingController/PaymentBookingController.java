@@ -13,6 +13,10 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RestController;
 
+/**
+ * REST controller for booking payment operations.
+ * Provides an endpoint to complete the payment process for a booking.
+ */
 @RestController
 @RequiredArgsConstructor
 @Tag(name = "Booking - Payments", description = "Booking payment APIs")

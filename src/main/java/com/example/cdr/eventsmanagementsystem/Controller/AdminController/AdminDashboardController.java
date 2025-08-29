@@ -11,6 +11,11 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 import java.time.LocalDate;
 import java.util.Map;
+/**
+ * REST controller for admin dashboard operations.
+ * Provides endpoints to retrieve dashboard statistics, event type distribution,
+ * daily bookings, and daily cancellations.
+ */
 
 @RestController
 @RequiredArgsConstructor

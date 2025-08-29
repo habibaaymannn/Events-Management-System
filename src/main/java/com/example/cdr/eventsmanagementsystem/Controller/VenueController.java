@@ -7,6 +7,7 @@ import com.example.cdr.eventsmanagementsystem.Service.Venue.VenueService;
 import jakarta.validation.Valid;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.web.PageableDefault;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
@@ -15,7 +16,11 @@ import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 
-
+/**
+ * REST controller for venue management.
+ * Provides endpoints to create, update, delete venues, update venue availability,
+ * and retrieve venue bookings for venue providers.
+ */
 @RequiredArgsConstructor
 @RestController
 @RequestMapping(VenueControllerConstants.VENUE_BASE_URL)
@@ -38,12 +43,12 @@ public class VenueController {
         VenueDTO updatedVenue = venueService.updateVenue(venueId, dto);
         return ResponseEntity.ok(updatedVenue);
     }
-    @Operation(summary = "Update availability of a venue")
+    @Operation(summary = "Update the availability of a venue")
     @PreAuthorize("hasRole('" + RoleConstants.VENUE_PROVIDER_ROLE + "')")
     @PatchMapping(VenueControllerConstants.UPDATE_VENUE_AVAILABILITY)
-    public ResponseEntity<String> updateVenueAvailability(@PathVariable Long venueId) {
+    public ResponseEntity<VenueDTO> updateVenueAvailability(@PathVariable Long venueId) {
         VenueDTO updatedVenue =  venueService.updateAvailability(venueId);
-        return ResponseEntity.ok("Service availability updated to " + updatedVenue.getAvailability());
+        return ResponseEntity.ok(updatedVenue);
     }
 
     @Operation(summary = "Delete a venue", description = "Deletes a venue by its ID")
@@ -57,7 +62,7 @@ public class VenueController {
     @Operation(summary = "Get all booked venues for a venue provider", description = "Retrieves all venue bookings associated with a specific venue provider")
     @PreAuthorize("hasRole('" + RoleConstants.VENUE_PROVIDER_ROLE + "')")
     @GetMapping(VenueControllerConstants.GET_VENUE_BOOKINGS_URL)
-    public ResponseEntity<Page<BookingDetailsResponse>> getVenueBookings(Pageable pageable) {
+    public ResponseEntity<Page<BookingDetailsResponse>> getVenueBookings(@PageableDefault(page = 0, size = 10)Pageable pageable) {
         Page<BookingDetailsResponse> bookings = venueService.getBookingsForVenueProvider(pageable);
         return ResponseEntity.ok(bookings);
     }
