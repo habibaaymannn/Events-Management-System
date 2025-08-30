@@ -257,6 +257,7 @@
       "enabled": true,
       "protocol": "openid-connect",
       "publicClient": false,
+      "secret": "Ywxmh2GaYFNcDrcCwHzylB3gFDsHNaTN",
       "serviceAccountsEnabled": true,
       "standardFlowEnabled": false,
       "directAccessGrantsEnabled": false,
@@ -282,21 +283,9 @@
       "lastName": "One",
       "email": "admin1@example.com",
       "credentials": [
-        { "type": "password", "value": "AdminPass123!", "temporary": false }
+        { "type": "password", "value": "adminpass", "temporary": false }
       ],
       "realmRoles": ["admin"]
-    },
-    {
-      "username": "organizer1",
-      "enabled": true,
-      "emailVerified": true,
-      "firstName": "Organizer",
-      "lastName": "One",
-      "email": "organizer1@example.com",
-      "credentials": [
-        { "type": "password", "value": "OrganizerPass123!", "temporary": false }
-      ],
-      "realmRoles": ["organizer"]
     }
   ],
 
