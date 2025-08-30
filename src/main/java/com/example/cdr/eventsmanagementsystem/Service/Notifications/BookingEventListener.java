@@ -17,8 +17,7 @@ import org.springframework.stereotype.Component;
 @Component
 @RequiredArgsConstructor
 public class BookingEventListener {
-
-    private final NotificationService notificationService;
+    private final EmailNotificationService notificationService;
 
     @EventListener
     public void handleEventBookingCreated(EventBookingCreated event) {

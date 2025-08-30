@@ -1,5 +1,5 @@
 package com.example.cdr.eventsmanagementsystem.NotificationEvent.BookingCancellation;
 
-import com.example.cdr.eventsmanagementsystem.Model.Booking.Booking;
+import com.example.cdr.eventsmanagementsystem.Model.Booking.ServiceBooking;
 
-public record ServiceBookingCancelled(Booking booking, String reason){}
+public record ServiceBookingCancelled(ServiceBooking booking, String reason){}

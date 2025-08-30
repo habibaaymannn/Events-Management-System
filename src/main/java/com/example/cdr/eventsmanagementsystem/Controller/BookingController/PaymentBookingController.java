@@ -1,31 +1,46 @@
 package com.example.cdr.eventsmanagementsystem.Controller.BookingController;
 
-import com.example.cdr.eventsmanagementsystem.Constants.BookingControllerConstants;
 import com.example.cdr.eventsmanagementsystem.DTO.Booking.Request.PaymentCompleteRequest;
-import com.example.cdr.eventsmanagementsystem.DTO.Booking.Response.BookingDetailsResponse;
-import com.example.cdr.eventsmanagementsystem.Service.Booking.BookingService;
+import com.example.cdr.eventsmanagementsystem.DTO.Booking.Response.EventBookingResponse;
+import com.example.cdr.eventsmanagementsystem.DTO.Booking.Response.ServiceBookingResponse;
+import com.example.cdr.eventsmanagementsystem.DTO.Booking.Response.VenueBookingResponse;
+import com.example.cdr.eventsmanagementsystem.Service.Booking.EventBookingService;
+import com.example.cdr.eventsmanagementsystem.Service.Booking.ServiceBookingService;
+import com.example.cdr.eventsmanagementsystem.Service.Booking.VenueBookingService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
+
+import static com.example.cdr.eventsmanagementsystem.Constants.BookingControllerConstants.*;
 
 @RestController
 @RequiredArgsConstructor
-@Tag(name = "Booking - Payments", description = "Booking payment APIs")
-public class PaymentBookingController extends BookingController{
+@Tag(name = "Payments", description = "Payment management for bookings")
+public class PaymentBookingController {
+    private final EventBookingService eventBookingService;
+    private final VenueBookingService venueBookingService;
+    private final ServiceBookingService serviceBookingService;
 
-    private final BookingService bookingService;
-    @Operation(summary = "Complete booking payment", description = "Completes the payment process for a booking")
-    @PostMapping(BookingControllerConstants.COMPLETE_PAYMENT)
-    public ResponseEntity<BookingDetailsResponse> completePayment(
-            @PathVariable Long bookingId,
-            @RequestBody PaymentCompleteRequest request) {
+    @Operation(summary = "Complete event booking payment", description = "Completes the payment process for an event booking")
+    @PostMapping(EVENT_BOOKING + COMPLETE_PAYMENT)
+    public ResponseEntity<EventBookingResponse> completeEventPayment(@PathVariable Long bookingId, @RequestBody PaymentCompleteRequest request) {
+        EventBookingResponse response = eventBookingService.completePayment(bookingId, request.getPaymentMethodId());
+        return ResponseEntity.ok(response);
+    }
 
-        BookingDetailsResponse response = bookingService.completePayment(bookingId, request.getPaymentMethodId());
+    @Operation(summary = "Complete venue booking payment", description = "Completes the payment process for a venue booking")
+    @PostMapping(VENUE_BOOKING + COMPLETE_PAYMENT)
+    public ResponseEntity<VenueBookingResponse> completeVenuePayment(@PathVariable Long bookingId, @RequestBody PaymentCompleteRequest request) {
+        VenueBookingResponse response = venueBookingService.completePayment(bookingId, request.getPaymentMethodId());
+        return ResponseEntity.ok(response);
+    }
+
+    @Operation(summary = "Complete service booking payment", description = "Completes the payment process for a service booking")
+    @PostMapping(SERVICE_BOOKING + COMPLETE_PAYMENT)
+    public ResponseEntity<ServiceBookingResponse> completeServicePayment(@PathVariable Long bookingId, @RequestBody PaymentCompleteRequest request) {
+        ServiceBookingResponse response = serviceBookingService.completePayment(bookingId, request.getPaymentMethodId());
         return ResponseEntity.ok(response);
     }
 }

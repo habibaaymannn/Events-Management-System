@@ -1,10 +1,7 @@
 package com.example.cdr.eventsmanagementsystem.Controller;
 
-import com.example.cdr.eventsmanagementsystem.DTO.Booking.Response.BookingDetailsResponse;
-import com.example.cdr.eventsmanagementsystem.Service.Venue.VenueServiceInterface;
+import com.example.cdr.eventsmanagementsystem.Service.Venue.VenueServiceImpl;
 import jakarta.validation.Valid;
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.Pageable;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
@@ -19,7 +16,7 @@ import lombok.RequiredArgsConstructor;
 @RequestMapping(VenueControllerConstants.VENUE_BASE_URL)
 @Tag(name = "Venue", description = "Venue management APIs")
 public class VenueController {
-    private final VenueServiceInterface venueService;
+    private final VenueServiceImpl venueService;
 
     @Operation(summary = "Create a new venue", description = "Creates a new venue for the venue provider")
     @PreAuthorize("hasRole('" + RoleConstants.VENUE_PROVIDER_ROLE + "')")
@@ -43,21 +40,5 @@ public class VenueController {
     public ResponseEntity<Void> deleteVenue(@PathVariable Long venueId) {
         venueService.deleteVenue(venueId);
         return ResponseEntity.noContent().build();
-    }
-
-    @Operation(summary = "Get all booked venues for a venue provider", description = "Retrieves all venue bookings associated with a specific venue provider")
-    @PreAuthorize("hasRole('" + RoleConstants.VENUE_PROVIDER_ROLE + "')")
-    @GetMapping(VenueControllerConstants.GET_VENUE_BOOKINGS_URL)
-    public ResponseEntity<Page<BookingDetailsResponse>> getVenueBookings(Pageable pageable) {
-         Page<BookingDetailsResponse> bookings = venueService.getBookingsForVenueProvider(pageable);
-         return ResponseEntity.ok(bookings);
-    }
-
-    @Operation(summary = "Cancel a booking as a venue provider")
-    @PreAuthorize("hasRole('" + RoleConstants.VENUE_PROVIDER_ROLE + "')")
-    @PostMapping(VenueControllerConstants.CANCEL_VENUE_BOOKING_URL)
-    public ResponseEntity<Void> cancelVenueBooking(@PathVariable Long bookingId) {
-        venueService.cancelBooking(bookingId);
-        return ResponseEntity.ok().build();
     }
 }

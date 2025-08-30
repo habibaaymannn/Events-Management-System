@@ -2,13 +2,9 @@ package com.example.cdr.eventsmanagementsystem.Model.Event;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
-import java.util.ArrayList;
-import java.util.List;
 
 import com.example.cdr.eventsmanagementsystem.Util.BaseEntity;
-import com.fasterxml.jackson.annotation.JsonIgnore;
 
-import com.example.cdr.eventsmanagementsystem.Model.Booking.Booking;
 import com.example.cdr.eventsmanagementsystem.Model.User.Admin;
 import com.example.cdr.eventsmanagementsystem.Model.User.Organizer;
 import com.example.cdr.eventsmanagementsystem.Model.Venue.Venue;
@@ -19,7 +15,6 @@ import jakarta.persistence.EnumType;
 import jakarta.persistence.Enumerated;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
-import jakarta.persistence.OneToMany;
 import jakarta.persistence.Table;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
@@ -59,12 +54,8 @@ public class Event extends BaseEntity {
     @JoinColumn(name = "venue_id")
     private Venue venue;
 
-    @OneToMany(mappedBy = "event")
-    @JsonIgnore
-    private List<Booking> bookings = new ArrayList<>();
-
     private LocalDateTime freeCancellationDeadline;  
-    private BigDecimal retailPrice; 
+    private BigDecimal retailPrice;
 
     @Column(nullable = false)
     private boolean flagged;

@@ -1,5 +1,5 @@
 package com.example.cdr.eventsmanagementsystem.NotificationEvent.BookingCreation;
 
-import com.example.cdr.eventsmanagementsystem.Model.Booking.Booking;
+import com.example.cdr.eventsmanagementsystem.Model.Booking.EventBooking;
 
-public record EventBookingCreated(Booking booking) {}
+public record EventBookingCreated(EventBooking booking) {}

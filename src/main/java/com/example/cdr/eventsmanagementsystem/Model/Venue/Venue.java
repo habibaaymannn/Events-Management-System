@@ -1,13 +1,12 @@
 package com.example.cdr.eventsmanagementsystem.Model.Venue;
 
-import com.example.cdr.eventsmanagementsystem.Model.Booking.Booking;
+import com.example.cdr.eventsmanagementsystem.Model.Booking.VenueBooking;
 import com.example.cdr.eventsmanagementsystem.Model.Event.EventType;
 import com.example.cdr.eventsmanagementsystem.Model.User.VenueProvider;
 import com.example.cdr.eventsmanagementsystem.Util.BaseEntity;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
 import lombok.*;
-import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
@@ -43,10 +42,6 @@ public class Venue extends BaseEntity {
     @ManyToOne(fetch = FetchType.EAGER)
     @JoinColumn(name = "venue_provider_id")
     private VenueProvider venueProvider;
-
-    @OneToMany(mappedBy = "venue")
-    @JsonIgnore
-    private List<Booking> bookings = new ArrayList<>();
 
     @Column(name = "event_type", nullable = false)
     @ElementCollection(fetch = FetchType.EAGER)
