@@ -9,11 +9,11 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import static com.example.cdr.eventsmanagementsystem.Constants.PaymentConstants.BOOKING_NOT_FOUND;
-import static com.example.cdr.eventsmanagementsystem.Constants.PaymentConstants.EVENT_NOT_FOUND;
-import static com.example.cdr.eventsmanagementsystem.Constants.PaymentConstants.SERVICE_NOT_FOUND;
 import static com.example.cdr.eventsmanagementsystem.Constants.PaymentConstants.SETUP_FUTURE_USAGE_ON_SESSION;
-import static com.example.cdr.eventsmanagementsystem.Constants.PaymentConstants.VENUE_NOT_FOUND;
+import static com.example.cdr.eventsmanagementsystem.Constants.PaymentExceptionConstants.BOOKING_NOT_FOUND;
+import static com.example.cdr.eventsmanagementsystem.Constants.PaymentExceptionConstants.EVENT_NOT_FOUND;
+import static com.example.cdr.eventsmanagementsystem.Constants.PaymentExceptionConstants.SERVICE_NOT_FOUND;
+import static com.example.cdr.eventsmanagementsystem.Constants.PaymentExceptionConstants.VENUE_NOT_FOUND;
 import com.example.cdr.eventsmanagementsystem.DTO.Booking.Request.BookingCancelRequest;
 import com.example.cdr.eventsmanagementsystem.DTO.Booking.Request.EventBookingRequest;
 import com.example.cdr.eventsmanagementsystem.DTO.Booking.Request.ServiceBookingRequest;

@@ -9,6 +9,7 @@ import org.springframework.stereotype.Service;
 
 import com.stripe.Stripe;
 import com.stripe.exception.StripeException;
+import com.example.cdr.eventsmanagementsystem.Constants.RefundConstants;
 import com.stripe.model.Customer;
 import com.stripe.model.PaymentIntent;
 import com.stripe.model.PaymentMethod;
@@ -106,13 +107,15 @@ public class StripeService implements StripeServiceInterface {
             }
             
             String normalizedReason = reason.trim().toLowerCase().replace(' ', '_');
-            if (normalizedReason.equals("duplicate") ||
-                normalizedReason.equals("fraudulent") ||
-                normalizedReason.equals("requested_by_customer")) {
+            if (normalizedReason.equals(RefundConstants.DUPLICATE) ||
+                normalizedReason.equals(RefundConstants.FRAUDULENT) ||
+                normalizedReason.equals(RefundConstants.REQUESTED_BY_CUSTOMER)) {
                 params.put("reason", normalizedReason);
             } else {
                 throw new IllegalArgumentException("Invalid refund reason: " + reason +
-                    ". Allowed values are: duplicate, fraudulent, requested_by_customer.");
+                    ". Allowed values are: " + RefundConstants.DUPLICATE + 
+                    ", " + RefundConstants.FRAUDULENT + 
+                    ", " + RefundConstants.REQUESTED_BY_CUSTOMER + ".");
             }
 
             return Refund.create(params);
@@ -193,7 +196,7 @@ public class StripeService implements StripeServiceInterface {
 
             if (setupFutureUsage != null) {
                 builder.setPaymentIntentData(
-                    SessionCreateParams.PaymentIntentData.builder()
+                    SessionCreateParams.PaymentIntentData.builder() 
                         .setSetupFutureUsage(SessionCreateParams.PaymentIntentData.SetupFutureUsage.valueOf(setupFutureUsage))
                         .setCaptureMethod(manualCapture ? SessionCreateParams.PaymentIntentData.CaptureMethod.MANUAL : SessionCreateParams.PaymentIntentData.CaptureMethod.AUTOMATIC)
                         .build()

@@ -5,7 +5,7 @@ import java.time.LocalDateTime;
 
 import lombok.Data;
 
-@Data
+@Data // We need to use annotations -> Nullable, etc..
 public abstract class BaseBookingDTO {
     protected LocalDateTime startTime; 
     protected LocalDateTime endTime;
