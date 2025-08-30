@@ -2,12 +2,14 @@ package com.example.cdr.eventsmanagementsystem.Service.Service;
 
 import com.example.cdr.eventsmanagementsystem.DTO.Booking.Response.BookingDetailsResponse;
 import com.example.cdr.eventsmanagementsystem.DTO.Service.ServicesDTO;
+import com.example.cdr.eventsmanagementsystem.DTO.Venue.VenueDTO;
 import com.example.cdr.eventsmanagementsystem.Mapper.BookingMapper;
 import com.example.cdr.eventsmanagementsystem.Mapper.ServiceMapper;
 import com.example.cdr.eventsmanagementsystem.Model.Booking.Booking;
 import com.example.cdr.eventsmanagementsystem.Model.Booking.BookingStatus;
 import com.example.cdr.eventsmanagementsystem.Model.Service.Availability;
 import com.example.cdr.eventsmanagementsystem.Model.User.ServiceProvider;
+import com.example.cdr.eventsmanagementsystem.Model.Venue.Venue;
 import com.example.cdr.eventsmanagementsystem.NotificationEvent.BookingUpdates.ServiceBookingUpdate;
 import com.example.cdr.eventsmanagementsystem.Repository.BookingRepository;
 import com.example.cdr.eventsmanagementsystem.Repository.ServiceRepository;
@@ -49,7 +51,7 @@ public class ServicesService {
     }
 
     @Transactional
-    public ServicesDTO updateAvailability(Long serviceId) {
+    public ServicesDTO updateAvailability(Long serviceId, String availability) {
         String keycloakId = AuthUtil.getCurrentUserId();
         Services service = serviceRepository.findById(serviceId)
                 .orElseThrow(() -> new IllegalArgumentException("Service not found"));
@@ -57,11 +59,13 @@ public class ServicesService {
         if (!service.getServiceProvider().getKeycloakId().equals(keycloakId)) {
             throw new AccessDeniedException("You are not allowed to update this service");
         }
-        service.setAvailability(service.getAvailability() == Availability.AVAILABLE
-                ? Availability.UNAVAILABLE
-                : Availability.AVAILABLE);
+        service.setAvailability(Availability.valueOf(availability.toUpperCase()));
 
         return serviceMapper.toServiceDTO(serviceRepository.save(service));
+    }
+    public Page<ServicesDTO> getAllServices(Pageable pageable) {
+        Page<Services> services = serviceRepository.findAll(pageable);
+        return services.map(serviceMapper::toServiceDTO);
     }
 
     /// Refactor to its booking service

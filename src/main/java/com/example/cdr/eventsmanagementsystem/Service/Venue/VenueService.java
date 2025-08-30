@@ -14,7 +14,6 @@ import org.springframework.transaction.annotation.Transactional;
 import com.example.cdr.eventsmanagementsystem.DTO.Venue.VenueDTO;
 import com.example.cdr.eventsmanagementsystem.Mapper.VenueMapper;
 import com.example.cdr.eventsmanagementsystem.Model.Booking.Booking;
-import com.example.cdr.eventsmanagementsystem.Model.Booking.BookingStatus;
 import com.example.cdr.eventsmanagementsystem.Model.User.VenueProvider;
 import com.example.cdr.eventsmanagementsystem.Model.Venue.Venue;
 import com.example.cdr.eventsmanagementsystem.Repository.BookingRepository;
@@ -64,7 +63,7 @@ public class VenueService {
     }
 
     @Transactional
-    public VenueDTO updateAvailability(Long venueId) {
+    public VenueDTO updateAvailability(Long venueId, String availability) {
         String keycloakId = AuthUtil.getCurrentUserId();
         Venue venue = venueRepository.findById(venueId)
                 .orElseThrow(() -> new IllegalArgumentException("Venue not found"));
@@ -72,9 +71,7 @@ public class VenueService {
         if (!venue.getVenueProvider().getKeycloakId().equals(keycloakId)) {
             throw new AccessDeniedException("You are not allowed to update this Venue");
         }
-        venue.setAvailability(venue.getAvailability() == Availability.AVAILABLE
-                ? Availability.UNAVAILABLE
-                : Availability.AVAILABLE);
+        venue.setAvailability(Availability.valueOf(availability.toUpperCase()));
 
         return venueMapper.toVenueDTO(venueRepository.save(venue));
     }
@@ -89,6 +86,11 @@ public class VenueService {
 
         venueRepository.deleteById(venueId);
     }
+    public Page<VenueDTO> getAllVenues(Pageable pageable) {
+        Page<Venue> venues = venueRepository.findAll(pageable);
+        return venues.map(venueMapper::toVenueDTO);
+    }
+
     /// Refactored to their service
     public Page<BookingDetailsResponse> getBookingsForVenueProvider(Pageable pageable) {
         String venueProviderId = AuthUtil.getCurrentUserId();

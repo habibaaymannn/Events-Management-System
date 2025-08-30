@@ -1,8 +1,10 @@
 package com.example.cdr.eventsmanagementsystem.Controller;
 
 import com.example.cdr.eventsmanagementsystem.Constants.ControllerConstants.RoleConstants;
+import com.example.cdr.eventsmanagementsystem.Constants.ControllerConstants.ServiceControllerConstants;
 import com.example.cdr.eventsmanagementsystem.Constants.ControllerConstants.VenueControllerConstants;
 import com.example.cdr.eventsmanagementsystem.DTO.Booking.Response.BookingDetailsResponse;
+import com.example.cdr.eventsmanagementsystem.DTO.Service.ServicesDTO;
 import com.example.cdr.eventsmanagementsystem.Service.Venue.VenueService;
 import jakarta.validation.Valid;
 import org.springframework.data.domain.Page;
@@ -46,8 +48,8 @@ public class VenueController {
     @Operation(summary = "Update the availability of a venue")
     @PreAuthorize("hasRole('" + RoleConstants.VENUE_PROVIDER_ROLE + "')")
     @PatchMapping(VenueControllerConstants.UPDATE_VENUE_AVAILABILITY)
-    public ResponseEntity<VenueDTO> updateVenueAvailability(@PathVariable Long venueId) {
-        VenueDTO updatedVenue =  venueService.updateAvailability(venueId);
+    public ResponseEntity<VenueDTO> updateVenueAvailability(@PathVariable Long venueId,@RequestParam String availability) {
+        VenueDTO updatedVenue =  venueService.updateAvailability(venueId,availability);
         return ResponseEntity.ok(updatedVenue);
     }
 
@@ -58,7 +60,12 @@ public class VenueController {
         venueService.deleteVenue(venueId);
         return ResponseEntity.noContent().build();
     }
-
+    @Operation(summary = "Get all venues", description = "Retrieves a paginated list of all venues")
+    @GetMapping(VenueControllerConstants.GET_ALL_VENUES_URL)
+    @PreAuthorize("hasAnyRole('" + RoleConstants.VENUE_PROVIDER_ROLE + "')")
+    public Page<VenueDTO> getAllVenues(@PageableDefault(page = 0, size = 10)Pageable pageable) {
+        return venueService.getAllVenues(pageable);
+    }
     @Operation(summary = "Get all booked venues for a venue provider", description = "Retrieves all venue bookings associated with a specific venue provider")
     @PreAuthorize("hasRole('" + RoleConstants.VENUE_PROVIDER_ROLE + "')")
     @GetMapping(VenueControllerConstants.GET_VENUE_BOOKINGS_URL)

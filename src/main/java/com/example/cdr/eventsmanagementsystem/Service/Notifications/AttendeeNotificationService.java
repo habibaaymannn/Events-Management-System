@@ -10,6 +10,8 @@ import com.example.cdr.eventsmanagementsystem.Repository.BookingRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
+
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
@@ -45,19 +47,18 @@ public class AttendeeNotificationService {
             }
         }
     }
-    @Scheduled(fixedRate = 300000) // every 5 minutes
-    public void sendUpcomingEventReminders() {
-        // fetch bookings 24–25 hours from now
-        LocalDateTime now = LocalDateTime.now();
-        LocalDateTime start = now.plusHours(24);
-        LocalDateTime end = now.plusHours(25);
 
-        List<Booking> bookings = bookingRepository.findUpcomingBookings(BookingStatus.BOOKED, start, end);
+    @Scheduled(cron = "0 0 9 * * ?")
+    public void sendUpcomingEventReminders() {
+
+        LocalDate tomorrow = LocalDate.now().plusDays(1);
+        LocalDateTime startOfDay = tomorrow.atStartOfDay();
+        LocalDateTime endOfDay = tomorrow.atTime(23, 59, 59);
+
+        List<Booking> bookings = bookingRepository.findUpcomingBookings(BookingStatus.BOOKED, startOfDay, endOfDay);
 
         for (Booking booking : bookings) {
             sendEventReminderEmail(booking);
-            booking.setEmailSent(true);
-            bookingRepository.save(booking);
         }
     }
 

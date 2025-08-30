@@ -1,8 +1,10 @@
 package com.example.cdr.eventsmanagementsystem.Controller;
 
+import com.example.cdr.eventsmanagementsystem.Constants.ControllerConstants.EventsControllerConstants;
 import com.example.cdr.eventsmanagementsystem.Constants.ControllerConstants.RoleConstants;
 import com.example.cdr.eventsmanagementsystem.Constants.ControllerConstants.ServiceControllerConstants;
 import com.example.cdr.eventsmanagementsystem.DTO.Booking.Response.BookingDetailsResponse;
+import com.example.cdr.eventsmanagementsystem.DTO.Event.EventResponseDTO;
 import com.example.cdr.eventsmanagementsystem.DTO.Service.ServicesDTO;
 import com.example.cdr.eventsmanagementsystem.Model.Booking.Booking;
 import com.example.cdr.eventsmanagementsystem.Model.Booking.BookingStatus;
@@ -41,11 +43,16 @@ public class ServiceController {
     @Operation(summary = "Update the availability of a service")
     @PreAuthorize("hasRole('" + RoleConstants.SERVICE_PROVIDER_ROLE + "')")
     @PatchMapping(ServiceControllerConstants.UPDATE_SERVICE_AVAILABILITY)
-    public ResponseEntity<ServicesDTO> updateServiceAvailability(@PathVariable Long serviceId) {
-        ServicesDTO updatedService =  servicesService.updateAvailability(serviceId);
+    public ResponseEntity<ServicesDTO> updateServiceAvailability(@PathVariable Long serviceId,@RequestParam String availability) {
+        ServicesDTO updatedService =  servicesService.updateAvailability(serviceId, availability);
         return ResponseEntity.ok(updatedService);
     }
-
+    @Operation(summary = "Get all services", description = "Retrieves a paginated list of all services")
+    @GetMapping(ServiceControllerConstants.GET_ALL_SERVICES_URL)
+    @PreAuthorize("hasAnyRole('" + RoleConstants.SERVICE_PROVIDER_ROLE + "')")
+    public Page<ServicesDTO> getAllServices(@PageableDefault(page = 0, size = 10)Pageable pageable) {
+        return servicesService.getAllServices(pageable);
+    }
 
     @Operation(summary = "Get all booked services for a service provider", description = "Retrieves all service bookings associated with a specific service provider")
     @PreAuthorize("hasRole('" + RoleConstants.SERVICE_PROVIDER_ROLE + "')")

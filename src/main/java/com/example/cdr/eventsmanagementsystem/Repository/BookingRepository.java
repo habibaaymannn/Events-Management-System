@@ -43,8 +43,7 @@ public interface BookingRepository extends JpaRepository<Booking, Long> {
 
     @Query("SELECT b FROM Booking b JOIN b.event e " +
             "WHERE b.status = :status " +
-            "AND e.startTime BETWEEN :start AND :end " +
-            "AND b.isEmailSent = false")
+            "AND e.startTime BETWEEN :start AND :end ")
     List<Booking> findUpcomingBookings(@Param("status") BookingStatus status,
                                        @Param("start") LocalDateTime start,
                                        @Param("end") LocalDateTime end);
