@@ -1,7 +1,5 @@
 package com.example.cdr.eventsmanagementsystem.Controller;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.transaction.annotation.Transactional;
@@ -16,12 +14,13 @@ import com.stripe.model.Event;
 
 import io.swagger.v3.oas.annotations.Operation;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 
 @RestController
 @RequiredArgsConstructor
+@Slf4j
 public class StripeWebhookController {
 
-    private static final Logger log = LoggerFactory.getLogger(StripeWebhookController.class);
     private final StripeWebhookService webhookService;
 
     @Operation(summary = "Handle Stripe webhook events", description = "Process incoming Stripe webhook events")

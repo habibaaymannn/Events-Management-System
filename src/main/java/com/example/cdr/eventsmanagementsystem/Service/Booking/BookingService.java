@@ -4,17 +4,16 @@ import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.List;
 
-import com.example.cdr.eventsmanagementsystem.Model.Service.Services;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import static com.example.cdr.eventsmanagementsystem.Constants.PaymentConstants.MSG_BOOKING_NOT_FOUND;
-import static com.example.cdr.eventsmanagementsystem.Constants.PaymentConstants.MSG_EVENT_NOT_FOUND;
-import static com.example.cdr.eventsmanagementsystem.Constants.PaymentConstants.MSG_SERVICE_NOT_FOUND;
-import static com.example.cdr.eventsmanagementsystem.Constants.PaymentConstants.MSG_VENUE_NOT_FOUND;
+import static com.example.cdr.eventsmanagementsystem.Constants.PaymentConstants.BOOKING_NOT_FOUND;
+import static com.example.cdr.eventsmanagementsystem.Constants.PaymentConstants.EVENT_NOT_FOUND;
+import static com.example.cdr.eventsmanagementsystem.Constants.PaymentConstants.SERVICE_NOT_FOUND;
 import static com.example.cdr.eventsmanagementsystem.Constants.PaymentConstants.SETUP_FUTURE_USAGE_ON_SESSION;
+import static com.example.cdr.eventsmanagementsystem.Constants.PaymentConstants.VENUE_NOT_FOUND;
 import com.example.cdr.eventsmanagementsystem.DTO.Booking.Request.BookingCancelRequest;
 import com.example.cdr.eventsmanagementsystem.DTO.Booking.Request.EventBookingRequest;
 import com.example.cdr.eventsmanagementsystem.DTO.Booking.Request.ServiceBookingRequest;
@@ -27,6 +26,7 @@ import com.example.cdr.eventsmanagementsystem.Mapper.BookingMapper;
 import com.example.cdr.eventsmanagementsystem.Model.Booking.Booking;
 import com.example.cdr.eventsmanagementsystem.Model.Booking.BookingStatus;
 import com.example.cdr.eventsmanagementsystem.Model.Event.Event;
+import com.example.cdr.eventsmanagementsystem.Model.Service.Services;
 import com.example.cdr.eventsmanagementsystem.Model.User.Attendee;
 import com.example.cdr.eventsmanagementsystem.Model.User.Organizer;
 import com.example.cdr.eventsmanagementsystem.Model.Venue.Venue;
@@ -70,7 +70,7 @@ public class BookingService implements BookingServiceInterface {
     public EventBookingResponse bookEvent(EventBookingRequest request) {
 
         Event event = eventRepository.findById(request.getEventId())
-                .orElseThrow(() -> new EntityNotFoundException(MSG_EVENT_NOT_FOUND));
+                .orElseThrow(() -> new EntityNotFoundException(EVENT_NOT_FOUND));
 
         Attendee attendee = userSyncService.ensureUserExists(Attendee.class);
         if (attendee.getStripeCustomerId() == null) {
@@ -100,7 +100,7 @@ public class BookingService implements BookingServiceInterface {
             "Event ticket for: " + event.getName(),
             savedBooking.getId(),
             SETUP_FUTURE_USAGE_ON_SESSION,
-            request.getAuthorizeOnly() != null ? request.getAuthorizeOnly() : false
+            request.getIsCaptured() != null ? request.getIsCaptured() : false
         );
         savedBooking.setStripeSessionId(session.getId());
         savedBooking = bookingRepository.save(savedBooking);
@@ -116,7 +116,7 @@ public class BookingService implements BookingServiceInterface {
     @Transactional
     public VenueBookingResponse bookVenue(VenueBookingRequest request) {
         Venue venue = venueRepository.findById(request.getVenueId())
-                .orElseThrow(() -> new EntityNotFoundException(MSG_VENUE_NOT_FOUND));
+                .orElseThrow(() -> new EntityNotFoundException(VENUE_NOT_FOUND));
 
         Organizer organizer = userSyncService.ensureUserExists(Organizer.class);
         if (organizer.getStripeCustomerId() == null) {
@@ -131,7 +131,7 @@ public class BookingService implements BookingServiceInterface {
         booking.setVenue(venue);
         if (request.getEventId() != null) {
             Event ev = eventRepository.findById(request.getEventId())
-                .orElseThrow(() -> new EntityNotFoundException(MSG_EVENT_NOT_FOUND));
+                .orElseThrow(() -> new EntityNotFoundException(EVENT_NOT_FOUND));
             booking.setEvent(ev);
         }
         booking.setOrganizerBooker(organizer);
@@ -149,7 +149,7 @@ public class BookingService implements BookingServiceInterface {
             "Venue booking for: " + venue.getName(),
             savedBooking.getId(),
             SETUP_FUTURE_USAGE_ON_SESSION, 
-            request.getAuthorizeOnly() != null ? request.getAuthorizeOnly() : false
+            request.getIsCaptured() != null ? request.getIsCaptured() : false
         );
         savedBooking.setStripeSessionId(sessionVenue.getId());
         savedBooking = bookingRepository.save(savedBooking);
@@ -166,7 +166,7 @@ public class BookingService implements BookingServiceInterface {
     public ServiceBookingResponse bookService(ServiceBookingRequest request) {
         Services service =
                 serviceRepository.findById(request.getServiceId())
-                .orElseThrow(() -> new EntityNotFoundException(MSG_SERVICE_NOT_FOUND));
+                .orElseThrow(() -> new EntityNotFoundException(SERVICE_NOT_FOUND));
 
         Organizer organizer = userSyncService.ensureUserExists(Organizer.class);
         if (organizer.getStripeCustomerId() == null) {
@@ -179,7 +179,7 @@ public class BookingService implements BookingServiceInterface {
         booking.setService(service);
         if (request.getEventId() != null) {
             Event ev = eventRepository.findById(request.getEventId())
-                .orElseThrow(() -> new EntityNotFoundException(MSG_EVENT_NOT_FOUND));
+                .orElseThrow(() -> new EntityNotFoundException(EVENT_NOT_FOUND));
             booking.setEvent(ev);
         }
         booking.setOrganizerBooker(organizer);
@@ -197,7 +197,7 @@ public class BookingService implements BookingServiceInterface {
             "Service booking for: " + service.getName(),
             savedBooking.getId(),
             SETUP_FUTURE_USAGE_ON_SESSION,
-            request.getAuthorizeOnly() != null ? request.getAuthorizeOnly() : false
+            request.getIsCaptured() != null ? request.getIsCaptured() : false
         );
         savedBooking.setStripeSessionId(sessionService.getId());
         savedBooking = bookingRepository.save(savedBooking);
@@ -213,7 +213,7 @@ public class BookingService implements BookingServiceInterface {
     @Transactional
     public void cancelBooking(BookingCancelRequest request) {
         Booking booking = bookingRepository.findById(request.getBookingId())
-                .orElseThrow(() -> new EntityNotFoundException(MSG_BOOKING_NOT_FOUND));
+                .orElseThrow(() -> new EntityNotFoundException(BOOKING_NOT_FOUND));
 
         String currentUserId = AuthUtil.getCurrentUserId();
         if (!booking.getBookerId().equals(currentUserId)) {
@@ -246,7 +246,7 @@ public class BookingService implements BookingServiceInterface {
     @Override
     public BookingDetailsResponse getBookingById(Long bookingId) {
         Booking booking = bookingRepository.findById(bookingId)
-                .orElseThrow(() -> new EntityNotFoundException(MSG_BOOKING_NOT_FOUND));
+                .orElseThrow(() -> new EntityNotFoundException(BOOKING_NOT_FOUND));
         
         return bookingMapper.toBookingDetailsResponse(booking);
     }

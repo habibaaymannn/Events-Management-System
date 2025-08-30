@@ -4,9 +4,6 @@ import java.math.BigDecimal;
 import java.util.HashMap;
 import java.util.Map;
 
-import com.stripe.param.checkout.SessionCreateParams.LineItem.PriceData;
-import com.stripe.param.checkout.SessionCreateParams.LineItem.PriceData.ProductData;
-import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
@@ -16,19 +13,17 @@ import com.stripe.model.Customer;
 import com.stripe.model.PaymentIntent;
 import com.stripe.model.PaymentMethod;
 import com.stripe.model.Refund;
-import com.stripe.model.SetupIntent;
 import com.stripe.model.checkout.Session;
 import com.stripe.param.PaymentIntentCaptureParams;
-import com.stripe.param.PaymentIntentConfirmParams;
 import com.stripe.param.PaymentIntentCreateParams;
 import com.stripe.param.PaymentMethodAttachParams;
-import com.stripe.param.SetupIntentCreateParams;
 import com.stripe.param.checkout.SessionCreateParams;
+import com.stripe.param.checkout.SessionCreateParams.LineItem.PriceData;
+import com.stripe.param.checkout.SessionCreateParams.LineItem.PriceData.ProductData;
 
 import jakarta.annotation.PostConstruct;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-
-import static com.stripe.Stripe.apiKey;
 
 @Slf4j
 @Service
@@ -43,7 +38,7 @@ public class StripeService implements StripeServiceInterface {
     
     @PostConstruct
     public void init() {
-        apiKey = stripeApiKey;
+        Stripe.apiKey = stripeApiKey;
     }
 
     @Override
@@ -110,8 +105,14 @@ public class StripeService implements StripeServiceInterface {
                 params.put("amount", toCents(amount));
             }
             
-            if (reason != null && !reason.isBlank()) {
-                params.put("reason", reason.trim().toLowerCase().replace(' ', '_'));
+            String normalizedReason = reason.trim().toLowerCase().replace(' ', '_');
+            if (normalizedReason.equals("duplicate") ||
+                normalizedReason.equals("fraudulent") ||
+                normalizedReason.equals("requested_by_customer")) {
+                params.put("reason", normalizedReason);
+            } else {
+                throw new IllegalArgumentException("Invalid refund reason: " + reason +
+                    ". Allowed values are: duplicate, fraudulent, requested_by_customer.");
             }
 
             return Refund.create(params);
@@ -194,7 +195,7 @@ public class StripeService implements StripeServiceInterface {
                 builder.setPaymentIntentData(
                     SessionCreateParams.PaymentIntentData.builder()
                         .setSetupFutureUsage(SessionCreateParams.PaymentIntentData.SetupFutureUsage.valueOf(setupFutureUsage))
-                        .setCaptureMethod(manualCapture ? SessionCreateParams.PaymentIntentData.CaptureMethod.MANUAL : null)
+                        .setCaptureMethod(manualCapture ? SessionCreateParams.PaymentIntentData.CaptureMethod.MANUAL : SessionCreateParams.PaymentIntentData.CaptureMethod.AUTOMATIC)
                         .build()
                 );
             }

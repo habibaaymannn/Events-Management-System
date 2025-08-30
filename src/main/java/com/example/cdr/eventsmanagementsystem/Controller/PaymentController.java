@@ -45,7 +45,7 @@ public class PaymentController {
     @Operation(summary = "Toggle auto-pay feature", description = "Enable or disable automatic payment for future bookings")
     @PostMapping(PaymentConstants.AUTO_PAY)
     public ResponseEntity<Void> toggleAutoPay(@RequestBody AutoPayToggleRequest request) {
-        paymentService.toggleAutoPay(request.isEnable());
+        paymentService.toggleAutoPay(request.isEnabled());
         return ResponseEntity.ok().build();
     }
 

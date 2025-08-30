@@ -11,5 +11,5 @@ public abstract class BaseBookingDTO {
     protected LocalDateTime endTime;
     protected String currency = "usd";
     private BigDecimal amount;
-    protected Boolean authorizeOnly = false; // true = "Reserve Now, Pay Later", false = "Pay Now"
+    protected Boolean isCaptured = false; // true = "Pay Now", false = "Reserve Now, Pay Later"
 }

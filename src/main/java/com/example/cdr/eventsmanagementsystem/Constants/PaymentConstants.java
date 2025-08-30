@@ -4,10 +4,13 @@ public final class PaymentConstants {
 
     private PaymentConstants() {}
 
-    public static final String MSG_EVENT_NOT_FOUND = "Event not found";
-    public static final String MSG_VENUE_NOT_FOUND = "Venue not found";
-    public static final String MSG_SERVICE_NOT_FOUND = "Service not found";
-    public static final String MSG_BOOKING_NOT_FOUND = "Booking not found";
+    public static final String EVENT_NOT_FOUND = "Event not found";
+    public static final String VENUE_NOT_FOUND = "Venue not found";
+    public static final String SERVICE_NOT_FOUND = "Service not found";
+    public static final String BOOKING_NOT_FOUND = "Booking not found";
+
+    public static final String CHECKOUT_SESSION_COMPLETED = "checkout.session.completed";
+    public static final String PAYMENT_INTENT_SUCCEEDED = "payment_intent.succeeded";
 
     public static final String SETUP_FUTURE_USAGE_ON_SESSION = "ON_SESSION";
 

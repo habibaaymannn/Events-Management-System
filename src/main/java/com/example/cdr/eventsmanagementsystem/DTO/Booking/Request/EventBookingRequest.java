@@ -7,8 +7,4 @@ public class EventBookingRequest extends BaseBookingDTO {
     protected Long eventId;
 
     private Integer ticketQuantity = 1;
-    
-    // private String attendeeId; 
-    
-    // private PaymentDetailsDTO paymentDetails;
 }

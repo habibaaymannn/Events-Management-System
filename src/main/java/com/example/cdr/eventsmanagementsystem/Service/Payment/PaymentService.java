@@ -28,12 +28,12 @@ import com.example.cdr.eventsmanagementsystem.NotificationEvent.Payment.BookingP
 import com.example.cdr.eventsmanagementsystem.Repository.BookingRepository;
 import com.example.cdr.eventsmanagementsystem.Service.Auth.UserSyncService;
 import com.example.cdr.eventsmanagementsystem.Service.Booking.StripeServiceInterface;
+import com.stripe.model.Customer;
 import com.stripe.model.PaymentIntent;
 import com.stripe.model.checkout.Session;
 
 import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
-
 @Service
 @RequiredArgsConstructor
 public class PaymentService {
@@ -109,7 +109,7 @@ public class PaymentService {
         }
         
         try {
-            PaymentIntent captured = stripeService.capturePaymentIntent(booking.getStripePaymentId(), request.getAmountToCapture());
+            PaymentIntent captured = stripeService.capturePaymentIntent(booking.getStripePaymentId(), request.getAmount());
             if ("succeeded".equals(captured.getStatus())) {
                 booking.setPaymentStatus(PaymentStatus.CAPTURED);
                 booking.setStatus(BookingStatus.BOOKED);
@@ -171,7 +171,7 @@ public class PaymentService {
     public CheckoutSessionResponse createSetupCheckoutSessionForCurrentUser() {
         BaseRoleEntity user = userSyncService.ensureUserExists(BaseRoleEntity.class);
         if (user.getStripeCustomerId() == null) {
-            com.stripe.model.Customer customer = stripeService.createCustomer(user.getEmail(), user.getFullName(), null);
+            Customer customer = stripeService.createCustomer(user.getEmail(), user.getFullName(), null);
             user.setStripeCustomerId(customer.getId());
             userSyncService.getHandlerForRole(userSyncService.getCurrentUserRole(SecurityContextHolder.getContext().getAuthentication())).saveUser(user);
         }
@@ -186,7 +186,7 @@ public class PaymentService {
     public void setDefaultPaymentMethodForCurrentUser(String paymentMethodId) {
         BaseRoleEntity user = userSyncService.ensureUserExists(BaseRoleEntity.class);
         if (user.getStripeCustomerId() == null) {
-            com.stripe.model.Customer customer = stripeService.createCustomer(user.getEmail(), user.getFullName(), null);
+            Customer customer = stripeService.createCustomer(user.getEmail(), user.getFullName(), null);
             user.setStripeCustomerId(customer.getId());
         }
         stripeService.attachPaymentMethodToCustomer(paymentMethodId, user.getStripeCustomerId());

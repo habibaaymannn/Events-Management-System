@@ -4,7 +4,7 @@ import lombok.Data;
 
 @Data
 public class AutoPayToggleRequest {
-    private boolean enable;
+    private boolean isEnabled;
 }
 
 

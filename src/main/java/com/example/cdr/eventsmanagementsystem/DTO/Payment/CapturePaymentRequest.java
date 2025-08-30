@@ -6,7 +6,7 @@ import lombok.Data;
 
 @Data
 public class CapturePaymentRequest {
-    private BigDecimal amountToCapture; // null for full capture
+    private BigDecimal amount; // null for full capture
 }
 
 

@@ -4,6 +4,8 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 
+import static com.example.cdr.eventsmanagementsystem.Constants.PaymentConstants.CHECKOUT_SESSION_COMPLETED;
+import static com.example.cdr.eventsmanagementsystem.Constants.PaymentConstants.PAYMENT_INTENT_SUCCEEDED;
 import com.example.cdr.eventsmanagementsystem.Model.Booking.Booking;
 import com.example.cdr.eventsmanagementsystem.Model.Booking.BookingStatus;
 import com.example.cdr.eventsmanagementsystem.Model.Booking.PaymentStatus;
@@ -31,22 +33,10 @@ public class StripeWebhookService {
     private final ApplicationEventPublisher eventPublisher;
     private final StripeServiceInterface stripeService;
 
-    @Value("${STRIPE_WEBHOOK_SECRET:}")
+    @Value("${app.payment.webhook-secret:}")
     private String webhookSecret;
 
-    @Value("${STRIPE_WEBHOOK_SKIP_VERIFY:false}")
-    private String skipSignatureVerificationRaw;
-
-    private static final String CHECKOUT_SESSION_COMPLETED = "checkout.session.completed";
-    private static final String PAYMENT_INTENT_SUCCEEDED = "payment_intent.succeeded";
-
-    public Event constructEvent(String payload, String sigHeader) throws Exception {
-        boolean skipVerification = "true".equalsIgnoreCase(String.valueOf(skipSignatureVerificationRaw).trim());
-
-        if (skipVerification) {
-            return ApiResource.GSON.fromJson(payload, Event.class);
-        }
-
+    public Event constructEvent(String payload, String sigHeader) throws SignatureVerificationException {
         if (webhookSecret == null || webhookSecret.isBlank()) {
             throw new IllegalStateException("webhook secret missing");
         }
