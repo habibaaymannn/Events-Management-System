@@ -1,8 +1,10 @@
 package com.example.cdr.eventsmanagementsystem.Service.Notifications;
 
-import com.example.cdr.eventsmanagementsystem.Model.Booking.BookingType;
 import org.springframework.stereotype.Service;
+
 import com.example.cdr.eventsmanagementsystem.Model.Booking.Booking;
+import com.example.cdr.eventsmanagementsystem.Model.Booking.BookingType;
+
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 

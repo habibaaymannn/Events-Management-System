@@ -25,16 +25,21 @@ public interface BookingMapper {
     @Mapping(target = "stripePaymentId", ignore = true)
     @Mapping(target = "refundAmount", ignore = true)
     @Mapping(target = "refundProcessedAt", ignore = true)
+    @Mapping(target = "currency", ignore = true)
+    @Mapping(target = "amount", ignore = true)
+    @Mapping(target = "paymentStatus", ignore = true)
+    @Mapping(target = "stripeSessionId", ignore = true)
     @Mapping(target = "cancellationReason", ignore = true)
-    @Mapping(target = "cancelledAt", ignore = true)
-    @Mapping(target = "cancelledBy", ignore = true)
     @Mapping(source = "eventId", target = "event.id")
+    @Mapping(target = "attendeeBooker", ignore = true)
+    @Mapping(target = "organizerBooker", ignore = true)
     Booking toBooking(EventBookingRequest request);
 
     @Mapping(source = "id", target = "bookingId")
     @Mapping(source = "event.id", target = "eventId")
-    @Mapping(source = "bookerId", target = "attendeeId")       
-    @Mapping(source = "stripePaymentId", target = "paymentConfirmation")
+    @Mapping(source = "bookerId", target = "attendeeId")
+    @Mapping(target = "paymentUrl", ignore = true)
+    @Mapping(target = "paymentConfirmation", ignore = true)
     EventBookingResponse toEventBookingResponse(Booking booking);
 
     @Mapping(target = "id", ignore = true)
@@ -47,16 +52,21 @@ public interface BookingMapper {
     @Mapping(target = "stripePaymentId", ignore = true)
     @Mapping(target = "refundAmount", ignore = true)
     @Mapping(target = "refundProcessedAt", ignore = true)
+    @Mapping(target = "currency", ignore = true)
+    @Mapping(target = "amount", ignore = true)
+    @Mapping(target = "paymentStatus", ignore = true)
+    @Mapping(target = "stripeSessionId", ignore = true)
     @Mapping(target = "cancellationReason", ignore = true)
-    @Mapping(target = "cancelledAt", ignore = true)
-    @Mapping(target = "cancelledBy", ignore = true)
     @Mapping(source = "venueId", target = "venue.id")
     @Mapping(source = "eventId", target = "event.id")
+    @Mapping(target = "attendeeBooker", ignore = true)
+    @Mapping(target = "organizerBooker", ignore = true)
     Booking toBooking(VenueBookingRequest request);
 
     @Mapping(source = "id", target = "bookingId")
     @Mapping(source = "venue.id", target = "venueId")
     @Mapping(source = "bookerId", target = "organizerId")     
+    @Mapping(target = "paymentUrl", ignore = true)
     VenueBookingResponse toVenueBookingResponse(Booking booking);
 
     @Mapping(target = "id", ignore = true)
@@ -69,9 +79,11 @@ public interface BookingMapper {
     @Mapping(target = "stripePaymentId", ignore = true)
     @Mapping(target = "refundAmount", ignore = true)
     @Mapping(target = "refundProcessedAt", ignore = true)
+    @Mapping(target = "currency", ignore = true)
+    @Mapping(target = "amount", ignore = true)
+    @Mapping(target = "paymentStatus", ignore = true)   
+    @Mapping(target = "stripeSessionId", ignore = true)
     @Mapping(target = "cancellationReason", ignore = true)
-    @Mapping(target = "cancelledAt", ignore = true)
-    @Mapping(target = "cancelledBy", ignore = true)
     @Mapping(source = "serviceId", target = "service.id")
     @Mapping(source = "eventId", target = "event.id")
     Booking toBooking(ServiceBookingRequest request);
@@ -79,12 +91,13 @@ public interface BookingMapper {
     @Mapping(source = "id", target = "bookingId")
     @Mapping(source = "service.id", target = "serviceId")
     @Mapping(source = "bookerId", target = "organizerId")      
+    @Mapping(target = "paymentUrl", ignore = true)
     ServiceBookingResponse toServiceBookingResponse(Booking booking);
 
     @Mapping(source = "venue.id", target = "venueId")
     @Mapping(source = "event.id", target = "eventId")
     @Mapping(source = "service.id", target = "serviceId")
-    @Mapping(source = "bookerId", target = "bookerId")          
-    @Mapping(source = "bookerType", target = "bookerType")      
+    @Mapping(source = "bookerId", target = "bookerId")
+    @Mapping(source = "bookerType", target = "bookerType")
     BookingDetailsResponse toBookingDetailsResponse(Booking booking);
 }

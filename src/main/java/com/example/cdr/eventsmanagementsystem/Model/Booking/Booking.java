@@ -2,14 +2,16 @@ package com.example.cdr.eventsmanagementsystem.Model.Booking;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
-import com.example.cdr.eventsmanagementsystem.Model.Service.Services;
-import com.example.cdr.eventsmanagementsystem.Util.BaseEntity;
-import com.fasterxml.jackson.annotation.JsonIgnore;
+
 import com.example.cdr.eventsmanagementsystem.Model.Event.Event;
+import com.example.cdr.eventsmanagementsystem.Model.Service.Services;
 import com.example.cdr.eventsmanagementsystem.Model.User.Attendee;
 import com.example.cdr.eventsmanagementsystem.Model.User.BaseRoleEntity;
 import com.example.cdr.eventsmanagementsystem.Model.User.Organizer;
 import com.example.cdr.eventsmanagementsystem.Model.Venue.Venue;
+import com.example.cdr.eventsmanagementsystem.Util.BaseEntity;
+import com.fasterxml.jackson.annotation.JsonIgnore;
+
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
@@ -56,6 +58,13 @@ public class Booking extends BaseEntity {
 
     @Column(unique = true)
     private String stripePaymentId;
+    @Column(unique = true)
+    private String stripeSessionId;
+    private String currency;
+    private BigDecimal amount;
+    @Enumerated(EnumType.STRING)
+    private PaymentStatus paymentStatus;
+
     private BigDecimal refundAmount;
     private LocalDateTime refundProcessedAt;
 

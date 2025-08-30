@@ -4,7 +4,6 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
 
-import com.example.cdr.eventsmanagementsystem.Model.Booking.BookerType;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
@@ -13,6 +12,7 @@ import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
 import com.example.cdr.eventsmanagementsystem.DTO.projections.LocalDateCount;
+import com.example.cdr.eventsmanagementsystem.Model.Booking.BookerType;
 import com.example.cdr.eventsmanagementsystem.Model.Booking.Booking;
 import com.example.cdr.eventsmanagementsystem.Model.Booking.BookingStatus;
 
@@ -20,6 +20,8 @@ import com.example.cdr.eventsmanagementsystem.Model.Booking.BookingStatus;
 public interface BookingRepository extends JpaRepository<Booking, Long> {
     List<Booking> findByBookerId(String bookerId);
     List<Booking> findByEvent_Id(Long eventId);
+    java.util.Optional<Booking> findByStripeSessionId(String stripeSessionId);
+    java.util.Optional<Booking> findByStripePaymentId(String stripePaymentId);
 
     List<Booking> findByEventIdAndBookerType(Long eventId, BookerType bookerType);
 
