@@ -9,7 +9,7 @@ spring:
 
   jpa:
     hibernate:
-      ddl-auto: update
+      ddl-auto: create-drop
     properties:
       hibernate:
         format_sql: true
@@ -27,16 +27,22 @@ spring:
           starttls:
             enable: true
     protocol: smtp
-  security:
-    oauth2:
-      resourceserver:
-        jwt:
-          issuer-uri: ${ISSUER_URI}
+  oauth2:
+    resourceserver:
+      jwt:
+        issuer-uri: ${ISSUER_URI}
+        jwk-set-uri: ${spring.oauth2.resourceserver.jwt.issuer-uri}/protocol/openid-connect/certs
   stripe:
     api-key: ${SECRET_KEY}
 logging:
   level:
     com.example.cdr.eventsmanagementsystem.Aspect.LoggingAspect: INFO
+    org:
+      springframework:
+        security:
+          oauth2: trace
+        web: debug
+    com: debug
 server:
   port: 8180
   error:
