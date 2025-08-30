@@ -285,7 +285,12 @@
       "credentials": [
         { "type": "password", "value": "adminpass", "temporary": false }
       ],
-      "realmRoles": ["admin"]
+
+      "realmRoles": ["admin"],
+
+      "clientRoles": {
+        "realm-management": ["realm-admin"]
+      }
     }
   ],
 
