@@ -1,25 +1,32 @@
 package com.example.cdr.eventsmanagementsystem.Controller;
 
+import com.example.cdr.eventsmanagementsystem.Constants.ControllerConstants.RoleConstants;
+import com.example.cdr.eventsmanagementsystem.Constants.ControllerConstants.VenueControllerConstants;
 import com.example.cdr.eventsmanagementsystem.DTO.Booking.Response.BookingDetailsResponse;
-import com.example.cdr.eventsmanagementsystem.Service.Venue.VenueServiceInterface;
+import com.example.cdr.eventsmanagementsystem.Service.Venue.VenueService;
 import jakarta.validation.Valid;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.web.PageableDefault;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 import com.example.cdr.eventsmanagementsystem.DTO.Venue.VenueDTO;
-import com.example.cdr.eventsmanagementsystem.Constants.*;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 
+/**
+ * REST controller for venue management.
+ * Provides endpoints to create, update, delete venues, update venue availability,
+ * and retrieve venue bookings for venue providers.
+ */
 @RequiredArgsConstructor
 @RestController
 @RequestMapping(VenueControllerConstants.VENUE_BASE_URL)
 @Tag(name = "Venue", description = "Venue management APIs")
 public class VenueController {
-    private final VenueServiceInterface venueService;
+    private final VenueService venueService;
 
     @Operation(summary = "Create a new venue", description = "Creates a new venue for the venue provider")
     @PreAuthorize("hasRole('" + RoleConstants.VENUE_PROVIDER_ROLE + "')")
@@ -32,8 +39,15 @@ public class VenueController {
     @Operation(summary = "Update an existing venue", description = "Updates the details of a venue by ID")
     @PreAuthorize("hasRole('" + RoleConstants.VENUE_PROVIDER_ROLE + "')")
     @PutMapping(VenueControllerConstants.UPDATE_VENUE_URL)
-    public ResponseEntity<VenueDTO> updateVenue(@PathVariable Long venueId, @Valid @RequestBody VenueDTO dto){
+    public ResponseEntity<VenueDTO> updateVenue(@PathVariable Long venueId, @Valid @RequestBody VenueDTO dto) {
         VenueDTO updatedVenue = venueService.updateVenue(venueId, dto);
+        return ResponseEntity.ok(updatedVenue);
+    }
+    @Operation(summary = "Update the availability of a venue")
+    @PreAuthorize("hasRole('" + RoleConstants.VENUE_PROVIDER_ROLE + "')")
+    @PatchMapping(VenueControllerConstants.UPDATE_VENUE_AVAILABILITY)
+    public ResponseEntity<VenueDTO> updateVenueAvailability(@PathVariable Long venueId,@RequestParam String availability) {
+        VenueDTO updatedVenue =  venueService.updateAvailability(venueId,availability);
         return ResponseEntity.ok(updatedVenue);
     }
 
@@ -44,20 +58,18 @@ public class VenueController {
         venueService.deleteVenue(venueId);
         return ResponseEntity.noContent().build();
     }
-
+    @Operation(summary = "Get all venues", description = "Retrieves a paginated list of all venues")
+    @GetMapping(VenueControllerConstants.GET_ALL_VENUES_URL)
+    @PreAuthorize("hasAnyRole('" + RoleConstants.VENUE_PROVIDER_ROLE + "')")
+    public Page<VenueDTO> getAllVenues(@PageableDefault(page = 0, size = 10)Pageable pageable) {
+        return venueService.getAllVenues(pageable);
+    }
     @Operation(summary = "Get all booked venues for a venue provider", description = "Retrieves all venue bookings associated with a specific venue provider")
     @PreAuthorize("hasRole('" + RoleConstants.VENUE_PROVIDER_ROLE + "')")
     @GetMapping(VenueControllerConstants.GET_VENUE_BOOKINGS_URL)
-    public ResponseEntity<Page<BookingDetailsResponse>> getVenueBookings(Pageable pageable) {
-         Page<BookingDetailsResponse> bookings = venueService.getBookingsForVenueProvider(pageable);
-         return ResponseEntity.ok(bookings);
+    public ResponseEntity<Page<BookingDetailsResponse>> getVenueBookings(@PageableDefault(page = 0, size = 10)Pageable pageable) {
+        Page<BookingDetailsResponse> bookings = venueService.getBookingsForVenueProvider(pageable);
+        return ResponseEntity.ok(bookings);
     }
 
-    @Operation(summary = "Cancel a booking as a venue provider")
-    @PreAuthorize("hasRole('" + RoleConstants.VENUE_PROVIDER_ROLE + "')")
-    @PostMapping(VenueControllerConstants.CANCEL_VENUE_BOOKING_URL)
-    public ResponseEntity<Void> cancelVenueBooking(@PathVariable Long bookingId) {
-        venueService.cancelBooking(bookingId);
-        return ResponseEntity.ok().build();
-    }
 }

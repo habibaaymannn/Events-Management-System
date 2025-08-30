@@ -3,6 +3,8 @@ package com.example.cdr.eventsmanagementsystem.Repository;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
+
+import com.example.cdr.eventsmanagementsystem.Model.Booking.BookerType;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
@@ -19,13 +21,16 @@ public interface BookingRepository extends JpaRepository<Booking, Long> {
     List<Booking> findByBookerId(String bookerId);
     List<Booking> findByEvent_Id(Long eventId);
 
+    List<Booking> findByEventIdAndBookerType(Long eventId, BookerType bookerType);
+
+
     Page<Booking> findByService_ServiceProvider_Id(String serviceProviderId, Pageable pageable);
     Page<Booking> findByVenue_VenueProvider_Id(String venueProviderId,Pageable pageable);
 
     long countByVenueIsNotNullAndStatus(BookingStatus status);
 
     @Query("select function('date', b.createdAt) as date, count(b) as count from Booking b "+
-           "where b.createdAt is not null and function('date', b.createdAt) >= :start and function('date', b.createdAt) <= :end "+
+           "where function('date', b.createdAt) >= :start and function('date', b.createdAt) <= :end "+
            "group by function('date', b.createdAt) order by function('date', b.createdAt)")
     List<LocalDateCount> countDailyBookingsBetween(@Param("start") LocalDate start,
                                                    @Param("end") LocalDate end);
@@ -35,6 +40,14 @@ public interface BookingRepository extends JpaRepository<Booking, Long> {
            "group by function('date', b.cancelledAt) order by function('date', b.cancelledAt)")
     List<LocalDateCount> countDailyCancellationsBetween(@Param("start") LocalDate start,
                                                         @Param("end") LocalDate end);
+
+    @Query("SELECT b FROM Booking b JOIN b.event e " +
+            "WHERE b.status = :status " +
+            "AND e.startTime BETWEEN :start AND :end ")
+    List<Booking> findUpcomingBookings(@Param("status") BookingStatus status,
+                                       @Param("start") LocalDateTime start,
+                                       @Param("end") LocalDateTime end);
+
 
     Page<Booking> findByStatusAndUpdatedAtBetweenAndStripePaymentIdIsNotNull(
             BookingStatus status,

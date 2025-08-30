@@ -1,7 +1,7 @@
 package com.example.cdr.eventsmanagementsystem.Controller.BookingController;
 
-import com.example.cdr.eventsmanagementsystem.Constants.BookingControllerConstants;
-import com.example.cdr.eventsmanagementsystem.Constants.RoleConstants;
+import com.example.cdr.eventsmanagementsystem.Constants.ControllerConstants.BookingControllerConstants;
+import com.example.cdr.eventsmanagementsystem.Constants.ControllerConstants.RoleConstants;
 import com.example.cdr.eventsmanagementsystem.DTO.Booking.Request.EventBookingRequest;
 import com.example.cdr.eventsmanagementsystem.DTO.Booking.Response.EventBookingResponse;
 import com.example.cdr.eventsmanagementsystem.Service.Booking.BookingService;
@@ -13,6 +13,11 @@ import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RestController;
+
+/**
+ * REST controller for booking.
+ * Provides endpoint to book an event by attendees
+ */
 
 @RestController
 @RequiredArgsConstructor

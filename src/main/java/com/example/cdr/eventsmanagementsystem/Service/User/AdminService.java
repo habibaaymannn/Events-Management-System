@@ -24,7 +24,7 @@ import lombok.RequiredArgsConstructor;
 public class AdminService implements AdminServiceInterface {
 
     private final AdminUserManagement userManagement;
-    private final AdminEventsManagement eventManagement;
+    private final AdminEventManagement eventManagement;
     private final StatisticsManagement statisticsManagement;
 
     /// let keycloak handle it
@@ -56,6 +56,7 @@ public class AdminService implements AdminServiceInterface {
     public void deactivateUser(String userId) {
         userManagement.deactivateUser(userId);
     }
+
     /// PUT /admin/realms/EMS-realm/users/{user-id}/reset-password
     @Override
     public void resetPassword(String userId) {

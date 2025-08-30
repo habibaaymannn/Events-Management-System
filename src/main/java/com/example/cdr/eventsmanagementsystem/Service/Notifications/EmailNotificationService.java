@@ -1,13 +1,8 @@
 package com.example.cdr.eventsmanagementsystem.Service.Notifications;
 
-import org.springframework.mail.SimpleMailMessage;
-import org.springframework.mail.javamail.JavaMailSender;
+import com.example.cdr.eventsmanagementsystem.Model.Booking.BookingType;
 import org.springframework.stereotype.Service;
 import com.example.cdr.eventsmanagementsystem.Model.Booking.Booking;
-import com.example.cdr.eventsmanagementsystem.Model.User.BaseRoleEntity;
-import com.example.cdr.eventsmanagementsystem.Model.User.ServiceProvider;
-import com.example.cdr.eventsmanagementsystem.Model.User.VenueProvider;
-import com.example.cdr.eventsmanagementsystem.Service.Auth.UserSyncService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
@@ -15,227 +10,69 @@ import lombok.extern.slf4j.Slf4j;
 @Service
 @RequiredArgsConstructor
 public class EmailNotificationService implements NotificationService {
-    
-    private final JavaMailSender mailSender;
-    private final UserSyncService userSyncService;
 
+    private final AttendeeNotificationService attendeeNotificationService;
+    private final PaymentNotificationService paymentNotificationService;
+    private final ProviderNotificationService providerNotificationService;
+    private final OrganizerNotificationService organizerNotificationService;
+
+    /// Payment
     @Override
     public void sendPaymentRequestEmail(Booking booking, String clientSecret) {
-        try {
-            BaseRoleEntity booker = userSyncService.findUserById(booking.getBookerId());
-
-            if (booker == null) {
-                log.error("User not found for payment email: booking {}", booking.getId());
-                return;
-            }
-
-            String paymentUrl = String.format("http://localhost:8080/payment-page?booking_id=%d&client_secret=%s",
-                    booking.getId(), clientSecret);
-
-            String content = String.format(
-                    "Hello %s,\n\n" +
-                            "Complete your payment for booking #%d:\n" +
-                            "%s\n\n" +
-                            "Payment expires in 24 hours.\n\n" +
-                            "Best regards,\nEvents Team",
-                    booker.getFirstName(), booking.getId(), paymentUrl
-            );
-
-            sendEmail(booker.getEmail(), "Complete Payment - Booking #" + booking.getId(), content);
-        } catch (Exception e) {
-            log.error("Failed to send payment request email for booking {}", booking.getId(), e);
-        }
+        // organizer gets email of payment link
+        paymentNotificationService.sendPaymentRequestEmail(booking, clientSecret);
     }
-
-    @Override
-    public void sendEventBookingConfirmationEmail(Booking booking) {
-        BaseRoleEntity booker = userSyncService.findUserById(booking.getBookerId());
-        if (booker == null) {
-            log.error("User not found for confirmation email: booking {}", booking.getId());
-            return;
-        }
-
-        String content = String.format(
-            "Hello %s,\n\n" +
-            "Your booking #%d is confirmed!\n" +
-            "Payment ID: %s\n\n" +
-            "Best regards,\nEvents Team",
-            booker.getFirstName(), booking.getId(), booking.getStripePaymentId()
-        );
-
-        sendEmail(booker.getEmail(), String.format("Booking Confirmed #" , booking.getId()), content);
-    }
-    @Override
-    public void sendVenueBookingConfirmationEmail(Booking booking) {
-        VenueProvider venueProvider = booking.getVenue().getVenueProvider();
-        BaseRoleEntity booker = userSyncService.findUserById(booking.getBookerId());
-        if (booker == null) {
-            log.error("User not found for confirmation email: booking {}", booking.getId());
-            return;
-        }
-
-        String content = String.format(
-                "Hello %s,\n\n" +
-                        "Your Venue booking #%d is confirmed!\n" +
-                        "Payment ID: %s\n\n" +
-                        "Best regards,\nEvents Team",
-                booker.getFirstName(), booking.getId(), booking.getStripePaymentId()
-        );
-
-        sendEmail(venueProvider.getEmail(),String.format( "Booking Confirmed #" + booking.getId()), content);
-    }
-    @Override
-    public void sendServiceBookingConfirmationEmail(Booking booking) {
-        ServiceProvider serviceProvider = booking.getService().getServiceProvider();
-        BaseRoleEntity booker = userSyncService.findUserById(booking.getBookerId());
-        if (booker == null) {
-            log.error("User not found for confirmation email: booking {}", booking.getId());
-            return;
-        }
-
-        String content = String.format(
-                "Hello %s,\n\n" +
-                        "Your Service booking #%d is confirmed!\n" +
-                        "Payment ID: %s\n\n" +
-                        "Best regards,\nEvents Team",
-                booker.getFirstName(), booking.getId(), booking.getStripePaymentId()
-        );
-
-        sendEmail(serviceProvider.getEmail(),String.format( "Booking Confirmed #" + booking.getId()), content);
-    }
-
-    @Override
-    public void sendBookingCancellationEmail(Booking booking) {
-        BaseRoleEntity booker = userSyncService.findUserById(booking.getBookerId());
-        if (booker == null) {
-            log.error("User not found for confirmation email: booking {}", booking.getId());
-            return;
-        }
-
-        String content = String.format(
-            "Hello %s,\n\n" +
-            "Your booking #%d has been cancelled.\n" +
-            "Refund will be processed within 5-10 business days.\n\n" +
-            "Best regards,\nEvents Team",
-            booker.getFirstName(), booking.getId()
-        );
-        sendEmail(booker.getEmail(), String.format("Booking Cancelled #" + booking.getId()), content);
-    }
-
     @Override
     public void sendPaymentFailureEmail(Booking booking, String failureReason) {
-        BaseRoleEntity booker = userSyncService.findUserById(booking.getBookerId());
-        if (booker == null) {
-            return;
-        }
+        // organizer gets email of payment failure
+       paymentNotificationService.sendPaymentFailureEmail(booking, failureReason);
+    }
 
-        String content = String.format(
-            "Hello %s,\n\n" +
-            "Unfortunately, your payment for booking #%d could not be processed.\n\n" +
-            "Reason: %s\n\n" +
-            "Please try again or contact support if the issue persists.\n" +
-            "Your booking will remain pending for 24 hours.\n\n" +
-            "Best regards,\nEvents Team",
-            booker.getFirstName(), booking.getId(), failureReason
-        );
+    /// providers
+    @Override
+    public void sendProviderBookingEmail(Booking booking, BookingType bookingType) {
+        // Notify providers (new booking)
+        providerNotificationService.sendNewBookingRequestEmail(booking,BookingType.VENUE);
+        providerNotificationService.sendNewBookingRequestEmail(booking,BookingType.SERVICE);
+    }
+    @Override
+    public void sendProviderConfirmationEmail(Booking booking, BookingType bookingType){
+        // Notify providers of booking confirmation
+        providerNotificationService.sendBookingConfirmationEmail(booking,BookingType.VENUE);
+        providerNotificationService.sendBookingConfirmationEmail(booking,BookingType.SERVICE);
+    }
+    @Override
+    public void sendProviderCancellationEmail(Booking booking, String reason) {
+        // Notify providers of booking cancellation
+        providerNotificationService.sendBookingCancellationEmail(booking,BookingType.VENUE, reason);
+        providerNotificationService.sendBookingCancellationEmail(booking, BookingType.SERVICE,reason);
+    }
 
-        sendEmail(booker.getEmail(),String.format( "Payment Failed - Booking #" + booking.getId()), content);
+    /// organizer
+    @Override
+    public void sendBookingConfirmationEmail(Booking booking){
+        organizerNotificationService.sendBookingConfirmationEmail(booking);
     }
     @Override
-    public void sendVenueBookingEmail(Booking booking) {
-        BaseRoleEntity booker = userSyncService.findUserById(booking.getBookerId());
-        VenueProvider venueProvider = booking.getVenue().getVenueProvider();
-        String content = String.format(
-                "Hello %s,\n\n" +
-                        "You have a new booking request for your venue '%s'.\n" +
-                        "Booking ID: %d\n" +
-                        "Date: %s to %s\n" +
-                        "Booked by: %s\n\n" +
-                        "The booking will be confirmed once payment is completed.\n\n" +
-                        "Best regards,\nEvents Team",
-                venueProvider.getFirstName(),
-                booking.getVenue().getName(),
-                booking.getId(),
-                booking.getStartTime(),
-                booking.getEndTime(),
-                booker.getFirstName()
-        );
-        sendEmail(venueProvider.getEmail(), "New Booking Request for Your Venue", content);
+    public void sendServiceUpdateEmail(Booking booking) {
+        // notify organizer the status update(accept/reject)
+        organizerNotificationService.sendServiceBookingUpdateEmail(booking);
     }
     @Override
-    public void sendVenueCancellationEmail(Booking booking,String reason) {
-        BaseRoleEntity booker = userSyncService.findExistingUser(booking.getBookerId(), booking.getBookerType().toString());
-        VenueProvider venueProvider = booking.getVenue().getVenueProvider();
-        String content = String.format(
-                "Hello %s,\n\n" +
-                        "A booking for your venue '%s' has been cancelled.\n" +
-                        "Booking ID: %d\n" +
-                        "Original Date: %s to %s\n" +
-                        "Booked by: %s (%s)\n" +
-                        "Cancellation Reason: %s\n\n" +
-                        "Best regards,\nEvents Team",
-                venueProvider.getFirstName(),
-                booking.getVenue().getName(),
-                booking.getId(),
-                booking.getStartTime(),
-                booking.getEndTime(),
-                booker.getFullName(),
-                booker.getEmail(),
-                reason
-        );
-        sendEmail(venueProvider.getEmail(),  "Booking Cancelled for Your Venue: ",content);
+    public void sendBookingCancellationEmail(Booking booking) {
+        // notify organizer when their venue/service booking is cancelled
+        organizerNotificationService.sendBookingCancellationEmail(booking);
     }
     @Override
-    public void sendServiceBookingEmail(Booking booking) {
-        BaseRoleEntity booker = userSyncService.findExistingUser(booking.getBookerId(), booking.getBookerType().toString());
-        ServiceProvider serviceProvider = booking.getService().getServiceProvider();
-        String content = String.format(
-                "Hello %s,\n\n" +
-                        "You have a new booking request for your service '%s'.\n" +
-                        "Booking ID: %d\n" +
-                        "Date: %s to %s\n" +
-                        "Booked by: %s\n\n" +
-                        "The booking will be confirmed once payment is completed.\n\n" +
-                        "Best regards,\nEvents Team",
-                serviceProvider.getFirstName(),
-                booking.getService().getName(),
-                booking.getId(),
-                booking.getStartTime(),
-                booking.getEndTime(),
-                booker.getFirstName()
-        );
-        sendEmail(serviceProvider.getEmail(), "New Booking Request for Your Service", content);
+    public void sendEventCancellationEmail(Booking booking) {
+        // notify organizer when event is cancelled
+        organizerNotificationService.sendEventCancellationEmail(booking);
     }
+
+    /// attendee
     @Override
-    public void sendServiceCancellationEmail(Booking booking,String reason) {
-        BaseRoleEntity booker = userSyncService.findExistingUser(booking.getBookerId(), booking.getBookerType().toString());
-        ServiceProvider serviceProvider = booking.getService().getServiceProvider();
-        String content = String.format(
-                "Hello %s,\n\n" +
-                        "A booking for your service '%s' has been cancelled.\n" +
-                        "Booking ID: %d\n" +
-                        "Original Date: %s to %s\n" +
-                        "Booked by: %s (%s)\n" +
-                        "Cancellation Reason: %s\n\n" +
-                        "Best regards,\nEvents Team",
-                serviceProvider.getFirstName(),
-                booking.getService().getName(),
-                booking.getId(),
-                booking.getStartTime(),
-                booking.getEndTime(),
-                booker.getFullName(),
-                booker.getEmail(),
-                reason
-        );
-        sendEmail(serviceProvider.getEmail(),  "Booking Cancelled for Your Service: ",content);
-    }
-    @Override
-    public void sendEmail(String to, String subject, String content) {
-        SimpleMailMessage message = new SimpleMailMessage();
-        message.setTo(to);
-        message.setSubject(subject);
-        message.setText(content);
-        
-        mailSender.send(message);
+    public void sendAttendeeCancellationEmail(Booking booking) {
+        attendeeNotificationService.sendBookingCancellationEmail(booking);
     }
 }
+

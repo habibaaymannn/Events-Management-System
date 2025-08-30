@@ -1,6 +1,6 @@
-package com.example.cdr.eventsmanagementsystem.Constants;
+package com.example.cdr.eventsmanagementsystem.Constants.ControllerConstants;
 
-public class AdminControllerConstants {
+public final class AdminControllerConstants {
 
     public static final String ADMIN_BASE_URL = "/v1/admin";
 
@@ -19,4 +19,6 @@ public class AdminControllerConstants {
     public static final String ADMIN_EVENT_TYPE_DISTRIBUTION_URL = "/event-type-distribution";
     public static final String ADMIN_DAILY_BOOKINGS_URL = "/daily-bookings";
     public static final String ADMIN_DAILY_CANCELLATIONS_URL = "/daily-cancellations";
+
+    private AdminControllerConstants() {}
 }

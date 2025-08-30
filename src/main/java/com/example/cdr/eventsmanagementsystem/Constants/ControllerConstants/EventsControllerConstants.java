@@ -1,6 +1,6 @@
-package com.example.cdr.eventsmanagementsystem.Constants;
+package com.example.cdr.eventsmanagementsystem.Constants.ControllerConstants;
 
-public class EventsControllerConstants {
+public final class EventsControllerConstants {
     public static final String EVENT_BASE_URL = "/v1/events";
     public static final String CREATE_EVENT_URL = "/create";
     public static final String UPDATE_EVENT_URL = "/{id}";
@@ -8,4 +8,6 @@ public class EventsControllerConstants {
     public static final String GET_ALL_EVENTS_URL = EVENT_BASE_URL;
     public static final String GET_EVENT_BY_ID_URL = "/{id}";
     public static final String GET_EVENTS_BY_TYPE_URL = "/type/{type}";
+
+    private EventsControllerConstants() {}
 }

@@ -18,21 +18,18 @@ import org.springframework.stereotype.Service;
 
 @Service
 @RequiredArgsConstructor
-public class AdminEventManagementImpl implements AdminEventsManagement {
+public class AdminEventManagement {
     private final EventRepository eventRepository;
     private final AdminMapper adminMapper;
 
-    @Override
     public Page<EventDetailsDto> getAllEvents(Pageable pageable) {
         return eventRepository.findAll(pageable).map(adminMapper::toEventDetailsDto);
     }
 
-    @Override
     public Page<EventDetailsDto> getEventsByStatus(EventStatus status, Pageable pageable) {
         return eventRepository.findByStatus(status, pageable).map(adminMapper::toEventDetailsDto);
     }
 
-    @Override
     public void cancelEvent(Long eventId) {
         Event event = eventRepository.findById(eventId)
                 .orElseThrow(() -> new EntityNotFoundException("Event not found with id: " + eventId));
