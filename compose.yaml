@@ -34,7 +34,8 @@ services:
     command:
       - start-dev
       - --import-realm
-      - --features=scripts,admin-fine-grained-authz
+      - --features=preview,scripts,admin-fine-grained-authz
+      - --spi-import-export-import-strategy=OVERWRITE_EXISTING
 
   backend:
     container_name: ems-backend
@@ -51,12 +52,32 @@ services:
         condition: service_healthy
       keycloak:
         condition: service_started
-#      config-server:
-#        condition: service_healthy
     networks:
       - ems-network
     env_file:
       - .env
+
+  frontend:
+    container_name: ems-frontend
+    build: ./front-end
+    ports:
+      - "3000:3000"
+    environment:
+      - REACT_APP_KEYCLOAK_BASE_URL=http://localhost:8080
+      - REACT_APP_KEYCLOAK_REALM=EMS-realm
+      - REACT_APP_KEYCLOAK_CLIENT_ID=ems-frontend
+      - REACT_APP_API_BASE=http://localhost:8180
+    depends_on:
+      - keycloak
+      - backend
+    networks:
+      - ems-network
+volumes:
+  postgres_data:
+    name: ems-postgres-data
+networks:
+  ems-network:
+    driver: bridge
 
 #  config-server:
 #    build:
@@ -73,10 +94,3 @@ services:
 #      interval: 5s
 #      retries: 10
 #      timeout: 5s
-
-volumes:
-  postgres_data:
-    name: ems-postgres-data
-networks:
-  ems-network:
-    driver: bridge

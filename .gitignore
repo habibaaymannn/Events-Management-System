@@ -1,37 +1,50 @@
-HELP.md
-target/
-.mvn/wrapper/maven-wrapper.jar
+﻿
+!**/src/main/**/build/
 !**/src/main/**/target/
+!**/src/test/**/build/
 !**/src/test/**/target/
-
+## Node Modules ##
+### IntelliJ IDEA ###
+### NetBeans ###
+### secrets ###
 ### STS ###
+### VS Code ###
+**/k8s/secret.yaml
+**/secret.yaml
+*.iml
+*.ipr
+*.iws
+*.secret.*
 .apt_generated
 .classpath
+.env
 .factorypath
+.idea
+.mvn/wrapper/maven-wrapper.jar
 .project
 .settings
 .springBeans
 .sts4-cache
-
-### IntelliJ IDEA ###
-.idea
-*.iws
-*.iml
-*.ipr
-.env
-
-### NetBeans ###
-/nbproject/private/
-/nbbuild/
-/dist/
-/nbdist/
+.vscode/
 /.nb-gradle/
+/dist/
+/k8s/secret.yaml
+/nbbuild/
+/nbdist/
+/nbproject/private/
 build/
-!**/src/main/**/build/
-!**/src/test/**/build/
+HELP.md
+node_modules/
+target/
 
 ### VS Code ###
 .vscode/
+**/k8s/secret.yaml
+**/secret.yaml
+*.secret.*
+## Node Modules ##
+node_modules/
+
 
 ### secrets ###
 /k8s/secret.yaml
