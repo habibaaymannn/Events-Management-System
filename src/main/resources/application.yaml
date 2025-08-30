@@ -37,6 +37,12 @@ spring:
 logging:
   level:
     com.example.cdr.eventsmanagementsystem.Aspect.LoggingAspect: INFO
+    org:
+      springframework:
+        security:
+          oauth2: trace
+        web: debug
+    com: debug
 server:
   port: 8180
   error:

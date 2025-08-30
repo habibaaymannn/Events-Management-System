@@ -1,50 +1,63 @@
 package com.example.cdr.eventsmanagementsystem.Controller;
 
-import com.example.cdr.eventsmanagementsystem.Constants.RoleConstants;
-import com.example.cdr.eventsmanagementsystem.Constants.ServiceControllerConstants;
+import com.example.cdr.eventsmanagementsystem.Constants.ControllerConstants.EventsControllerConstants;
+import com.example.cdr.eventsmanagementsystem.Constants.ControllerConstants.RoleConstants;
+import com.example.cdr.eventsmanagementsystem.Constants.ControllerConstants.ServiceControllerConstants;
 import com.example.cdr.eventsmanagementsystem.DTO.Booking.Response.BookingDetailsResponse;
+import com.example.cdr.eventsmanagementsystem.DTO.Event.EventResponseDTO;
 import com.example.cdr.eventsmanagementsystem.DTO.Service.ServicesDTO;
 import com.example.cdr.eventsmanagementsystem.Model.Booking.Booking;
 import com.example.cdr.eventsmanagementsystem.Model.Booking.BookingStatus;
-import com.example.cdr.eventsmanagementsystem.Service.Service.ServicesServiceInterface;
+import com.example.cdr.eventsmanagementsystem.Service.Service.ServicesService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.web.PageableDefault;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
+/**
+ * REST controller for service provider operations.
+ * Provides endpoints to create services, update service availability,
+ * retrieve service bookings, and respond to requests.
+ */
 @RestController
 @RequiredArgsConstructor
 @RequestMapping(ServiceControllerConstants.SERVICE_BASE_URL)
 @Tag(name = "Service", description = "Service provider APIs for managing services and bookings")
 public class ServiceController {
-    private final ServicesServiceInterface servicesService;
+    private final ServicesService servicesService;
 
-    @Operation(summary = "Add a new service")
+    @Operation(summary = "Create a new service", description = "Creates a new service for the service provider")
     @PreAuthorize("hasRole('" + RoleConstants.SERVICE_PROVIDER_ROLE + "')")
     @PostMapping(ServiceControllerConstants.CREATE_SERVICE_URL)
-    public ResponseEntity<ServicesDTO> addService(@Valid @RequestBody ServicesDTO dto) {
+    public ResponseEntity<ServicesDTO> createService(@Valid @RequestBody ServicesDTO dto) {
         ServicesDTO servicesDTO = servicesService.addService(dto);
         return ResponseEntity.ok(servicesDTO);
     }
 
-    @Operation(summary = "Update availability of a service")
+    @Operation(summary = "Update the availability of a service")
     @PreAuthorize("hasRole('" + RoleConstants.SERVICE_PROVIDER_ROLE + "')")
     @PatchMapping(ServiceControllerConstants.UPDATE_SERVICE_AVAILABILITY)
-    public ResponseEntity<String> updateServiceAvailability(@PathVariable Long serviceId) {
-        ServicesDTO updatedService =  servicesService.updateAvailability(serviceId);
-        return ResponseEntity.ok("Service availability updated to " + updatedService.getAvailability());
+    public ResponseEntity<ServicesDTO> updateServiceAvailability(@PathVariable Long serviceId,@RequestParam String availability) {
+        ServicesDTO updatedService =  servicesService.updateAvailability(serviceId, availability);
+        return ResponseEntity.ok(updatedService);
+    }
+    @Operation(summary = "Get all services", description = "Retrieves a paginated list of all services")
+    @GetMapping(ServiceControllerConstants.GET_ALL_SERVICES_URL)
+    @PreAuthorize("hasAnyRole('" + RoleConstants.SERVICE_PROVIDER_ROLE + "')")
+    public Page<ServicesDTO> getAllServices(@PageableDefault(page = 0, size = 10)Pageable pageable) {
+        return servicesService.getAllServices(pageable);
     }
 
-
-    @Operation(summary = "Get bookings for the current service provider")
+    @Operation(summary = "Get all booked services for a service provider", description = "Retrieves all service bookings associated with a specific service provider")
     @PreAuthorize("hasRole('" + RoleConstants.SERVICE_PROVIDER_ROLE + "')")
     @GetMapping(ServiceControllerConstants.GET_SERVICE_BOOKINGS_URL)
-    public ResponseEntity<Page<BookingDetailsResponse>> getBookings(Pageable pageable) {
+    public ResponseEntity<Page<BookingDetailsResponse>> getServiceBookings(@PageableDefault(page = 0, size = 10)Pageable pageable) {
         Page<BookingDetailsResponse> services = servicesService.getBookingsForServiceProvider(pageable);
         return ResponseEntity.ok(services);
     }
@@ -55,11 +68,5 @@ public class ServiceController {
     public Booking acceptOrRejectBooking(@PathVariable Long bookingId,@RequestParam BookingStatus status)   {
         return servicesService.respondToBookingRequests(bookingId, status);
     }
-    @Operation(summary = "Cancel a booking as a service provider")
-    @PreAuthorize("hasRole('" + RoleConstants.SERVICE_PROVIDER_ROLE + "')")
-    @PostMapping(ServiceControllerConstants.CANCEL_SERVICE_BOOKING_URL)
-    public ResponseEntity<Void> cancelBooking(@PathVariable Long bookingId)  {
-        servicesService.cancelBooking(bookingId);
-        return ResponseEntity.ok().build();
-    }
+
 }

@@ -1,6 +1,6 @@
 package com.example.cdr.eventsmanagementsystem.Controller.AdminController;
 
-import com.example.cdr.eventsmanagementsystem.Constants.AdminControllerConstants;
+import com.example.cdr.eventsmanagementsystem.Constants.ControllerConstants.AdminControllerConstants;
 import com.example.cdr.eventsmanagementsystem.DTO.Admin.DashboardStatisticsDto;
 import com.example.cdr.eventsmanagementsystem.Service.User.AdminServiceInterface;
 import io.swagger.v3.oas.annotations.Operation;
@@ -11,6 +11,11 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 import java.time.LocalDate;
 import java.util.Map;
+/**
+ * REST controller for admin dashboard operations.
+ * Provides endpoints to retrieve dashboard statistics, event type distribution,
+ * daily bookings, and daily cancellations.
+ */
 
 @RestController
 @RequiredArgsConstructor

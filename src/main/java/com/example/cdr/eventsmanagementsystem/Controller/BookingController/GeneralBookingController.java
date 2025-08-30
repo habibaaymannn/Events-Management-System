@@ -1,7 +1,7 @@
 package com.example.cdr.eventsmanagementsystem.Controller.BookingController;
 
-import com.example.cdr.eventsmanagementsystem.Constants.BookingControllerConstants;
-import com.example.cdr.eventsmanagementsystem.Constants.RoleConstants;
+import com.example.cdr.eventsmanagementsystem.Constants.ControllerConstants.BookingControllerConstants;
+import com.example.cdr.eventsmanagementsystem.Constants.ControllerConstants.RoleConstants;
 import com.example.cdr.eventsmanagementsystem.DTO.Booking.Request.BookingCancelRequest;
 import com.example.cdr.eventsmanagementsystem.DTO.Booking.Response.BookingDetailsResponse;
 import com.example.cdr.eventsmanagementsystem.Model.Booking.BookingStatus;
@@ -14,6 +14,12 @@ import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 import java.util.List;
 
+/**
+ * REST controller for general booking operations.
+ * Provides endpoints to cancel bookings, retrieve booking details, get bookings by attendee,
+ * and update booking status.
+ */
+
 @RestController
 @RequiredArgsConstructor
 @Tag(name = "Booking - General", description = "General booking operations")
@@ -22,7 +28,8 @@ public class GeneralBookingController extends BookingController{
 
     @Operation(summary = "Cancel a booking", description = "Cancels an existing booking")
     @PostMapping(BookingControllerConstants.CANCEL_BOOKING)
-    @PreAuthorize("hasAnyRole('" + RoleConstants.ORGANIZER_ROLE + "', '" + RoleConstants.ATTENDEE_ROLE + "')")
+    @PreAuthorize("hasAnyRole('" + RoleConstants.ORGANIZER_ROLE + "', '" + RoleConstants.ATTENDEE_ROLE +  "','" +
+            RoleConstants.VENUE_PROVIDER_ROLE + "','" + RoleConstants.SERVICE_PROVIDER_ROLE + "')")
     public ResponseEntity<Void> cancelBooking(
             @RequestBody BookingCancelRequest request) {
         bookingService.cancelBooking(request);
@@ -41,14 +48,6 @@ public class GeneralBookingController extends BookingController{
     public ResponseEntity<List<BookingDetailsResponse>> getBookingsByAttendee(
             @PathVariable String attendeeId) {
         List<BookingDetailsResponse> responses = bookingService.getBookingsByAttendee(attendeeId);
-        return ResponseEntity.ok(responses);
-    }
-    @Operation(summary = "Get bookings by event ID", description = "Retrieves all bookings for a specific event")
-    @GetMapping(BookingControllerConstants.GET_BOOKINGS_BY_EVENT)
-    @PreAuthorize("hasAnyRole('" + RoleConstants.ORGANIZER_ROLE + "', '" + RoleConstants.ADMIN_ROLE + "')")
-    public ResponseEntity<List<BookingDetailsResponse>> getBookingsByEvent(
-            @PathVariable Long eventId) {
-        List<BookingDetailsResponse> responses = bookingService.getBookingsByEvent(eventId);
         return ResponseEntity.ok(responses);
     }
     @Operation(summary = "Update booking status", description = "Updates the status of a booking")

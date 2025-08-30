@@ -1,13 +1,13 @@
 package com.example.cdr.eventsmanagementsystem.Controller;
 
 import java.util.List;
-import com.example.cdr.eventsmanagementsystem.Constants.EventsControllerConstants;
-import com.example.cdr.eventsmanagementsystem.Constants.RoleConstants;
+import com.example.cdr.eventsmanagementsystem.Constants.ControllerConstants.EventsControllerConstants;
+import com.example.cdr.eventsmanagementsystem.Constants.ControllerConstants.RoleConstants;
 import com.example.cdr.eventsmanagementsystem.DTO.Event.EventUpdateDTO;
-import com.example.cdr.eventsmanagementsystem.Service.Event.EventServiceInterface;
+import com.example.cdr.eventsmanagementsystem.Service.Event.EventService;
 import org.springframework.data.domain.Page;
-import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.web.PageableDefault;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -16,7 +16,6 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 import com.example.cdr.eventsmanagementsystem.DTO.Event.EventDTO;
 import com.example.cdr.eventsmanagementsystem.DTO.Event.EventResponseDTO;
@@ -25,12 +24,17 @@ import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 
+/**
+ * REST controller for event management.
+ * Provides endpoints to create, retrieve, update, delete, and list events,
+ * as well as filter events by type.
+ */
 @RequiredArgsConstructor
 @RestController
 @RequestMapping(EventsControllerConstants.EVENT_BASE_URL)
 @Tag(name = "Event", description = "Event management APIs")
 public class EventController {
-    private final EventServiceInterface eventService;
+    private final EventService eventService;
 
     @Operation(summary = "Create a new event", description = "Creates a new event with the provided details")
     @PostMapping(EventsControllerConstants.CREATE_EVENT_URL)
@@ -63,10 +67,7 @@ public class EventController {
     @Operation(summary = "Get all events", description = "Retrieves a paginated list of all events")
     @GetMapping(EventsControllerConstants.GET_ALL_EVENTS_URL)
     @PreAuthorize("hasAnyRole('" + RoleConstants.ORGANIZER_ROLE + "', '" + RoleConstants.ATTENDEE_ROLE + "')")
-    public Page<EventResponseDTO> getAllEvents(
-            @RequestParam(defaultValue = "0") int page,
-            @RequestParam(defaultValue = "10") int size) {
-        Pageable pageable = PageRequest.of(page, size);
+    public Page<EventResponseDTO> getAllEvents(@PageableDefault(page = 0, size = 10)Pageable pageable) {
         return eventService.getAllEvents(pageable);
     }
 
