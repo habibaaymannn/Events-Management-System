@@ -35,7 +35,7 @@ public class VenueBookingController {
     }
 
     @Operation(summary = "Create a venue booking", description = "Creates a new venue booking for an organizer. Use 'authorizeOnly=true' for 'Reserve Now, Pay Later' or 'authorizeOnly=false' for immediate payment.")
-    @PostMapping()
+    @PostMapping(CREATE_BOOKING)
     @PreAuthorize("hasAnyRole('" + ORGANIZER_ROLE + "', '" + ADMIN_ROLE + "')")
     public ResponseEntity<VenueBookingResponse> createBooking(@RequestBody VenueBookingRequest request) {
         VenueBookingResponse response = bookingService.createBooking(request);

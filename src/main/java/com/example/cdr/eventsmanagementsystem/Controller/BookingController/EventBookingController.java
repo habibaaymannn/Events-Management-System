@@ -1,10 +1,6 @@
 package com.example.cdr.eventsmanagementsystem.Controller.BookingController;
 
 import com.example.cdr.eventsmanagementsystem.DTO.Booking.Request.BookingCancelRequest;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RestController;
-
 import com.example.cdr.eventsmanagementsystem.DTO.Booking.Request.EventBookingRequest;
 import com.example.cdr.eventsmanagementsystem.DTO.Booking.Response.EventBookingResponse;
 import com.example.cdr.eventsmanagementsystem.Model.Booking.BookingStatus;
@@ -31,7 +27,6 @@ import static com.example.cdr.eventsmanagementsystem.Constants.ControllerConstan
 public class EventBookingController {
     private final EventBookingService bookingService;
 
-
     @Operation(summary = "Get booking details by ID", description = "Retrieves details of a booking by its ID")
     @GetMapping(GET_BOOKING_BY_ID)
     @PreAuthorize("hasAnyRole('" + ORGANIZER_ROLE + "', '" + ATTENDEE_ROLE + "','" + ADMIN_ROLE + "')")
@@ -41,7 +36,7 @@ public class EventBookingController {
     }
 
     @Operation(summary = "Create an event booking", description = "Creates a new event booking for an attendee. Creates a new event booking for an attendee. Use 'authorizeOnly=true' for 'Reserve Now, Pay Later' or 'authorizeOnly=false' for immediate payment.")
-    @PostMapping()
+    @PostMapping(CREATE_BOOKING)
     @PreAuthorize("hasAnyRole('" + ATTENDEE_ROLE + "', '" + ADMIN_ROLE + "')")
     public ResponseEntity<EventBookingResponse> createBooking(@RequestBody EventBookingRequest request) {
         EventBookingResponse response = bookingService.createBooking(request);

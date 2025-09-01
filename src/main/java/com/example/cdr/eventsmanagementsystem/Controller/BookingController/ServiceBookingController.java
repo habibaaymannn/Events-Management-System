@@ -11,7 +11,6 @@ import com.example.cdr.eventsmanagementsystem.DTO.Booking.Request.ServiceBooking
 import com.example.cdr.eventsmanagementsystem.DTO.Booking.Response.ServiceBookingResponse;
 import com.example.cdr.eventsmanagementsystem.Model.Booking.BookingStatus;
 import com.example.cdr.eventsmanagementsystem.Service.Booking.ServiceBookingService;
-
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
@@ -40,7 +39,7 @@ public class ServiceBookingController {
     }
 
     @Operation(summary = "Create a service booking", description = "Creates a new service booking for an organizer. Use 'authorizeOnly=true' for 'Reserve Now, Pay Later' or 'authorizeOnly=false' for immediate payment.")
-    @PostMapping()
+    @PostMapping(CREATE_BOOKING)
     @PreAuthorize("hasAnyRole('" + ORGANIZER_ROLE + "', '" + ADMIN_ROLE + "')")
     public ResponseEntity<ServiceBookingResponse> createBooking(@RequestBody ServiceBookingRequest request) {
         ServiceBookingResponse response = bookingService.createBooking(request);
