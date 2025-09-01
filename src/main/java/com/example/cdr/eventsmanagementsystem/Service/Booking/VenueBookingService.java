@@ -21,12 +21,14 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
+import static com.example.cdr.eventsmanagementsystem.Constants.ControllerConstants.RoleConstants.ADMIN_ROLE;
 import static com.example.cdr.eventsmanagementsystem.Constants.PaymentConstants.SETUP_FUTURE_USAGE_ON_SESSION;
 
 @Slf4j
@@ -46,6 +48,7 @@ public class VenueBookingService {
 
     public VenueBookingResponse getBookingById(Long bookingId) {
         VenueBooking booking = bookingRepository.findById(bookingId).orElseThrow(() -> new EntityNotFoundException("Booking not found"));
+        // TODO: Check authorization
         return bookingMapper.toVenueBookingResponse(booking);
     }
 
@@ -85,6 +88,14 @@ public class VenueBookingService {
     public VenueBookingResponse updateBookingStatus(Long bookingId, BookingStatus status) {
         VenueBooking booking = bookingRepository.findById(bookingId).orElseThrow(() -> new EntityNotFoundException("Booking not found"));
 
+        String currentUserId = AuthUtil.getCurrentUserId();
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        String userRole = userSyncService.getCurrentUserRole(authentication);
+        String providerId = venueRepository.findById(booking.getVenueId()).map(Venue::getCreatedBy).orElse("Unknown provider");
+        if (!providerId.equals(currentUserId) && !ADMIN_ROLE.equals(userRole)) {
+            throw new RuntimeException("You can only update your own bookings");
+        }
+
         BookingStatus oldStatus = booking.getStatus();
         booking.setStatus(status);
 
@@ -100,6 +111,7 @@ public class VenueBookingService {
     public void cancelBooking(BookingCancelRequest request) {
         VenueBooking booking = bookingRepository.findById(request.getBookingId()).orElseThrow(() -> new EntityNotFoundException("Booking not found"));
 
+        // TODO: Check authorization
         String currentUserId = AuthUtil.getCurrentUserId();
         if (!booking.getCreatedBy().equals(currentUserId)) {
             throw new RuntimeException("You can only cancel your own bookings");
