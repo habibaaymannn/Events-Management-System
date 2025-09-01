@@ -1,20 +1,12 @@
 spring:
   application:
     name: Events-Management-System
+  profiles:
+    active: dev
   datasource:
-    url: jdbc:postgresql://postgres:5432/Events-Management-System
     username: ${DB_USERNAME}
     password: ${DB_PASSWORD}
     driver-class-name: org.postgresql.Driver
-
-  jpa:
-    hibernate:
-      ddl-auto: create-drop
-    properties:
-      hibernate:
-        format_sql: true
-    show-sql: true
-
   mail:
     host: smtp.gmail.com
     port: 587
@@ -34,21 +26,8 @@ spring:
         jwk-set-uri: ${spring.oauth2.resourceserver.jwt.issuer-uri}/protocol/openid-connect/certs
   stripe:
     api-key: ${SECRET_KEY}
-logging:
-  level:
-    com.example.cdr.eventsmanagementsystem.Aspect.LoggingAspect: INFO
-    org:
-      springframework:
-        security:
-          oauth2: trace
-        web: debug
-    com: debug
 server:
   port: 8180
-  error:
-    include-message: always
-    include-binding-errors: always
-    include-stacktrace: never
 app:
   payment:
     return-url: http://localhost:3000/booking-success

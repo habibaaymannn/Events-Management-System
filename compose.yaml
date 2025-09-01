@@ -3,13 +3,14 @@ services:
     container_name: ems-postgres
     image: 'postgres:latest'
     environment:
-      POSTGRES_DB: Events-Management-System
+      POSTGRES_DB: ems_dev
       POSTGRES_USER: ${POSTGRES_USERNAME}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
     ports:
       - '5432:5432'
     volumes:
       - postgres_data:/var/lib/postgresql/data
+      - ./init-multiple-dbs.sql:/docker-entrypoint-initdb.d/init-multiple-dbs.sql
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USERNAME}"]
       interval: 5s
@@ -44,6 +45,7 @@ services:
     ports:
       - "8180:8180"
     environment:
+      SPRING_PROFILES_ACTIVE: prod
       ISSUER_URI: http://keycloak:8080/realms/EMS-realm
       #      - SPRING_CLOUD_CONFIG_URI=http://config-server:8888
     depends_on:
