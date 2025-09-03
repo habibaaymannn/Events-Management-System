@@ -43,6 +43,13 @@ public class ServiceController {
         return ResponseEntity.ok(servicesDTO);
     }
 
+    @Operation(summary = "Get service by ID", description = "Retrieves service details by its ID")
+    @GetMapping(ServiceControllerConstants.GET_SERVICE_BY_ID_URL)
+    @PreAuthorize("hasAnyRole('" + RoleConstants.SERVICE_PROVIDER_ROLE + "')")
+    public ServicesDTO getServiceById(@PathVariable Long id) {
+        return servicesService.getServiceById(id);
+    }
+
     @Operation(summary = "Update the availability of a service")
     @PreAuthorize("hasRole('" + RoleConstants.SERVICE_PROVIDER_ROLE + "')")
     @PatchMapping(ServiceControllerConstants.UPDATE_SERVICE_AVAILABILITY)

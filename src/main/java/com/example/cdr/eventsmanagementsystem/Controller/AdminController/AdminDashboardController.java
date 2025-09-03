@@ -1,12 +1,15 @@
 package com.example.cdr.eventsmanagementsystem.Controller.AdminController;
 
 import com.example.cdr.eventsmanagementsystem.Constants.ControllerConstants.AdminControllerConstants;
+import com.example.cdr.eventsmanagementsystem.Constants.ControllerConstants.RoleConstants;
 import com.example.cdr.eventsmanagementsystem.DTO.Admin.DashboardStatisticsDto;
 import com.example.cdr.eventsmanagementsystem.Service.User.AdminService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 import java.time.LocalDate;
@@ -19,8 +22,10 @@ import java.util.Map;
 
 @RestController
 @RequiredArgsConstructor
+@RequestMapping(AdminControllerConstants.ADMIN_BASE_URL)
+@PreAuthorize("hasRole('" + RoleConstants.ADMIN_ROLE + "')")
 @Tag(name = "Admin - Dashboard", description = "Admin dashboard & statistics APIs")
-public class AdminDashboardController extends AdminController {
+public class AdminDashboardController {
     private final AdminService adminService;
 
     @Operation(summary = "Get dashboard statistics", description = "Retrieves statistics for the dashboard")

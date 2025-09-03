@@ -43,6 +43,13 @@ public class VenueController {
         return ResponseEntity.ok(venue);
     }
 
+    @Operation(summary = "Get venue by ID", description = "Retrieves venue details by its ID")
+    @GetMapping(VenueControllerConstants.GET_VENUE_BY_ID_URL)
+    @PreAuthorize("hasAnyRole('" + RoleConstants.VENUE_PROVIDER_ROLE + "')")
+    public VenueDTO getVenueById(@PathVariable Long id) {
+        return venueService.getVenueById(id);
+    }
+
     @Operation(summary = "Update an existing venue", description = "Updates the details of a venue by ID")
     @PreAuthorize("hasRole('" + RoleConstants.VENUE_PROVIDER_ROLE + "')")
     @PutMapping(VenueControllerConstants.UPDATE_VENUE_URL)

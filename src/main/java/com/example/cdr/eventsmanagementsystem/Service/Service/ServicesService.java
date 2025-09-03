@@ -8,6 +8,7 @@ import com.example.cdr.eventsmanagementsystem.Repository.ServiceRepository;
 import com.example.cdr.eventsmanagementsystem.Model.Service.Services;
 import com.example.cdr.eventsmanagementsystem.Service.Auth.UserSyncService;
 import com.example.cdr.eventsmanagementsystem.Util.AuthUtil;
+import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -40,6 +41,11 @@ public class ServicesService {
 
         Services savedService = serviceRepository.save(newService);
         return serviceMapper.toServiceDTO(savedService);
+    }
+
+    public ServicesDTO getServiceById(Long serviceId) {
+        Services service = serviceRepository.findById(serviceId).orElseThrow(() -> new EntityNotFoundException("Service not found"));
+        return serviceMapper.toServiceDTO(service);
     }
 
     @Transactional
