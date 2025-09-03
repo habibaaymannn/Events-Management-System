@@ -2,10 +2,13 @@ package com.example.cdr.eventsmanagementsystem.Service.Auth;
 
 import com.example.cdr.eventsmanagementsystem.Model.User.Attendee;
 import com.example.cdr.eventsmanagementsystem.Model.User.BaseRoleEntity;
+import com.example.cdr.eventsmanagementsystem.Model.User.VenueProvider;
 import com.example.cdr.eventsmanagementsystem.Repository.UsersRepository.AttendeeRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
+
+import java.util.Optional;
 
 /**
  * Handler for managing Attendee users.
@@ -25,11 +28,6 @@ public class AttendeeHandler implements UserRoleHandler<Attendee> {
     }
 
     @Override
-    public Class<Attendee> getRoleClass() {
-        return Attendee.class;
-    }
-
-    @Override
     @Transactional
     public Attendee findUserById(String userId) {
         return attendeeRepository.findById(userId).orElse(null);
@@ -38,6 +36,11 @@ public class AttendeeHandler implements UserRoleHandler<Attendee> {
     @Override
     @Transactional
     public Attendee createNewUser(String userId, String email, String firstName, String lastName) {
+        Optional<Attendee> existingUser = attendeeRepository.findByEmail(email);
+
+        if (existingUser.isPresent()) {
+            return existingUser.get();
+        }
         Attendee attendee = new Attendee();
         attendee.setId(userId);
         attendee.setEmail(email);
@@ -51,9 +54,4 @@ public class AttendeeHandler implements UserRoleHandler<Attendee> {
         return attendeeRepository.save((Attendee) user);
     }
 
-    @Override
-    @Transactional
-    public void deleteUser(String userId) {
-        attendeeRepository.deleteById(userId);
-    }
 }

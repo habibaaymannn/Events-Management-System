@@ -2,10 +2,13 @@ package com.example.cdr.eventsmanagementsystem.Service.Auth;
 
 import com.example.cdr.eventsmanagementsystem.Model.User.Admin;
 import com.example.cdr.eventsmanagementsystem.Model.User.BaseRoleEntity;
+import com.example.cdr.eventsmanagementsystem.Model.User.VenueProvider;
 import com.example.cdr.eventsmanagementsystem.Repository.UsersRepository.AdminRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
+
+import java.util.Optional;
 
 /**
  * Handler for managing Admin users.
@@ -25,11 +28,6 @@ public class AdminHandler implements UserRoleHandler<Admin> {
     }
 
     @Override
-    public Class<Admin> getRoleClass() {
-        return Admin.class;
-    }
-
-    @Override
     @Transactional
     public Admin findUserById(String userId) {
         return adminRepository.findById(userId).orElse(null);
@@ -38,6 +36,11 @@ public class AdminHandler implements UserRoleHandler<Admin> {
     @Override
     @Transactional
     public Admin createNewUser(String userId, String email, String firstName, String lastName) {
+        Optional<Admin> existingUser = adminRepository.findByEmail(email);
+
+        if (existingUser.isPresent()) {
+            return existingUser.get();
+        }
         Admin admin = new Admin();
         admin.setId(userId);
         admin.setEmail(email);
@@ -52,9 +55,4 @@ public class AdminHandler implements UserRoleHandler<Admin> {
         return adminRepository.save((Admin) user);
     }
 
-    @Override
-    @Transactional
-    public void deleteUser(String userId) {
-        adminRepository.deleteById(userId);
-    }
 }
