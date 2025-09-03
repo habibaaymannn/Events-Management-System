@@ -4,14 +4,17 @@ import com.example.cdr.eventsmanagementsystem.DTO.Admin.DashboardStatisticsDto;
 import com.example.cdr.eventsmanagementsystem.DTO.Admin.OrganizerRevenueDto;
 import com.example.cdr.eventsmanagementsystem.DTO.projections.EventTypeCount;
 import com.example.cdr.eventsmanagementsystem.DTO.projections.LocalDateCount;
-import com.example.cdr.eventsmanagementsystem.Model.Booking.Booking;
 import com.example.cdr.eventsmanagementsystem.Model.Booking.BookingStatus;
+import com.example.cdr.eventsmanagementsystem.Model.Booking.EventBooking;
+import com.example.cdr.eventsmanagementsystem.Model.Event.Event;
 import com.example.cdr.eventsmanagementsystem.Model.Event.EventStatus;
-import com.example.cdr.eventsmanagementsystem.Repository.BookingRepository;
+import com.example.cdr.eventsmanagementsystem.Repository.EventBookingRepository;
 import com.example.cdr.eventsmanagementsystem.Repository.EventRepository;
 import com.example.cdr.eventsmanagementsystem.Repository.UsersRepository.*;
+import com.example.cdr.eventsmanagementsystem.Repository.VenueBookingRepository;
 import com.example.cdr.eventsmanagementsystem.Repository.VenueRepository;
 import com.example.cdr.eventsmanagementsystem.Service.Booking.StripeServiceInterface;
+import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
@@ -39,9 +42,9 @@ public class StatisticsManagement {
     private final VenueProviderRepository venueProviderRepository;
     private final VenueRepository venueRepository;
     private final EventRepository eventRepository;
-    private final BookingRepository bookingRepository;
     private final StripeServiceInterface stripeService;
-
+    private final VenueBookingRepository venueBookingRepository;
+    private final EventBookingRepository eventBookingRepository;
 
     public DashboardStatisticsDto getDashboardStatistics() {
         DashboardStatisticsDto dto = new DashboardStatisticsDto();
@@ -64,7 +67,6 @@ public class StatisticsManagement {
 
     public Map<String, Long> getEventTypeDistribution() {
         return eventRepository.countEventsByType().stream()
-                .map(o -> (EventTypeCount) o)
                 .collect(Collectors.toMap(
                         r -> r.getType() == null ? "UNKNOWN" : r.getType().name(),
                         EventTypeCount::getCount
@@ -72,14 +74,12 @@ public class StatisticsManagement {
     }
 
     public Map<LocalDate, Long> getDailyBookingCount(LocalDate startDate, LocalDate endDate) {
-        return bookingRepository.countDailyBookingsBetween(startDate, endDate).stream()
-                .map(o -> (LocalDateCount) o)
+        return eventBookingRepository.countDailyBookingsBetween(startDate, endDate).stream()
                 .collect(Collectors.toMap(LocalDateCount::getDate, LocalDateCount::getCount));
     }
 
     public Map<LocalDate, Long> getDailyCancellationCount(LocalDate startDate, LocalDate endDate) {
-        return bookingRepository.countDailyCancellationsBetween(startDate, endDate).stream()
-                .map(o -> (LocalDateCount) o)
+        return eventBookingRepository.countDailyCancellationsBetween(startDate, endDate).stream()
                 .collect(Collectors.toMap(LocalDateCount::getDate, LocalDateCount::getCount));
     }
 
@@ -91,13 +91,12 @@ public class StatisticsManagement {
         LocalDateTime endTs = endDate.atTime(java.time.LocalTime.MAX);
 
         PageRequest scanPage = PageRequest.of(0, 500);
-        Page<Booking> page;
+        Page<EventBooking> page;
         do {
-            page = bookingRepository.findByStatusAndUpdatedAtBetweenAndStripePaymentIdIsNotNull(
-                    BookingStatus.BOOKED, startTs, endTs, scanPage);
+            page = eventBookingRepository.findByStatusAndUpdatedAtBetween(BookingStatus.BOOKED, startTs, endTs, scanPage);
 
             Set<String> uniquePaymentIds = page.getContent().stream()
-                    .map(Booking::getStripePaymentId)
+                    .map(EventBooking::getStripePaymentId)
                     .filter(id -> id != null && !id.isBlank())
                     .collect(Collectors.toCollection(HashSet::new));
 
@@ -114,8 +113,9 @@ public class StatisticsManagement {
                 }
             }
 
-            for (Booking b : page.getContent()) {
-                String organizerId = b.getEvent().getOrganizer().getId();
+            for (EventBooking b : page.getContent()) {
+                Event event = eventRepository.findById(b.getEventId()).orElseThrow(() -> new EntityNotFoundException("Event not found"));
+                String organizerId = event.getCreatedBy();
                 String paymentId = b.getStripePaymentId();
                 if (paymentId == null || paymentId.isBlank()) continue;
                 BigDecimal amount = paymentAmountCache.getOrDefault(paymentId, BigDecimal.ZERO);
@@ -144,7 +144,7 @@ public class StatisticsManagement {
 
     public double getVenueUtilizationRate() {
         long venues = Math.max(1, venueRepository.count());
-        long booked = bookingRepository.countByVenueIsNotNullAndStatus(BookingStatus.BOOKED);
+        long booked = venueBookingRepository.countByStatus(BookingStatus.BOOKED);
         return (double) booked / venues;
     }
 

@@ -2,68 +2,40 @@ package com.example.cdr.eventsmanagementsystem.Model.Booking;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
-
-import com.example.cdr.eventsmanagementsystem.Model.Event.Event;
-import com.example.cdr.eventsmanagementsystem.Model.Service.Services;
-import com.example.cdr.eventsmanagementsystem.Model.User.Attendee;
-import com.example.cdr.eventsmanagementsystem.Model.User.BaseRoleEntity;
-import com.example.cdr.eventsmanagementsystem.Model.User.Organizer;
-import com.example.cdr.eventsmanagementsystem.Model.Venue.Venue;
 import com.example.cdr.eventsmanagementsystem.Util.BaseEntity;
-import com.fasterxml.jackson.annotation.JsonIgnore;
-
-import jakarta.persistence.Column;
-import jakarta.persistence.Entity;
-import jakarta.persistence.EnumType;
-import jakarta.persistence.Enumerated;
-import jakarta.persistence.ManyToOne;
-import jakarta.persistence.Table;
+import jakarta.persistence.*;
+import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
+import lombok.NoArgsConstructor;
 
-@Entity
 @Data
+@AllArgsConstructor
+@NoArgsConstructor
+@MappedSuperclass
 @EqualsAndHashCode(callSuper = true)
-@Table(name = "bookings")
-public class Booking extends BaseEntity {
+public abstract class Booking extends BaseEntity {
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
-    private BookingType type;
+    private BookingStatus status;
 
-    @ManyToOne
-    @JsonIgnore
-    private Venue venue;
-
-    @ManyToOne
-    @JsonIgnore
-    private Event event;
-
-    @ManyToOne
-    @JsonIgnore
-    private Services service;
-
-    @Column(name = "booker_id", nullable = false)
-    private String bookerId;  // Keycloak ID
-
-    @Enumerated(EnumType.STRING)
-    @Column(name = "booker_type", nullable = false)  
-    private BookerType bookerType; 
-
-    @Enumerated(EnumType.STRING)
     @Column(nullable = false)
-    private BookingStatus status = BookingStatus.PENDING;
-
     private LocalDateTime startTime;
+
+    @Column(nullable = false)
     private LocalDateTime endTime;
 
     @Column(unique = true)
     private String stripePaymentId;
+
     @Column(unique = true)
     private String stripeSessionId;
-    private String currency;
-    private BigDecimal amount;
+
     @Enumerated(EnumType.STRING)
     private PaymentStatus paymentStatus;
+
+    private String currency;
+    private BigDecimal amount;
 
     private BigDecimal refundAmount;
     private LocalDateTime refundProcessedAt;
@@ -71,19 +43,4 @@ public class Booking extends BaseEntity {
     private String cancellationReason;
     private LocalDateTime cancelledAt;
     private String cancelledBy;
-
-    public void setAttendeeBooker(Attendee attendee) {
-        this.bookerId = attendee.getId();
-        this.bookerType = BookerType.ATTENDEE;
-    }
-
-    public void setOrganizerBooker(Organizer organizer) {
-        this.bookerId = organizer.getId();
-        this.bookerType = BookerType.ORGANIZER;
-    }
-
-    public void setBooker(BaseRoleEntity user, BookerType type) {
-        this.bookerId = user.getId();
-        this.bookerType = type;
-    }
 }

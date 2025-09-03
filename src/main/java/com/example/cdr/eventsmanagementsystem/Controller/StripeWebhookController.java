@@ -1,5 +1,6 @@
 package com.example.cdr.eventsmanagementsystem.Controller;
 
+import com.example.cdr.eventsmanagementsystem.Model.Booking.BookingType;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.transaction.annotation.Transactional;
@@ -26,13 +27,16 @@ public class StripeWebhookController {
     @Operation(summary = "Handle Stripe webhook events", description = "Process incoming Stripe webhook events")
     @PostMapping(PaymentConstants.STRIPE_WEBHOOK_URL)
     @Transactional
-    public ResponseEntity<String> handle(@RequestBody String payload,
-                                         @RequestHeader(name = "Stripe-Signature", required = false) String sigHeader) {
+    public ResponseEntity<String> handle(
+            @RequestBody BookingType type,
+            @RequestBody String payload,
+            @RequestHeader(name = "Stripe-Signature", required = false) String sigHeader
+    ) {
         try {
             log.info("Received Stripe webhook: endpoint={}", PaymentConstants.STRIPE_WEBHOOK_URL);
             Event event = webhookService.constructEvent(payload, sigHeader);
             log.info("Processing Stripe event: type={}, id={}", event.getType(), event.getId());
-            webhookService.processEvent(event);
+            webhookService.processEvent(event, type);
             return ResponseEntity.ok("ok");
         } catch (Exception e) {
             log.error("Error processing Stripe webhook: {}", e.getMessage(), e);

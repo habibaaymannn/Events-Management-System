@@ -1,15 +1,11 @@
 package com.example.cdr.eventsmanagementsystem.DTO.Booking.Response;
 
-import com.example.cdr.eventsmanagementsystem.DTO.Booking.Request.BaseBookingDTO;
-import com.example.cdr.eventsmanagementsystem.Model.Booking.BookingStatus;
-
 import lombok.Data;
+import lombok.EqualsAndHashCode;
 
 @Data
-public class VenueBookingResponse extends BaseBookingDTO {
-    private Long bookingId;
+@EqualsAndHashCode(callSuper = true)
+public class VenueBookingResponse extends BookingResponse {
     private Long venueId;
-    private String organizerId;
-    private BookingStatus status;
-    private String paymentUrl;
+    private Long eventId;
 }

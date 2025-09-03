@@ -21,7 +21,6 @@ public interface EventMapper {
     @Mapping(target = "organizer", ignore = true)
     @Mapping(target = "venue", ignore = true)
     @Mapping(target = "admin", ignore = true)
-    @Mapping(target = "bookings", ignore = true)
     @Mapping(target = "status", ignore = true)
     Event toEvent(EventDTO dto);
 
@@ -54,7 +53,6 @@ public interface EventMapper {
     @Mapping(target = "organizer", ignore = true)
     @Mapping(target = "venue", ignore = true)
     @Mapping(target = "admin", ignore = true)
-    @Mapping(target = "bookings", ignore = true)
     @Mapping(target = "status", ignore = true)
     @Mapping(target = "freeCancellationDeadline", ignore = true)
     void updateEventFromDTO(EventUpdateDTO dto, @MappingTarget Event event);

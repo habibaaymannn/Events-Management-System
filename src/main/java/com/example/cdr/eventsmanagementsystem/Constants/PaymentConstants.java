@@ -13,10 +13,10 @@ public final class PaymentConstants {
 
     public static final String REQUESTED_BY_CUSTOMER = "requested_by_customer";
 
-    public static final String AUTHORIZE_PAYMENT = "/{bookingId}/authorize";
-    public static final String CAPTURE_PAYMENT = "/{bookingId}/capture";
-    public static final String VOID_PAYMENT = "/{bookingId}/void";
-    public static final String REFUND_PAYMENT = "/{bookingId}/refund";
+    public static final String AUTHORIZE_PAYMENT = "/{type}/{bookingId}/authorize";
+    public static final String CAPTURE_PAYMENT = "/{type}/{bookingId}/capture";
+    public static final String VOID_PAYMENT = "/{type}/{bookingId}/void";
+    public static final String REFUND_PAYMENT = "/{type}/{bookingId}/refund";
 
     public static final String SETUP_SESSION = "/methods/setup-session";
     public static final String DEFAULT_PAYMENT_METHOD = "/methods/default";

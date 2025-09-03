@@ -1,5 +1,6 @@
 package com.example.cdr.eventsmanagementsystem.Controller;
 
+import com.example.cdr.eventsmanagementsystem.Model.Booking.BookingType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -53,13 +54,13 @@ public class PaymentController {
                description = "Handle Stripe redirect after payment completion. Supports both immediate payment and authorize-only flows.")
     @GetMapping(PaymentConstants.PAYMENT_CONFIRM)
     public ResponseEntity<PaymentConfirmationResponse> confirmPayment(
+            @RequestParam(name = "booking_type") BookingType type,
             @RequestParam(name = "session_id", required = false) String sessionId,
             @RequestParam(name = "setup_session_id", required = false) String setupSessionId,
             @RequestParam(required = false) Boolean canceled,
             @RequestParam(name = "setup_canceled", required = false) Boolean setupCanceled) {
         
-        PaymentConfirmationResponse response = paymentService.confirmPayment(
-                sessionId, setupSessionId, canceled, setupCanceled);
+        PaymentConfirmationResponse response = paymentService.confirmPayment(type, sessionId, setupSessionId, canceled, setupCanceled);
         
         return ResponseEntity.ok(response);
     }
