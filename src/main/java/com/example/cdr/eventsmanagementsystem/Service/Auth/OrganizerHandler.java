@@ -2,10 +2,13 @@ package com.example.cdr.eventsmanagementsystem.Service.Auth;
 
 import com.example.cdr.eventsmanagementsystem.Model.User.Organizer;
 import com.example.cdr.eventsmanagementsystem.Model.User.BaseRoleEntity;
+import com.example.cdr.eventsmanagementsystem.Model.User.VenueProvider;
 import com.example.cdr.eventsmanagementsystem.Repository.UsersRepository.OrganizerRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
+
+import java.util.Optional;
 
 /**
  * Handler for managing organizer users.
@@ -25,11 +28,6 @@ public class OrganizerHandler implements UserRoleHandler<Organizer> {
     }
 
     @Override
-    public Class<Organizer> getRoleClass() {
-        return Organizer.class;
-    }
-
-    @Override
     @Transactional
     public Organizer findUserById(String userId) {
         return organizerRepository.findById(userId).orElse(null);
@@ -38,6 +36,11 @@ public class OrganizerHandler implements UserRoleHandler<Organizer> {
     @Override
     @Transactional
     public Organizer createNewUser(String userId, String email, String firstName, String lastName) {
+        Optional<Organizer> existingUser = organizerRepository.findByEmail(email);
+
+        if (existingUser.isPresent()) {
+            return existingUser.get();
+        }
         Organizer organizer = new Organizer();
         organizer.setId(userId);
         organizer.setEmail(email);
@@ -52,10 +55,4 @@ public class OrganizerHandler implements UserRoleHandler<Organizer> {
         return organizerRepository.save((Organizer) user);
     }
 
-    @Override
-    @Transactional
-    public void deleteUser(String userId) {
-
-        organizerRepository.deleteById(userId);
-    }
 }

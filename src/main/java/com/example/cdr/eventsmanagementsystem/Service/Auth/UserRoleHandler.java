@@ -9,9 +9,7 @@ import com.example.cdr.eventsmanagementsystem.Model.User.BaseRoleEntity;
 
 public interface UserRoleHandler<T extends BaseRoleEntity> {
     boolean supports(String role);
-    Class<T> getRoleClass(); // returns Admin.class, Attendee.class, etc.
     T findUserById(String userId);
     T createNewUser(String userId, String email, String firstName, String lastName);
     BaseRoleEntity saveUser(BaseRoleEntity user);
-    void deleteUser(String userId);
 }

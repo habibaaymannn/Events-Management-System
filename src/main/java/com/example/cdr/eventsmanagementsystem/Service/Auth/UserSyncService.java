@@ -62,26 +62,12 @@ public class UserSyncService {
                 .findFirst()
                 .orElseThrow(() -> new RuntimeException("No supported user role found in authorities"));
     }
-
-    public BaseRoleEntity findExistingUser(String userId, String role) {
-        UserRoleHandler handler = getHandlerForRole(role);
-        return handler.findUserById(userId);
-    }
     public <T extends BaseRoleEntity> UserRoleHandler<T> getHandlerForRole(String role) {
         return handlers.stream()
                 .filter(handler -> handler.supports(role))
                 .findFirst()
                 .map(handler -> (UserRoleHandler<T>) handler)
                 .orElseThrow(() -> new IllegalArgumentException("No handler found for role: " + role));
-    }
-
-    public BaseRoleEntity findUserById(String userId) {
-        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
-        if (Objects.isNull(authentication)) {
-            throw new RuntimeException("No authentication found");
-        }
-        String role = getCurrentUserRole(authentication);
-        return findExistingUser(userId, role);
     }
     public List<UserRoleHandler> getHandlers() {
         return handlers;
