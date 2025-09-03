@@ -1,23 +1,31 @@
 package com.example.cdr.eventsmanagementsystem.Controller.BookingController;
 
-import com.example.cdr.eventsmanagementsystem.DTO.Booking.Request.BookingCancelRequest;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
+import static com.example.cdr.eventsmanagementsystem.Constants.ControllerConstants.BookingControllerConstants.*;
+import static com.example.cdr.eventsmanagementsystem.Constants.ControllerConstants.RoleConstants.ADMIN_ROLE;
+import static com.example.cdr.eventsmanagementsystem.Constants.ControllerConstants.RoleConstants.ORGANIZER_ROLE;
+import static com.example.cdr.eventsmanagementsystem.Constants.ControllerConstants.RoleConstants.SERVICE_PROVIDER_ROLE;
+import com.example.cdr.eventsmanagementsystem.DTO.Booking.Request.BookingCancelRequest;
 import com.example.cdr.eventsmanagementsystem.DTO.Booking.Request.ServiceBookingRequest;
 import com.example.cdr.eventsmanagementsystem.DTO.Booking.Response.ServiceBookingResponse;
 import com.example.cdr.eventsmanagementsystem.Model.Booking.BookingStatus;
 import com.example.cdr.eventsmanagementsystem.Service.Booking.ServiceBookingService;
+
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
-import org.springframework.web.bind.annotation.*;
-
-import static com.example.cdr.eventsmanagementsystem.Constants.ControllerConstants.BookingControllerConstants.*;
-import static com.example.cdr.eventsmanagementsystem.Constants.ControllerConstants.RoleConstants.*;
 
 /**
  * REST controller for booking.
@@ -29,6 +37,22 @@ import static com.example.cdr.eventsmanagementsystem.Constants.ControllerConstan
 @Tag(name = "Service Booking", description = "Service booking APIs")
 public class ServiceBookingController {
     private final ServiceBookingService bookingService;
+
+    @Operation(summary = "Get all bookings", description = "Retrieves all bookings")
+    @GetMapping(GET_ALL)
+    @PreAuthorize("hasAnyRole('" + ORGANIZER_ROLE + "', '" + SERVICE_PROVIDER_ROLE + "','" + ADMIN_ROLE + "')")
+    public ResponseEntity<Page<ServiceBookingResponse>> getAllBookings(@RequestParam(defaultValue = "0") int page, @RequestParam(defaultValue = "10") int size) {
+        Page<ServiceBookingResponse> response = bookingService.getAllServiceBookings(Pageable.ofSize(size).withPage(page));
+        return ResponseEntity.ok(response);
+    }
+
+    @Operation(summary = "Get all bookings by organizer ID", description = "Retrieves all bookings by organizer ID")
+    @GetMapping(GET_ALL_SERVICE_BOOKINGS_BY_ORGANIZER_ID)
+    @PreAuthorize("hasAnyRole('" + ORGANIZER_ROLE + "', '" + SERVICE_PROVIDER_ROLE + "','" + ADMIN_ROLE + "')")
+    public ResponseEntity<Page<ServiceBookingResponse>> getAllServiceBookingsByOrganizerId(@PathVariable String organizerId, @RequestParam(defaultValue = "0") int page, @RequestParam(defaultValue = "10") int size) {
+        Page<ServiceBookingResponse> response = bookingService.getAllServiceBookingsByOrganizerId(organizerId, Pageable.ofSize(size).withPage(page));
+        return ResponseEntity.ok(response);
+    }
 
     @Operation(summary = "Get booking details by ID", description = "Retrieves details of a booking by its ID")
     @GetMapping(GET_BOOKING_BY_ID)
