@@ -1,147 +1,123 @@
+// src/api/serviceApi.js
 import { buildApiUrl, getAuthHeaders } from '../config/apiConfig';
 
 /**
  * Add a new service for the service provider.
- * @param {object} serviceData - Service data to create.
- * @returns {Promise<object>} - Created service object.
+ * POST /v1/services/create
  */
 export async function addNewService(serviceData) {
-  const url = buildApiUrl("/v1/services");
+  const url = buildApiUrl('/v1/services/create');
   const response = await fetch(url, {
-    method: "POST",
+    method: 'POST',
     headers: getAuthHeaders(),
     body: JSON.stringify(serviceData),
   });
-
-  if (!response.ok) {
-    throw new Error(`Failed to add service: ${response.statusText}`);
-  }
-
+  if (!response.ok) throw new Error(`Failed to add service: ${response.status} ${response.statusText}`);
   return await response.json();
 }
 
 /**
  * Accept or reject a booking request as a service provider.
- * @param {number|string} bookingId - Booking request ID.
- * @param {string} status - Status to set ("ACCEPTED" or "REJECTED").
- * @param {string} [reason] - Optional reason for rejection.
- * @returns {Promise<object>} - Updated booking object.
+ * POST /v1/services/bookings/{bookingId}/status
+ * Body: { status: "ACCEPTED" | "REJECTED", cancellationReason?: string }
  */
-export async function respondToBookingRequest(bookingId, status, reason = "") {
+export async function respondToBookingRequest(bookingId, status, reason = '') {
   const url = buildApiUrl(`/v1/services/bookings/${bookingId}/status`);
   const requestBody = { status };
-
-  // Add reason if provided and status is REJECTED
-  if (status === "REJECTED" && reason) {
-    requestBody.cancellationReason = reason;
-  }
+  if (status === 'REJECTED' && reason) requestBody.cancellationReason = reason;
 
   const response = await fetch(url, {
-    method: "POST",
+    method: 'POST',
     headers: getAuthHeaders(),
     body: JSON.stringify(requestBody),
   });
-
-  if (!response.ok) {
-    throw new Error(`Failed to ${status.toLowerCase()} booking: ${response.statusText}`);
-  }
-
+  if (!response.ok) throw new Error(`Failed to ${status.toLowerCase()} booking: ${response.status} ${response.statusText}`);
   return await response.json();
 }
 
 /**
  * Cancel a booking as a service provider.
- * @param {number|string} bookingId - Booking ID to cancel.
- * @param {string} [reason] - Optional cancellation reason.
- * @returns {Promise<void>} - Resolves if successful.
+ * BE does NOT expose ".../cancel" in your constants.
+ * Use the same status endpoint with status=CANCELLED for consistency.
+ * POST /v1/services/bookings/{bookingId}/status
+ * Body: { status: "CANCELLED", cancellationReason?: string }
  */
-export async function cancelServiceBooking(bookingId, reason = "") {
-  const url = buildApiUrl(`/v1/services/bookings/${bookingId}/cancel`);
-  const requestBody = {};
-  
-  // Add reason if provided
-  if (reason) {
-    requestBody.cancellationReason = reason;
-  }
+export async function cancelServiceBooking(bookingId, reason = '') {
+  const url = buildApiUrl(`/v1/services/bookings/${bookingId}/status`);
+  const requestBody = { status: 'CANCELLED' };
+  if (reason) requestBody.cancellationReason = reason;
 
   const response = await fetch(url, {
-    method: "POST",
+    method: 'POST',
     headers: getAuthHeaders(),
     body: JSON.stringify(requestBody),
   });
-
-  if (!response.ok) {
-    throw new Error(`Failed to cancel booking: ${response.statusText}`);
-  }
+  if (!response.ok) throw new Error(`Failed to cancel booking: ${response.status} ${response.statusText}`);
+  return await response.json();
 }
 
 /**
  * Update availability of a service.
- * @param {number|string} serviceId - Service ID.
- * @param {object} availabilityData - Availability data (e.g., { availability: "AVAILABLE" }).
- * @returns {Promise<object>} - Updated service object.
+ * Your BE constant is "/{serviceId}/update-availability".
+ * It takes availability as a QUERY PARAM (common pattern).
+ * PATCH /v1/services/{serviceId}/update-availability?availability=AVAILABLE
+ * If caller passes { availability: "AVAILABLE" } we lift it into the query string.
  */
 export async function updateServiceAvailability(serviceId, availabilityData) {
-  const url = buildApiUrl(`/v1/services/${serviceId}/availability`);
-  const response = await fetch(url, {
-    method: "PATCH",
-    headers: getAuthHeaders(),
-    body: JSON.stringify(availabilityData),
-  });
-
-  if (!response.ok) {
-    throw new Error(`Failed to update service availability: ${response.statusText}`);
+  const availability = availabilityData?.availability;
+  let url = buildApiUrl(`/v1/services/${encodeURIComponent(serviceId)}/update-availability`);
+  if (availability) {
+    const qs = new URLSearchParams({ availability }).toString();
+    url += `?${qs}`;
   }
 
+  const response = await fetch(url, {
+    method: 'PATCH',
+    headers: getAuthHeaders(),
+    // Most controllers ignore body for this endpoint; keep it empty to be safe
+  });
+  if (!response.ok) throw new Error(`Failed to update service availability: ${response.status} ${response.statusText}`);
   return await response.json();
 }
 
 /**
  * Get all bookings for the current service provider.
- * @param {number} [page=0] - Page number for pagination.
- * @param {number} [size=10] - Page size for pagination.
- * @param {string} [status] - Optional status filter ("PENDING", "ACCEPTED", "CANCELLED").
- * @returns {Promise<Array>} - Array of booking objects.
+ * GET /v1/services/bookings?page=&size=&status=
+ * BE returns a Spring Page<>. We normalize to ARRAY for the dashboard.
+ * Return shape: Array of bookings (content) — unwraps Page.content if present.
  */
-export async function getServiceProviderBookings(page = 0, size = 10, status = "") {
-  let url = buildApiUrl("/v1/services/bookings");
+export async function getServiceProviderBookings(page = 0, size = 10, status = '') {
+  let url = buildApiUrl('/v1/services/bookings');
   const params = new URLSearchParams();
-  
-  if (page !== undefined) params.append('page', page);
-  if (size !== undefined) params.append('size', size);
+  if (page !== undefined && page !== null) params.append('page', page);
+  if (size !== undefined && size !== null) params.append('size', size);
   if (status) params.append('status', status);
-  
-  if (params.toString()) {
-    url += `?${params.toString()}`;
-  }
+  if (params.toString()) url += `?${params.toString()}`;
 
   const response = await fetch(url, {
-    method: "GET",
+    method: 'GET',
     headers: getAuthHeaders(),
   });
+  if (!response.ok) throw new Error(`Failed to fetch bookings: ${response.status} ${response.statusText}`);
 
-  if (!response.ok) {
-    throw new Error(`Failed to fetch bookings: ${response.statusText}`);
-  }
-
-  return await response.json();
+  const json = await response.json();
+  // If BE returns {content:[...], ...}, give the dashboard just the array.
+  return Array.isArray(json) ? json : (json.content ?? []);
 }
 
 /**
  * Get all services for the current service provider.
- * @returns {Promise<Array>} - Array of service objects.
+ * GET /v1/services/all
+ * BE returns a Spring Page<ServicesDTO>. We return the array (content).
  */
 export async function getMyServices() {
-  const url = buildApiUrl("/v1/services/my-services");
+  const url = buildApiUrl('/v1/services/all');
   const response = await fetch(url, {
-    method: "GET",
+    method: 'GET',
     headers: getAuthHeaders(),
   });
+  if (!response.ok) throw new Error(`Failed to fetch services: ${response.status} ${response.statusText}`);
 
-  if (!response.ok) {
-    throw new Error(`Failed to fetch services: ${response.statusText}`);
-  }
-
-  return await response.json();
+  const json = await response.json();
+  return Array.isArray(json) ? json : (json.content ?? []);
 }
-

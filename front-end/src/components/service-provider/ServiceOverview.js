@@ -196,13 +196,13 @@ const ServiceOverview = () => {
                         <div key={service.id} className="service-quick-card">
                             <div className="service-header">
                                 <h5 className="service-name">{service.name}</h5>
-                                <span className={`service-status ${service.status.toLowerCase()}`}>
-                                    {service.status}
+                                <span className={`service-status ${(service.availability || 'UNAVAILABLE').toLowerCase()}`}>
+                                    {service.availability}
                                 </span>
                             </div>
                             <div className="service-details">
-                                <p className="service-category">{service.category}</p>
-                                <p className="service-price">${service.price} {service.unit}</p>
+                                <p className="service-category">{service.descriptiob}</p>
+                                <p className="service-price">${service.price ?? 0}</p>
                             </div>
                             <div className="service-stats">
                                 <div className="service-stat">

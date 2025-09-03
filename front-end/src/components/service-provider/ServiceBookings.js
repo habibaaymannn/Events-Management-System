@@ -1,124 +1,132 @@
 import React, { useState, useEffect } from "react";
-import { getServiceProviderBookings, updateBookingStatus } from "../../api/serviceApi";
+import {
+  getServiceProviderBookings,
+  respondToBookingRequest,
+  cancelServiceBooking,
+} from "../../api/serviceApi";
 import { getBookingById } from "../../api/bookingApi";
 
 const ServiceBookings = () => {
-    const [bookings, setBookings] = useState([]);
-    const [filter, setFilter] = useState("All");
-    const [selectedBooking, setSelectedBooking] = useState(null);
-    const [bookingDetails, setBookingDetails] = useState(null);
-    const [notifications, setNotifications] = useState([]);
+  const [bookings, setBookings] = useState([]);
+  const [filter, setFilter] = useState("All");
+  const [selectedBooking, setSelectedBooking] = useState(null);
+  const [bookingDetails, setBookingDetails] = useState(null);
+  const [notifications, setNotifications] = useState([]);
 
-    useEffect(() => {
-        loadBookings();
-    }, []);
+  useEffect(() => {
+    loadBookings();
+  }, []);
 
-    const loadBookings = async () => {
-        try {
-            const response = await getServiceProviderBookings(0, 100);
-            // Map the backend response to expected frontend format
-            const mappedBookings = (response || []).map(booking => ({
-                id: booking.id,
-                serviceName: "Service", // You may need to get this from a separate endpoint
-                clientName: booking.organizerBooker?.fullName || `${booking.organizerBooker?.firstName || ''} ${booking.organizerBooker?.lastName || ''}`.trim(),
-                clientEmail: booking.organizerBooker?.email || booking.attendeeBooker?.email,
-                clientPhone: "N/A", // Phone not in response
-                eventDate: new Date(booking.startTime).toLocaleDateString(),
-                eventTime: new Date(booking.startTime).toLocaleTimeString(),
-                eventLocation: booking.organizerBooker?.events?.[0]?.venue?.location || "TBD",
-                quantity: 1, // Default since not in response
-                unitPrice: 0, // You may need to calculate this
-                totalAmount: 0, // You may need to calculate this
-                status: booking.status,
-                requestDate: new Date(booking.createdAt).toLocaleDateString(),
-                eventType: booking.organizerBooker?.events?.[0]?.type || "Unknown",
-                specialRequests: booking.cancellationReason || "None",
-                notes: "Booking request",
-                organizerBooker: booking.organizerBooker,
-                attendeeBooker: booking.attendeeBooker,
-                startTime: booking.startTime,
-                endTime: booking.endTime
-            }));
-            setBookings(mappedBookings);
-        } catch (error) {
-            console.error("Error loading bookings:", error);
-        }
+  const loadBookings = async () => {
+    try {
+      const response = await getServiceProviderBookings(0, 100);
+      const mappedBookings = (response || []).map((booking) => ({
+        id: booking.id,
+        serviceName: "Service",
+        clientName:
+          booking.organizerBooker?.fullName ||
+          `${booking.organizerBooker?.firstName || ""} ${
+            booking.organizerBooker?.lastName || ""
+          }`.trim(),
+        clientEmail:
+          booking.organizerBooker?.email || booking.attendeeBooker?.email,
+        clientPhone: "N/A",
+        eventDate: new Date(booking.startTime).toLocaleDateString(),
+        eventTime: new Date(booking.startTime).toLocaleTimeString(),
+        eventLocation:
+          booking.organizerBooker?.events?.[0]?.venue?.location || "TBD",
+        quantity: 1,
+        unitPrice: 0,
+        totalAmount: 0,
+        status: booking.status,
+        requestDate: new Date(booking.createdAt).toLocaleDateString(),
+        eventType: booking.organizerBooker?.events?.[0]?.type || "Unknown",
+        specialRequests: booking.cancellationReason || "None",
+        notes: "Booking request",
+        organizerBooker: booking.organizerBooker,
+        attendeeBooker: booking.attendeeBooker,
+        startTime: booking.startTime,
+        endTime: booking.endTime,
+      }));
+      setBookings(mappedBookings);
+    } catch (error) {
+      console.error("Error loading bookings:", error);
+    }
+  };
+
+  const handleStatusChange = async (bookingId, newStatus) => {
+    try {
+      if (newStatus === "ACCEPTED") {
+        await respondToBookingRequest(bookingId, "ACCEPTED");
+        addNotification("Booking accepted!", "client");
+        await loadBookings();
+        return;
+      }
+      if (newStatus === "REJECTED") {
+        const reason =
+          prompt("Please provide a reason for rejection:") ||
+          "No reason provided";
+        await respondToBookingRequest(bookingId, "REJECTED", reason);
+        addNotification("Booking rejected!", "client");
+        await loadBookings();
+        return;
+      }
+      if (newStatus === "CANCELLED") {
+        const reason =
+          prompt("Please provide a reason for cancellation:") ||
+          "Cancelled by service provider";
+        await cancelServiceBooking(bookingId, reason);
+        addNotification("Booking cancelled!", "client");
+        await loadBookings();
+        return;
+      }
+    } catch (error) {
+      console.error("Error updating booking status:", error);
+    }
+  };
+
+  const addNotification = (message, client) => {
+    const notification = {
+      id: Date.now(),
+      message,
+      client,
+      timestamp: new Date().toLocaleString(),
+      read: false,
     };
+    setNotifications((prev) => [notification, ...prev.slice(0, 9)]);
+  };
 
-    const handleStatusChange = async (bookingId, newStatus) => {
-        try {
-            let statusToUpdate = newStatus;
-            
-            // Map frontend status to backend enum values
-            if (newStatus === "ACCEPTED") {
-                statusToUpdate = "ACCEPTED";
-            } else if (newStatus === "REJECTED") {
-                statusToUpdate = "REJECTED";
-                const reason = prompt("Please provide a reason for rejection:");
-                // If using the specific service API with reason, use that instead
-                await respondToBookingRequest(bookingId, "REJECTED", reason || "No reason provided");
-                addNotification("Booking rejected!", "client");
-                loadBookings();
-                return;
-            } else if (newStatus === "CANCELLED") {
-                statusToUpdate = "CANCELLED";
-                const reason = prompt("Please provide a reason for cancellation:");
-                await cancelServiceBooking(bookingId, reason || "Cancelled by service provider");
-                addNotification("Booking cancelled!", "client");
-                loadBookings();
-                return;
-            }
+  const handleViewDetails = async (booking) => {
+    try {
+      const details = await getBookingById(booking.id);
+      setBookingDetails(details);
+      setSelectedBooking(booking);
+    } catch (error) {
+      console.error("Error fetching booking details:", error);
+      setBookingDetails(booking);
+      setSelectedBooking(booking);
+    }
+  };
 
-            // Use the general booking status update endpoint
-            await updateBookingStatus(bookingId, statusToUpdate);
-            addNotification(`Booking ${statusToUpdate.toLowerCase()}!`, "client");
-            loadBookings();
-        } catch (error) {
-            console.error("Error updating booking status:", error);
-        }
-    };
+  const filteredBookings =
+    filter === "All"
+      ? bookings
+      : bookings.filter((booking) => booking.status === filter);
 
-    const addNotification = (message, client) => {
-        const notification = {
-            id: Date.now(),
-            message,
-            client,
-            timestamp: new Date().toLocaleString(),
-            read: false
-        };
-        setNotifications(prev => [notification, ...prev.slice(0, 9)]); // Keep last 10
-    };
-
-    const handleViewDetails = async (booking) => {
-        try {
-            const details = await getBookingById(booking.id);
-            setBookingDetails(details);
-            setSelectedBooking(booking);
-        } catch (error) {
-            console.error("Error fetching booking details:", error);
-            // Fallback to using booking object directly
-            setBookingDetails(booking);
-            setSelectedBooking(booking);
-        }
-    };
-
-    const filteredBookings = filter === "All"
-        ? bookings
-        : bookings.filter(booking => booking.status === filter);
-
-    const stats = {
-        total: bookings.length,
-        pending: bookings.filter(b => b.status === "PENDING").length,
-        confirmed: bookings.filter(b => b.status === "ACCEPTED" || b.status === "CONFIRMED").length,
-        cancelled: bookings.filter(b => b.status === "CANCELLED").length,
-        totalRevenue: bookings
-            .filter(b => b.status === "ACCEPTED" || b.status === "CONFIRMED")
-            .reduce((sum, b) => sum + (b.totalAmount || 0), 0),
-        pendingRevenue: bookings
-            .filter(b => b.status === "PENDING")
-            .reduce((sum, b) => sum + (b.totalAmount || 0), 0)
-    };
-
+  const stats = {
+    total: bookings.length,
+    pending: bookings.filter((b) => b.status === "PENDING").length,
+    confirmed: bookings.filter(
+      (b) => b.status === "ACCEPTED" || b.status === "CONFIRMED"
+    ).length,
+    cancelled: bookings.filter((b) => b.status === "CANCELLED").length,
+    totalRevenue: bookings
+      .filter((b) => b.status === "ACCEPTED" || b.status === "CONFIRMED")
+      .reduce((sum, b) => sum + (b.totalAmount || 0), 0),
+    pendingRevenue: bookings
+      .filter((b) => b.status === "PENDING")
+      .reduce((sum, b) => sum + (b.totalAmount || 0), 0),
+  };
     return (
         <div className="service-page">
             <div className="service-page-header">
