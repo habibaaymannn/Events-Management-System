@@ -1,0 +1,26 @@
+spring:
+  datasource:
+    url: jdbc:postgresql://localhost:5432/ems_dev
+  jpa:
+    properties:
+      hibernate:
+        format_sql: true
+    show-sql: true
+    hibernate:
+      ddl-auto: create-drop
+
+logging:
+  level:
+    com.example.cdr.eventsmanagementsystem.Aspect.LoggingAspect: INFO
+    org:
+      springframework:
+        security:
+          oauth2: trace
+        web: debug
+    com: debug
+
+server:
+  error:
+    include-message: always
+    include-binding-errors: always
+    include-stacktrace: never
