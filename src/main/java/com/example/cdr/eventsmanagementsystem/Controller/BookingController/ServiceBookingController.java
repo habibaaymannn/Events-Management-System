@@ -2,6 +2,7 @@ package com.example.cdr.eventsmanagementsystem.Controller.BookingController;
 
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.web.PageableDefault;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -10,7 +11,6 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import static com.example.cdr.eventsmanagementsystem.Constants.ControllerConstants.BookingControllerConstants.*;
@@ -41,16 +41,24 @@ public class ServiceBookingController {
     @Operation(summary = "Get all bookings", description = "Retrieves all bookings")
     @GetMapping(GET_ALL)
     @PreAuthorize("hasAnyRole('" + ORGANIZER_ROLE + "', '" + SERVICE_PROVIDER_ROLE + "','" + ADMIN_ROLE + "')")
-    public ResponseEntity<Page<ServiceBookingResponse>> getAllBookings(@RequestParam(defaultValue = "0") int page, @RequestParam(defaultValue = "10") int size) {
-        Page<ServiceBookingResponse> response = bookingService.getAllServiceBookings(Pageable.ofSize(size).withPage(page));
+    public ResponseEntity<Page<ServiceBookingResponse>> getAllBookings(@PageableDefault() Pageable pageable) {
+        Page<ServiceBookingResponse> response = bookingService.getAllServiceBookings(pageable);
         return ResponseEntity.ok(response);
     }
 
     @Operation(summary = "Get all bookings by organizer ID", description = "Retrieves all bookings by organizer ID")
     @GetMapping(GET_ALL_SERVICE_BOOKINGS_BY_ORGANIZER_ID)
     @PreAuthorize("hasAnyRole('" + ORGANIZER_ROLE + "', '" + SERVICE_PROVIDER_ROLE + "','" + ADMIN_ROLE + "')")
-    public ResponseEntity<Page<ServiceBookingResponse>> getAllServiceBookingsByOrganizerId(@PathVariable String organizerId, @RequestParam(defaultValue = "0") int page, @RequestParam(defaultValue = "10") int size) {
-        Page<ServiceBookingResponse> response = bookingService.getAllServiceBookingsByOrganizerId(organizerId, Pageable.ofSize(size).withPage(page));
+    public ResponseEntity<Page<ServiceBookingResponse>> getAllServiceBookingsByOrganizerId(@PathVariable String organizerId, @PageableDefault() Pageable pageable) {
+        Page<ServiceBookingResponse> response = bookingService.getAllServiceBookingsByOrganizerId(organizerId, pageable);
+        return ResponseEntity.ok(response);
+    }
+
+    @Operation(summary = "Get all bookings by service provider ID", description = "Retrieves all bookings by service provider ID")
+    @GetMapping(GET_ALL_SERVICE_BOOKINGS_BY_SERVICE_PROVIDER_ID)
+    @PreAuthorize("hasAnyRole('" + SERVICE_PROVIDER_ROLE + "', '" + ADMIN_ROLE + "')")
+    public ResponseEntity<Page<ServiceBookingResponse>> getAllServiceBookingsByServiceProviderId(@PathVariable String serviceProviderId, @PageableDefault() Pageable pageable) {
+        Page<ServiceBookingResponse> response = bookingService.getAllServiceBookingsByServiceProviderId(serviceProviderId, pageable);
         return ResponseEntity.ok(response);
     }
 

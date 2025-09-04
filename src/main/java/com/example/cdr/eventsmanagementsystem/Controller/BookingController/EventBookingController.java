@@ -10,6 +10,7 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.web.PageableDefault;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
@@ -32,24 +33,24 @@ public class EventBookingController {
     @Operation(summary = "Get all bookings", description = "Retrieves all bookings")
     @GetMapping(GET_ALL)
     @PreAuthorize("hasAnyRole('" + ORGANIZER_ROLE + "', '" + ATTENDEE_ROLE + "','" + ADMIN_ROLE + "')")
-    public ResponseEntity<Page<EventBookingResponse>> getAllBookings(@RequestParam(defaultValue = "0") int page, @RequestParam(defaultValue = "10") int size) {
-        Page<EventBookingResponse> response = bookingService.getAllEventBookings(Pageable.ofSize(size).withPage(page));
+    public ResponseEntity<Page<EventBookingResponse>> getAllBookings(@PageableDefault() Pageable pageable) {
+        Page<EventBookingResponse> response = bookingService.getAllEventBookings(pageable);
         return ResponseEntity.ok(response);
     }
 
     @Operation(summary = "Get all bookings by event ID", description = "Retrieves all bookings by event ID")
     @GetMapping(GET_BOOKING_BY_EVENT_ID)
     @PreAuthorize("hasAnyRole('" + ORGANIZER_ROLE + "', '" + ATTENDEE_ROLE + "','" + ADMIN_ROLE + "')")
-    public ResponseEntity<Page<EventBookingResponse>> getAllBookingsByEventId(@PathVariable Long eventId, @RequestParam(defaultValue = "0") int page, @RequestParam(defaultValue = "10") int size) {
-        Page<EventBookingResponse> response = bookingService.getAllEventBookingsByEventId(eventId, Pageable.ofSize(size).withPage(page));
+    public ResponseEntity<Page<EventBookingResponse>> getAllBookingsByEventId(@PathVariable Long eventId, @PageableDefault() Pageable pageable) {
+        Page<EventBookingResponse> response = bookingService.getAllEventBookingsByEventId(eventId, pageable);
         return ResponseEntity.ok(response);
     }
 
     @Operation(summary = "Get all bookings by attendee ID", description = "Retrieves all bookings by attendee ID")
     @GetMapping(GET_BOOKING_BY_ATTENDEE_ID)
     @PreAuthorize("hasAnyRole('" + ORGANIZER_ROLE + "', '" + ATTENDEE_ROLE + "','" + ADMIN_ROLE + "')")
-    public ResponseEntity<Page<EventBookingResponse>> getAllBookingsByAttendeeId(@PathVariable String attendeeId, @RequestParam(defaultValue = "0") int page, @RequestParam(defaultValue = "10") int size) {
-        Page<EventBookingResponse> response = bookingService.getAllEventBookingsByAttendeeId(attendeeId, Pageable.ofSize(size).withPage(page));
+    public ResponseEntity<Page<EventBookingResponse>> getAllBookingsByAttendeeId(@PathVariable String attendeeId, @PageableDefault() Pageable pageable) {
+        Page<EventBookingResponse> response = bookingService.getAllEventBookingsByAttendeeId(attendeeId, pageable);
         return ResponseEntity.ok(response);
     }
 
