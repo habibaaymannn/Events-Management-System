@@ -5,6 +5,7 @@ import com.example.cdr.eventsmanagementsystem.Constants.ControllerConstants.Even
 import com.example.cdr.eventsmanagementsystem.Constants.ControllerConstants.RoleConstants;
 import com.example.cdr.eventsmanagementsystem.DTO.Event.EventUpdateDTO;
 import com.example.cdr.eventsmanagementsystem.Service.Event.EventService;
+import org.springdoc.core.annotations.ParameterObject;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.web.PageableDefault;
@@ -67,7 +68,7 @@ public class EventController {
     @Operation(summary = "Get all events", description = "Retrieves a paginated list of all events")
     @GetMapping(EventsControllerConstants.GET_ALL_EVENTS_URL)
     @PreAuthorize("hasAnyRole('" + RoleConstants.ORGANIZER_ROLE + "', '" + RoleConstants.ATTENDEE_ROLE + "')")
-    public Page<EventResponseDTO> getAllEvents(@PageableDefault(page = 0, size = 10)Pageable pageable) {
+    public Page<EventResponseDTO> getAllEvents(@ParameterObject @PageableDefault() Pageable pageable) {
         return eventService.getAllEvents(pageable);
     }
 

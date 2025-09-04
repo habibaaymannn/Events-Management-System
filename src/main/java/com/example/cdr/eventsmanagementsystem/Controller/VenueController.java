@@ -4,6 +4,7 @@ import com.example.cdr.eventsmanagementsystem.Constants.ControllerConstants.Role
 import com.example.cdr.eventsmanagementsystem.Constants.ControllerConstants.VenueControllerConstants;
 import com.example.cdr.eventsmanagementsystem.Service.Venue.VenueService;
 import jakarta.validation.Valid;
+import org.springdoc.core.annotations.ParameterObject;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.web.PageableDefault;
@@ -30,7 +31,7 @@ public class VenueController {
     @Operation(summary = "Get all venues", description = "Retrieves a paginated list of all venues")
     @GetMapping(VenueControllerConstants.GET_ALL_VENUES_URL)
     @PreAuthorize("hasAnyRole('" + RoleConstants.VENUE_PROVIDER_ROLE + "')")
-    public Page<VenueDTO> getAllVenues(@PageableDefault(page = 0, size = 10)Pageable pageable) {
+    public Page<VenueDTO> getAllVenues(@ParameterObject @PageableDefault() Pageable pageable) {
         return venueService.getAllVenues(pageable);
     }
 

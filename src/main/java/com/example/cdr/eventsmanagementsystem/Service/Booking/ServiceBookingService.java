@@ -1,5 +1,23 @@
 package com.example.cdr.eventsmanagementsystem.Service.Booking;
 
+import java.math.BigDecimal;
+import java.time.LocalDateTime;
+
+import org.springframework.context.ApplicationEventPublisher;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
+import static com.example.cdr.eventsmanagementsystem.Constants.ControllerConstants.RoleConstants.ADMIN_ROLE;
+import static com.example.cdr.eventsmanagementsystem.Constants.ExceptionConstants.BOOKING_NOT_FOUND;
+import static com.example.cdr.eventsmanagementsystem.Constants.ExceptionConstants.SERVICE_NOT_FOUND;
+import static com.example.cdr.eventsmanagementsystem.Constants.ExceptionConstants.YOU_CAN_ONLY_CANCEL_YOUR_OWN_BOOKINGS;
+import static com.example.cdr.eventsmanagementsystem.Constants.ExceptionConstants.YOU_CAN_ONLY_UPDATE_YOUR_OWN_BOOKINGS;
+import static com.example.cdr.eventsmanagementsystem.Constants.ExceptionConstants.YOU_CAN_ONLY_VIEW_YOUR_OWN_BOOKINGS;
+import static com.example.cdr.eventsmanagementsystem.Constants.PaymentConstants.SETUP_FUTURE_USAGE_ON_SESSION;
 import com.example.cdr.eventsmanagementsystem.DTO.Booking.Request.BookingCancelRequest;
 import com.example.cdr.eventsmanagementsystem.DTO.Booking.Request.ServiceBookingRequest;
 import com.example.cdr.eventsmanagementsystem.DTO.Booking.Response.ServiceBookingResponse;
@@ -8,6 +26,7 @@ import com.example.cdr.eventsmanagementsystem.Model.Booking.BookingStatus;
 import com.example.cdr.eventsmanagementsystem.Model.Booking.ServiceBooking;
 import com.example.cdr.eventsmanagementsystem.Model.Service.Services;
 import com.example.cdr.eventsmanagementsystem.Model.User.Organizer;
+import com.example.cdr.eventsmanagementsystem.Model.User.ServiceProvider;
 import com.example.cdr.eventsmanagementsystem.NotificationEvent.BookingCancellation.ServiceBookingCancelled;
 import com.example.cdr.eventsmanagementsystem.NotificationEvent.BookingConfirmation.ServiceBookingConfirmed;
 import com.example.cdr.eventsmanagementsystem.NotificationEvent.BookingCreation.ServiceBookingCreated;
@@ -16,20 +35,10 @@ import com.example.cdr.eventsmanagementsystem.Repository.ServiceRepository;
 import com.example.cdr.eventsmanagementsystem.Service.Auth.UserSyncService;
 import com.example.cdr.eventsmanagementsystem.Util.AuthUtil;
 import com.stripe.model.Customer;
+
 import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.context.ApplicationEventPublisher;
-import org.springframework.security.core.Authentication;
-import org.springframework.security.core.context.SecurityContextHolder;
-import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
-
-import java.math.BigDecimal;
-import java.time.LocalDateTime;
-
-import static com.example.cdr.eventsmanagementsystem.Constants.ControllerConstants.RoleConstants.ADMIN_ROLE;
-import static com.example.cdr.eventsmanagementsystem.Constants.PaymentConstants.SETUP_FUTURE_USAGE_ON_SESSION;
 
 @Slf4j
 @Service
@@ -42,19 +51,40 @@ public class ServiceBookingService {
     private final ServiceBookingMapper bookingMapper;
     private final ApplicationEventPublisher eventPublisher;
 
-    // TODO: Get All Service Bookings
-    // TODO: Get All Service Bookings By OrganizerId
-    // TODO: Get All Service Bookings By ProviderId
+    public Page<ServiceBookingResponse> getAllServiceBookings(Pageable pageable) {
+        Page<ServiceBooking> bookings = bookingRepository.findAll(pageable);
+        return bookings.map(bookingMapper::toServiceBookingResponse);
+    }
+
+    public Page<ServiceBookingResponse> getAllServiceBookingsByOrganizerId(String organizerId, Pageable pageable) {
+        Page<ServiceBooking> bookings = bookingRepository.findByCreatedBy(organizerId, pageable);
+        return bookings.map(bookingMapper::toServiceBookingResponse);
+    }
+
+    public Page<ServiceBookingResponse> getAllServiceBookingsByServiceProviderId(String providerId, Pageable pageable) {
+        Page<ServiceBooking> bookings = bookingRepository.findByServiceProviderId(providerId, pageable);
+        return bookings.map(bookingMapper::toServiceBookingResponse);
+    }
 
     public ServiceBookingResponse getBookingById(Long bookingId) {
-        ServiceBooking booking = bookingRepository.findById(bookingId).orElseThrow(() -> new EntityNotFoundException("Booking not found"));
-        // TODO: Check authorization
+        ServiceBooking booking = bookingRepository.findById(bookingId).orElseThrow(() -> new EntityNotFoundException(BOOKING_NOT_FOUND));
+
+        String currentUserId = AuthUtil.getCurrentUserId();
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        String userRole = userSyncService.getCurrentUserRole(authentication);
+        String providerId = serviceRepository.findById(booking.getServiceId()).map(Services::getServiceProvider).map(ServiceProvider::getId).orElse(null);
+        boolean isOrganizer = currentUserId != null && currentUserId.equals(booking.getCreatedBy());
+        boolean isProvider = currentUserId != null && currentUserId.equals(providerId);
+        boolean isAdmin = ADMIN_ROLE.equals(userRole);
+        if (!(isOrganizer || isProvider || isAdmin)) {
+            throw new RuntimeException(YOU_CAN_ONLY_VIEW_YOUR_OWN_BOOKINGS);
+        }
         return bookingMapper.toServiceBookingResponse(booking);
     }
 
     @Transactional
     public ServiceBookingResponse createBooking(ServiceBookingRequest request) {
-        Services service = serviceRepository.findById(request.getServiceId()).orElseThrow(() -> new EntityNotFoundException("Service not found"));
+        Services service = serviceRepository.findById(request.getServiceId()).orElseThrow(() -> new EntityNotFoundException(SERVICE_NOT_FOUND));
 
         Organizer organizer = userSyncService.ensureUserExists(Organizer.class);
         if (organizer.getStripeCustomerId() == null) {
@@ -85,14 +115,17 @@ public class ServiceBookingService {
 
     @Transactional
     public ServiceBookingResponse updateBookingStatus(Long bookingId, BookingStatus status) {
-        ServiceBooking booking = bookingRepository.findById(bookingId).orElseThrow(() -> new EntityNotFoundException("Booking not found"));
+        ServiceBooking booking = bookingRepository.findById(bookingId).orElseThrow(() -> new EntityNotFoundException(BOOKING_NOT_FOUND));
 
         String currentUserId = AuthUtil.getCurrentUserId();
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
         String userRole = userSyncService.getCurrentUserRole(authentication);
-        String providerId = serviceRepository.findById(booking.getServiceId()).map(Services::getCreatedBy).orElse("Unknown provider");
-        if (!providerId.equals(currentUserId) && !ADMIN_ROLE.equals(userRole)) {
-            throw new RuntimeException("You can only update your own bookings");
+        String providerId = serviceRepository.findById(booking.getServiceId()).map(Services::getServiceProvider).map(ServiceProvider::getId).orElse(null);
+        boolean isOrganizer = currentUserId != null && currentUserId.equals(booking.getCreatedBy());
+        boolean isProvider = currentUserId != null && currentUserId.equals(providerId);
+        boolean isAdmin = ADMIN_ROLE.equals(userRole);
+        if (!(isOrganizer || isProvider || isAdmin)) {
+            throw new RuntimeException(YOU_CAN_ONLY_UPDATE_YOUR_OWN_BOOKINGS);
         }
 
         BookingStatus oldStatus = booking.getStatus();
@@ -108,15 +141,19 @@ public class ServiceBookingService {
 
     @Transactional
     public void cancelBooking(BookingCancelRequest request) {
-        ServiceBooking booking = bookingRepository.findById(request.getBookingId()).orElseThrow(() -> new EntityNotFoundException("Booking not found"));
+        ServiceBooking booking = bookingRepository.findById(request.getBookingId()).orElseThrow(() -> new EntityNotFoundException(BOOKING_NOT_FOUND));
 
-        // TODO: Check authorization
         String currentUserId = AuthUtil.getCurrentUserId();
-        if (!booking.getCreatedBy().equals(currentUserId)) {
-            throw new RuntimeException("You can only cancel your own bookings");
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        String userRole = userSyncService.getCurrentUserRole(authentication);
+        String providerId = serviceRepository.findById(booking.getServiceId()).map(Services::getServiceProvider).map(ServiceProvider::getId).orElse(null);
+        boolean isOrganizer = currentUserId != null && currentUserId.equals(booking.getCreatedBy());
+        boolean isProvider = currentUserId != null && currentUserId.equals(providerId);
+        boolean isAdmin = ADMIN_ROLE.equals(userRole);
+        if (!(isOrganizer || isProvider || isAdmin)) {
+            throw new RuntimeException(YOU_CAN_ONLY_CANCEL_YOUR_OWN_BOOKINGS);
         }
 
-        // TODO: Isn't just one check of them enough?
         if (booking.getStripePaymentId() != null && booking.getStatus() == BookingStatus.BOOKED) {
             stripeService.createRefund(booking.getStripePaymentId(), null, "Customer requested cancellation");
             booking.setRefundProcessedAt(LocalDateTime.now());
