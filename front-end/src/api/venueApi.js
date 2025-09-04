@@ -6,7 +6,7 @@ import { buildApiUrl, getAuthHeaders } from '../config/apiConfig';
  * @returns {Promise<object>} - Created venue object.
  */
 export async function createVenue(venueData) {
-  const url = buildApiUrl("/v1/venues");
+  const url = buildApiUrl("/v1/venues/create");
   const response = await fetch(url, {
     method: "POST",
     headers: getAuthHeaders(),
@@ -82,7 +82,7 @@ export async function deleteVenue(id) {
  * @returns {Promise<Array>} - Array of venue objects.
  */
 export async function getAllVenues() {
-  const url = buildApiUrl("/v1/venues");
+  const url = buildApiUrl("/v1/venues/all");
   const response = await fetch(url, {
     method: "GET",
     headers: getAuthHeaders(),
