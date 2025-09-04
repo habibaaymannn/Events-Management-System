@@ -9,7 +9,7 @@ export async function addNewService(serviceData) {
   const url = buildApiUrl('/v1/services/create');
   const response = await fetch(url, {
     method: 'POST',
-    headers: getAuthHeaders(),
+    headers: getAuthHeaders(true),
     body: JSON.stringify(serviceData),
   });
   if (!response.ok) throw new Error(`Failed to add service: ${response.status} ${response.statusText}`);
@@ -28,7 +28,7 @@ export async function respondToBookingRequest(bookingId, status, reason = '') {
 
   const response = await fetch(url, {
     method: 'POST',
-    headers: getAuthHeaders(),
+    headers: getAuthHeaders(true),
     body: JSON.stringify(requestBody),
   });
   if (!response.ok) throw new Error(`Failed to ${status.toLowerCase()} booking: ${response.status} ${response.statusText}`);
@@ -49,7 +49,7 @@ export async function cancelServiceBooking(bookingId, reason = '') {
 
   const response = await fetch(url, {
     method: 'POST',
-    headers: getAuthHeaders(),
+    headers: getAuthHeaders(true),
     body: JSON.stringify(requestBody),
   });
   if (!response.ok) throw new Error(`Failed to cancel booking: ${response.status} ${response.statusText}`);

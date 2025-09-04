@@ -20,7 +20,7 @@ public class Services extends BaseEntity {
     @Column(nullable = false)
     private ServiceType type;
 
-    @Column(nullable = false)
+    @Column(nullable = true)
     private String description;
 
     @Column(nullable = false)

@@ -61,10 +61,16 @@
         },
         {
           "name": "sub",
-          "protocol": "openid-connect",
+          "protocol": "openid-connect", 
           "protocolMapper": "oidc-sub-mapper",
           "consentRequired": false,
-          "config": {}
+          "config": {
+            "access.token.claim": "true",
+            "id.token.claim": "true",
+            "userinfo.token.claim": "true",
+            "introspection.token.claim": "true",
+            "lightweight.token.claim": "true"
+          }
         }
       ]
     },

@@ -1,12 +1,13 @@
-import React, { useState, useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { addNewService, getMyServices, updateServiceAvailability } from "../../api/serviceApi";
 
 const serviceCategories = [
-    { value: "CATERING_SERVICES", label: "Catering Services" },
-    { value: "DECOR_AND_STYLING", label: "Decor and Styling" },
-    { value: "AUDIO_VISUAL_SERVICES", label: "Audio Visual Services" },
-    { value: "FURNITURE_EQUIPMENT_RENTAL", label: "Furniture & Equipment Rental" }
+  { value: "CATERING", label: "Catering" },
+  { value: "DECOR_AND_STYLING", label: "Decor & Styling" },
+  { value: "AUDIO_VISUAL", label: "Audio / Visual" },
+  { value: "PHOTOGRAPHY", label: "Photography" },
+  { value: "FURNITURE_RENTAL", label: "Furniture Rental" }
 ];
 
 const MyServices = () => {
@@ -16,10 +17,11 @@ const MyServices = () => {
     const [editingService, setEditingService] = useState(null);
     const [formData, setFormData] = useState({
         name: "",
-        description: "CATERING_SERVICES",
+        type: "CATERING",          // must match BE enum
         price: "",
-        location: "",
-        availability: "AVAILABLE"
+        servicesAreasText: "",     // user types: "maadi, zamalek"
+        availability: "AVAILABLE", // you already send this to BE
+        description: ""            // optional; BE doesn’t require it
     });
 
     useEffect(() => {
@@ -46,12 +48,18 @@ const MyServices = () => {
     const handleSubmit = async (e) => {
         e.preventDefault();
         try {
-            const serviceData = {
-                name: formData.name,
-                description: formData.description,
-                price: parseFloat(formData.price),
-                location: formData.location,
-                availability: formData.availability
+            const areas = (formData.servicesAreasText || "")
+            .split(",") 
+            .map(s => s.trim()) 
+            .filter(Boolean); 
+            
+            const serviceData = { 
+                name: formData.name.trim(), 
+                type: formData.type,                 // REQUIRED by BE 
+                price: Number(formData.price),       // REQUIRED by BE 
+                servicesAreas: areas,                // REQUIRED by BE (List<String>) 
+                availability: formData.availability, // REQUIRED by BE 
+                description: formData.description?.trim() || undefined // optional 
             };
 
             if (editingService) {
@@ -72,10 +80,11 @@ const MyServices = () => {
     const resetForm = () => {
         setFormData({
             name: "",
-            description: "CATERING_SERVICES",
+            type: "CATERING",          // must match BE enum
             price: "",
-            location: "",
-            availability: "AVAILABLE"
+            servicesAreasText: "",     // user types: "maadi, zamalek"
+            availability: "AVAILABLE", // you already send this to BE
+            description: ""            // optional; BE doesn’t require it
         });
         setEditingService(null);
     };
@@ -84,10 +93,11 @@ const MyServices = () => {
         setEditingService(service);
         setFormData({
             name: service.name,
-            description: service.description,
+            type: service.type,
             price: service.price,
-            location: service.location,
-            availability: service.availability
+            servicesAreasText: (service.servicesAreas ?? []).join(", "),
+            availability: service.availability,
+            description: service.description ?? ""
         });
         setShowAddForm(true);
     };
@@ -148,9 +158,9 @@ const MyServices = () => {
                                 <div className="form-group">
                                     <label className="form-label">Category</label>
                                     <select 
-                                        name="description"
+                                        name="type"
                                         className="form-control"
-                                        value={formData.description}
+                                        value={formData.type}
                                         onChange={handleInputChange}
                                         required
                                     >
@@ -177,10 +187,10 @@ const MyServices = () => {
                                     <label className="form-label">Location</label>
                                     <input 
                                         type="text" 
-                                        name="location"
+                                        name="servicesAreasText"
                                         className="form-control" 
                                         placeholder="Enter location"
-                                        value={formData.location}
+                                        value={formData.servicesAreasText}
                                         onChange={handleInputChange}
                                         required
                                     />
@@ -209,10 +219,10 @@ const MyServices = () => {
                             </div>
                             <div className="service-card-content">
                                 <p className="service-category">
-                                    {serviceCategories.find(cat => cat.value === service.description)?.label || service.description}
+                                    {serviceCategories.find(cat => cat.value === service.type)?.label || service.type}
                                 </p>
-                                <p className="service-price">💰 ${service.price}</p>
-                                <p className="service-location">📍 {service.location}</p>
+                                <p className="service-price">💰 ${Number(service.price ?? 0)}</p>
+                                <p className="service-location">📍{(service.servicesAreas ?? []).join(", ")}</p>
                             </div>
                             <div className="service-card-actions">
                                 <button className="service-btn" onClick={() => handleEdit(service)}>
