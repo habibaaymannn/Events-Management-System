@@ -41,7 +41,7 @@ services:
   backend:
     container_name: ems-backend
     build:
-      context: .
+      context: ./back-end
       dockerfile: Dockerfile
     ports:
       - "8180:8180"
