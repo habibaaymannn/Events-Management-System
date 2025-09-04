@@ -8,7 +8,7 @@
         <version>3.3.6</version>
         <relativePath/> <!-- lookup parent from repository -->
     </parent>
-    <groupId>com.example.cdr</groupId>
+    <groupId>com.example</groupId>
     <artifactId>Events-Management-System</artifactId>
     <version>0.0.1-SNAPSHOT</version>
     <name>Events-Management-System</name>

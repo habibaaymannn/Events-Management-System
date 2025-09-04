@@ -11,7 +11,7 @@ spring:
 
 logging:
   level:
-    com.example.cdr.eventsmanagementsystem.Aspect.LoggingAspect: INFO
+    com.example.cdr.eventsmanagementsystem.Aspect.com.example.eventsmanagementsystem.Aspect.LoggingAspect: INFO
     org:
       springframework:
         security:
