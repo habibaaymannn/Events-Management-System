@@ -1,5 +1,6 @@
 package com.example.cdr.eventsmanagementsystem.Controller.BookingController;
 
+import org.springdoc.core.annotations.ParameterObject;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.web.PageableDefault;
@@ -41,7 +42,7 @@ public class ServiceBookingController {
     @Operation(summary = "Get all bookings", description = "Retrieves all bookings")
     @GetMapping(GET_ALL)
     @PreAuthorize("hasAnyRole('" + ORGANIZER_ROLE + "', '" + SERVICE_PROVIDER_ROLE + "','" + ADMIN_ROLE + "')")
-    public ResponseEntity<Page<ServiceBookingResponse>> getAllBookings(@PageableDefault() Pageable pageable) {
+    public ResponseEntity<Page<ServiceBookingResponse>> getAllBookings(@ParameterObject @PageableDefault() Pageable pageable) {
         Page<ServiceBookingResponse> response = bookingService.getAllServiceBookings(pageable);
         return ResponseEntity.ok(response);
     }
@@ -49,7 +50,7 @@ public class ServiceBookingController {
     @Operation(summary = "Get all bookings by organizer ID", description = "Retrieves all bookings by organizer ID")
     @GetMapping(GET_ALL_SERVICE_BOOKINGS_BY_ORGANIZER_ID)
     @PreAuthorize("hasAnyRole('" + ORGANIZER_ROLE + "', '" + SERVICE_PROVIDER_ROLE + "','" + ADMIN_ROLE + "')")
-    public ResponseEntity<Page<ServiceBookingResponse>> getAllServiceBookingsByOrganizerId(@PathVariable String organizerId, @PageableDefault() Pageable pageable) {
+    public ResponseEntity<Page<ServiceBookingResponse>> getAllServiceBookingsByOrganizerId(@PathVariable String organizerId, @ParameterObject @PageableDefault() Pageable pageable) {
         Page<ServiceBookingResponse> response = bookingService.getAllServiceBookingsByOrganizerId(organizerId, pageable);
         return ResponseEntity.ok(response);
     }
@@ -57,7 +58,7 @@ public class ServiceBookingController {
     @Operation(summary = "Get all bookings by service provider ID", description = "Retrieves all bookings by service provider ID")
     @GetMapping(GET_ALL_SERVICE_BOOKINGS_BY_SERVICE_PROVIDER_ID)
     @PreAuthorize("hasAnyRole('" + SERVICE_PROVIDER_ROLE + "', '" + ADMIN_ROLE + "')")
-    public ResponseEntity<Page<ServiceBookingResponse>> getAllServiceBookingsByServiceProviderId(@PathVariable String serviceProviderId, @PageableDefault() Pageable pageable) {
+    public ResponseEntity<Page<ServiceBookingResponse>> getAllServiceBookingsByServiceProviderId(@PathVariable String serviceProviderId, @ParameterObject @PageableDefault() Pageable pageable) {
         Page<ServiceBookingResponse> response = bookingService.getAllServiceBookingsByServiceProviderId(serviceProviderId, pageable);
         return ResponseEntity.ok(response);
     }

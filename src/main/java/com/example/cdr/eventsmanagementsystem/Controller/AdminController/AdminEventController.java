@@ -7,6 +7,7 @@ import com.example.cdr.eventsmanagementsystem.Service.User.AdminService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
+import org.springdoc.core.annotations.ParameterObject;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.web.PageableDefault;
@@ -26,14 +27,13 @@ public class AdminEventController extends AdminController {
 
     @Operation(summary = "Get all events", description = "Retrieves all events with pagination")
     @GetMapping(AdminControllerConstants.ADMIN_EVENTS_URL)
-    public Page<EventDetailsDto> getAllEvents(@PageableDefault(page = 0, size = 10)Pageable pageable) {
+    public Page<EventDetailsDto> getAllEvents(@ParameterObject @PageableDefault() Pageable pageable) {
         return adminService.getAllEvents(pageable);
     }
 
     @Operation(summary = "Get events by status", description = "Retrieves events by their status with pagination")
     @GetMapping(AdminControllerConstants.ADMIN_EVENTS_BY_STATUS_URL)
-    public Page<EventDetailsDto> getEventsByStatus(@RequestParam EventStatus status,
-                                                   @PageableDefault(page = 0, size = 10)Pageable pageable) {
+    public Page<EventDetailsDto> getEventsByStatus(@RequestParam EventStatus status, @ParameterObject @PageableDefault() Pageable pageable) {
         return adminService.getEventsByStatus(status, pageable);
     }
 

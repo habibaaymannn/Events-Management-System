@@ -8,6 +8,7 @@ import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springdoc.core.annotations.ParameterObject;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.web.PageableDefault;
@@ -30,7 +31,7 @@ public class ServiceController {
     @Operation(summary = "Get all services", description = "Retrieves a paginated list of all services")
     @GetMapping(ServiceControllerConstants.GET_ALL_SERVICES_URL)
     @PreAuthorize("hasAnyRole('" + RoleConstants.SERVICE_PROVIDER_ROLE + "')")
-    public Page<ServicesDTO> getAllServices(@PageableDefault(page = 0, size = 10)Pageable pageable) {
+    public Page<ServicesDTO> getAllServices(@ParameterObject @PageableDefault() Pageable pageable) {
         return servicesService.getAllServices(pageable);
     }
 

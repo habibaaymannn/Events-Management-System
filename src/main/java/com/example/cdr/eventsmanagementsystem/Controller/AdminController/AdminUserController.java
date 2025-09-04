@@ -7,6 +7,7 @@ import com.example.cdr.eventsmanagementsystem.Service.User.AdminService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
+import org.springdoc.core.annotations.ParameterObject;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.web.PageableDefault;
@@ -20,7 +21,7 @@ public class AdminUserController extends AdminController {
     private final AdminService adminService;
     @Operation(summary = "Get all users", description = "Retrieves all users with pagination")
     @GetMapping(AdminControllerConstants.ADMIN_USERS_URL)
-    public Page<UserDetailsDto> getAllUsers(@PageableDefault(page = 0, size = 10)Pageable pageable) {
+    public Page<UserDetailsDto> getAllUsers(@ParameterObject @PageableDefault() Pageable pageable) {
         return adminService.getAllUsers(pageable);
     }
 

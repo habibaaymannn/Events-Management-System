@@ -8,6 +8,7 @@ import com.example.cdr.eventsmanagementsystem.Service.Booking.VenueBookingServic
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
+import org.springdoc.core.annotations.ParameterObject;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.web.PageableDefault;
@@ -32,7 +33,7 @@ public class VenueBookingController {
     @Operation(summary = "Get all bookings", description = "Retrieves all bookings")
     @GetMapping(GET_ALL)
     @PreAuthorize("hasAnyRole('" + ORGANIZER_ROLE + "', '" + VENUE_PROVIDER_ROLE + "','" + ADMIN_ROLE + "')")
-    public ResponseEntity<Page<VenueBookingResponse>> getAllBookings(@PageableDefault() Pageable pageable) {
+    public ResponseEntity<Page<VenueBookingResponse>> getAllBookings(@ParameterObject @PageableDefault() Pageable pageable) {
         Page<VenueBookingResponse> response = bookingService.getAllVenueBookings(pageable);
         return ResponseEntity.ok(response);
     }
@@ -40,7 +41,7 @@ public class VenueBookingController {
     @Operation(summary = "Get all bookings by organizer ID", description = "Retrieves all bookings by organizer ID")
     @GetMapping(GET_ALL_VENUE_BOOKINGS_BY_ORGANIZER_ID)
     @PreAuthorize("hasAnyRole('" + ORGANIZER_ROLE + "', '" + VENUE_PROVIDER_ROLE + "','" + ADMIN_ROLE + "')")
-    public ResponseEntity<Page<VenueBookingResponse>> getAllVenueBookingsByOrganizerId(@PathVariable String organizerId, @PageableDefault() Pageable pageable) {
+    public ResponseEntity<Page<VenueBookingResponse>> getAllVenueBookingsByOrganizerId(@PathVariable String organizerId, @ParameterObject @PageableDefault() Pageable pageable) {
         Page<VenueBookingResponse> response = bookingService.getAllVenueBookingsByOrganizerId(organizerId, pageable);
         return ResponseEntity.ok(response);
     }
@@ -48,7 +49,7 @@ public class VenueBookingController {
     @Operation(summary = "Get all bookings by venue provider ID", description = "Retrieves all bookings by venue provider ID")
     @GetMapping(GET_ALL_VENUE_BOOKINGS_BY_VENUE_PROVIDER_ID)
     @PreAuthorize("hasAnyRole('" + VENUE_PROVIDER_ROLE + "', '" + ADMIN_ROLE + "')")
-    public ResponseEntity<Page<VenueBookingResponse>> getAllVenueBookingsByVenueProviderId(@PathVariable String venueProviderId, @PageableDefault() Pageable pageable) {
+    public ResponseEntity<Page<VenueBookingResponse>> getAllVenueBookingsByVenueProviderId(@PathVariable String venueProviderId, @ParameterObject @PageableDefault() Pageable pageable) {
         Page<VenueBookingResponse> response = bookingService.getAllVenueBookingsByVenueProviderId(venueProviderId, pageable);
         return ResponseEntity.ok(response);
     }
