@@ -1,4 +1,4 @@
-package com.example.cdr.eventsmanagementsystem.Service.Booking;
+package com.example.cdr.eventsmanagementsystem.Service.Payment;
 
 import java.math.BigDecimal;
 import java.util.HashMap;
