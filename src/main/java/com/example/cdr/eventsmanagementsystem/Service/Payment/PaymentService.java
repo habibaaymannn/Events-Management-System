@@ -16,7 +16,7 @@ import com.example.cdr.eventsmanagementsystem.DTO.Payment.RefundRequest;
 import com.example.cdr.eventsmanagementsystem.Model.User.BaseRoleEntity;
 import com.example.cdr.eventsmanagementsystem.NotificationEvent.Payment.BookingPaymentFailed;
 import com.example.cdr.eventsmanagementsystem.Service.Auth.UserSyncService;
-import com.example.cdr.eventsmanagementsystem.Service.Booking.StripeServiceInterface;
+import com.example.cdr.eventsmanagementsystem.Service.Booking.StripeService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.context.ApplicationEventPublisher;
@@ -34,7 +34,7 @@ public class PaymentService {
 
     private static final Logger log = LoggerFactory.getLogger(PaymentService.class);
     private final UserSyncService userSyncService;
-    private final StripeServiceInterface stripeService;
+    private final StripeService stripeService;
     private final ApplicationEventPublisher eventPublisher;
     private final NotificationUtil notificationUtil;
     private final BookingUtil bookingUtil;

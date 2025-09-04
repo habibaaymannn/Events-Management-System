@@ -13,7 +13,7 @@ import com.example.cdr.eventsmanagementsystem.Repository.EventRepository;
 import com.example.cdr.eventsmanagementsystem.Repository.UsersRepository.*;
 import com.example.cdr.eventsmanagementsystem.Repository.VenueBookingRepository;
 import com.example.cdr.eventsmanagementsystem.Repository.VenueRepository;
-import com.example.cdr.eventsmanagementsystem.Service.Booking.StripeServiceInterface;
+import com.example.cdr.eventsmanagementsystem.Service.Booking.StripeService;
 import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
@@ -42,7 +42,7 @@ public class StatisticsManagement {
     private final VenueProviderRepository venueProviderRepository;
     private final VenueRepository venueRepository;
     private final EventRepository eventRepository;
-    private final StripeServiceInterface stripeService;
+    private final StripeService stripeService;
     private final VenueBookingRepository venueBookingRepository;
     private final EventBookingRepository eventBookingRepository;
 
