@@ -66,7 +66,7 @@ export async function deleteEvent(id) {
 export async function getAllEvents(page = 0, size = 10) {
   const url = buildApiUrl(`/v1/events?page=${page}&size=${size}`);
   const response = await fetch(url, {
-    method: "GET",
+    method: 'GET',
     headers: getAuthHeaders(),
   });
 
@@ -74,7 +74,11 @@ export async function getAllEvents(page = 0, size = 10) {
     throw new Error(`Failed to fetch events: ${response.statusText}`);
   }
 
-  return await response.json();
+  const json = await response.json();
+  if (Array.isArray(json)) return json;
+  if (json?.data?.content) return json.data.content;
+  if (json?.content) return json.content;
+  return json?.data ?? [];
 }
 
 /**
@@ -83,19 +87,19 @@ export async function getAllEvents(page = 0, size = 10) {
  * @returns {Promise<object>} - Created event object.
  */
 export async function createEvent(eventData) {
-  const url = buildApiUrl("/v1/events");
+  const url = buildApiUrl("/v1/events/create");      // <<< correct path
   const response = await fetch(url, {
     method: "POST",
-    headers: getAuthHeaders(),
+    headers: getAuthHeaders(true),                    // <<< JSON header
     body: JSON.stringify(eventData),
   });
-
   if (!response.ok) {
-    throw new Error(`Failed to create event: ${response.statusText}`);
+    const txt = await response.text().catch(() => "");
+    throw new Error(`Failed to create event: ${response.status} ${response.statusText} ${txt}`);
   }
-
   return await response.json();
 }
+
 
 /**
  * Get events filtered by event type.

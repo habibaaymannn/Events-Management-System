@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { createEvent } from "../../api/eventApi";
-import { bookCombinedResources } from "../../api/bookingApi";
+import { bookVenue, bookService } from "../../api/bookingApi";
 import { getAllVenues } from "../../api/venueApi";
 import { getMyServices } from "../../api/serviceApi";
 
@@ -20,8 +20,7 @@ const CreateEvent = () => {
     retailPrice: "",
     // Booking Information
     venueId: "",
-    serviceIds: [],
-    bookCombined: false // New option for combined booking
+    serviceIds: [], // New option for combined booking
   });
 
   const eventTypes = [
@@ -51,16 +50,17 @@ const CreateEvent = () => {
 
   const loadVenuesAndServices = async () => {
     try {
-      const [venuesData, servicesData] = await Promise.all([
-        getAllVenues(),
-        getMyServices()
-      ]);
-      setVenues(venuesData);
-      setServices(servicesData);
-    } catch (error) {
-      console.error("Error loading venues and services:", error);
+      const [venuesPage, servicesPage] = await Promise.all([getAllVenues(), getMyServices()]);
+      // Both helpers now return arrays (we unwrapped Page.content in the APIs)
+      setVenues(Array.isArray(venuesPage) ? venuesPage : (venuesPage?.content ?? []));
+      setServices(Array.isArray(servicesPage) ? servicesPage : (servicesPage?.content ?? []));
+    } catch (err) {
+      console.error("Failed to load venues/services", err);
+      setVenues([]);
+      setServices([]);
     }
   };
+
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
@@ -85,28 +85,37 @@ const CreateEvent = () => {
 
       const createdEvent = await createEvent(apiEventData);
 
-      // Book resources if selected
-      if ((eventData.venueId || eventData.serviceIds.length > 0) && eventData.bookCombined) {
-        // Use combined booking if both venue and services are selected
-        if (eventData.venueId && eventData.serviceIds.length > 0) {
-          const combinedBookingData = {
-            startTime: eventData.startTime + ":00.000Z",
-            endTime: eventData.endTime + ":00.000Z",
-            currency: "USD",
-            organizerId: "current-organizer-id", // Get from auth context
-            eventId: createdEvent.id,
-            venueId: parseInt(eventData.venueId),
-            serviceIds: eventData.serviceIds.map(id => parseInt(id))
-          };
-          
-          await bookCombinedResources(combinedBookingData);
-          alert("Event created and combined resources booked successfully!");
-        } else {
-          alert("Event created successfully! You can book venues and services separately from the dashboard.");
-        }
-      } else {
-        alert("Event created successfully!");
+    // After createEvent(...)
+    if (eventData.venueId || eventData.serviceIds.length > 0) {
+      // Book venue first if selected
+      if (eventData.venueId) {
+        await bookVenue({
+          startTime: eventData.startTime + ':00.000Z',
+          endTime:   eventData.endTime   + ':00.000Z',
+          currency: 'USD',
+          organizerId: 'current-organizer-id', // TODO: pull from Keycloak
+          eventId: createdEvent.id,
+          venueId: parseInt(eventData.venueId)
+        });
       }
+      // Then each selected service
+      if (eventData.serviceIds.length > 0) {
+        for (const sid of eventData.serviceIds) {
+          await bookService({
+            startTime: eventData.startTime + ':00.000Z',
+            endTime:   eventData.endTime   + ':00.000Z',
+            currency: 'USD',
+            organizerId: 'current-organizer-id',
+            eventId: createdEvent.id,
+            serviceId: parseInt(sid)
+          });
+        }
+      }
+      alert('Event created and resources booked successfully!');
+    } else {
+      alert("Event created successfully!");
+    }
+
       
       navigate('/event-organizer/my-events');
     } catch (error) {
@@ -277,45 +286,37 @@ const CreateEvent = () => {
                 <label className="form-label">Select Venue</label>
                 <select
                   name="venueId"
-                  value={eventData.venueId}
-                  onChange={handleInputChange}
+                  value={eventData.venueId || ""}
+                  onChange={(e) => setEventData(d => ({ ...d, venueId: e.target.value || null }))}
                   className="form-control"
                 >
-                  <option value="">No venue</option>
-                  {venues.map(venue => (
-                    <option key={venue.id} value={venue.id}>
-                      {venue.name} - {venue.location} (${venue.pricing?.perEvent || venue.pricing?.perHour}/event)
-                    </option>
-                  ))}
+                  <option value="">No Venue</option>
+                      {venues.map(v => (
+                        <option key={v.id} value={v.id}>{v.name}</option>
+                      ))}
                 </select>
               </div>
 
               <div className="form-group">
                 <label className="form-label">Select Services</label>
                 <div className="services-selection">
-                  {services.map(service => (
-                    <label key={service.id} className="checkbox-label">
-                      <input
-                        type="checkbox"
-                        checked={eventData.serviceIds.includes(String(service.id))}
-                        onChange={(e) => {
-                          const serviceId = String(service.id);
-                          if (e.target.checked) {
-                            setEventData(prev => ({
-                              ...prev,
-                              serviceIds: [...prev.serviceIds, serviceId]
-                            }));
-                          } else {
-                            setEventData(prev => ({
-                              ...prev,
-                              serviceIds: prev.serviceIds.filter(id => id !== serviceId)
-                            }));
-                          }
-                        }}
-                      />
-                      {service.name} - ${service.price}
-                    </label>
-                  ))}
+                    <select
+                    multiple
+                    value={eventData.serviceIds || []}
+                    onChange={(e) => {
+                      const selected = Array.from(e.target.selectedOptions).map(o => o.value);
+                      setEventData(d => ({ ...d, serviceIds: selected }));
+                    }}
+                    className="form-control"
+                  >
+                    {services.length === 0 ? (
+                      <option disabled>No services available</option>
+                    ) : (
+                      services.map(s => (
+                        <option key={s.id} value={s.id}>{s.name}</option>
+                      ))
+                    )}
+                  </select>
                 </div>
               </div>
 

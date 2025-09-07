@@ -1,6 +1,14 @@
 // src/api/serviceApi.js
 import { buildApiUrl, getAuthHeaders } from '../config/apiConfig';
 
+
+function unwrapApiData(json) {
+  if (Array.isArray(json)) return json;
+  if (json && Array.isArray(json.data)) return json.data;
+  if (json && Array.isArray(json.content)) return json.content;
+  if (json && json.data && Array.isArray(json.data.content)) return json.data.content;
+  return [];
+}
 /**
  * Add a new service for the service provider.
  * POST /v1/services/create
@@ -119,5 +127,5 @@ export async function getMyServices() {
   if (!response.ok) throw new Error(`Failed to fetch services: ${response.status} ${response.statusText}`);
 
   const json = await response.json();
-  return Array.isArray(json) ? json : (json.content ?? []);
+  return unwrapApiData(json);
 }

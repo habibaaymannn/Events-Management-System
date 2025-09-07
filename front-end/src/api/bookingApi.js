@@ -26,19 +26,17 @@ export async function updateBookingStatus(bookingId, status) {
  * @returns {Promise<object>} - Created booking object.
  */
 export async function bookVenue(bookingData) {
-  const url = buildApiUrl("/v1/bookings/venues");
+  const url = buildApiUrl("/v1/bookings/venues/create"); // <<< add /create
   const response = await fetch(url, {
     method: "POST",
-    headers: getAuthHeaders(),
+    headers: getAuthHeaders(true),                       // <<< JSON header
     body: JSON.stringify(bookingData),
   });
-
-  if (!response.ok) {
-    throw new Error(`Failed to book venue: ${response.statusText}`);
-  }
-
+  if (!response.ok) throw new Error(`Failed to book venue: ${response.status} ${response.statusText}`);
   return await response.json();
 }
+
+
 
 /**
  * Book a service for an organizer.
@@ -46,39 +44,36 @@ export async function bookVenue(bookingData) {
  * @returns {Promise<object>} - Created booking object.
  */
 export async function bookService(bookingData) {
-  const url = buildApiUrl("/v1/bookings/services");
+  const url = buildApiUrl("/v1/bookings/services/create"); // <<< add /create
   const response = await fetch(url, {
     method: "POST",
-    headers: getAuthHeaders(),
+    headers: getAuthHeaders(true),                          // <<< JSON header
     body: JSON.stringify(bookingData),
   });
-
-  if (!response.ok) {
-    throw new Error(`Failed to book service: ${response.statusText}`);
-  }
-
+  if (!response.ok) throw new Error(`Failed to book service: ${response.status} ${response.statusText}`);
   return await response.json();
 }
+
 
 /**
  * Book combined resources (venues and services) for an organizer.
  * @param {object} bookingData - Combined booking data with venues and services.
  * @returns {Promise<object>} - Created booking objects.
  */
-export async function bookCombinedResources(bookingData) {
-  const url = buildApiUrl("/v1/bookings/combined");
-  const response = await fetch(url, {
-    method: "POST",
-    headers: getAuthHeaders(),
-    body: JSON.stringify(bookingData),
-  });
+// export async function bookCombinedResources(bookingData) {
+//   const url = buildApiUrl("/v1/bookings/combined");
+//   const response = await fetch(url, {
+//     method: "POST",
+//     headers: getAuthHeaders(),
+//     body: JSON.stringify(bookingData),
+//   });
 
-  if (!response.ok) {
-    throw new Error(`Failed to book combined resources: ${response.statusText}`);
-  }
+//   if (!response.ok) {
+//     throw new Error(`Failed to book combined resources: ${response.statusText}`);
+//   }
 
-  return await response.json();
-}
+//   return await response.json();
+// }
 
 /**
  * Get booking details by ID.

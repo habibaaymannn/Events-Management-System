@@ -9,16 +9,17 @@ export async function createVenue(venueData) {
   const url = buildApiUrl("/v1/venues/create");
   const response = await fetch(url, {
     method: "POST",
-    headers: getAuthHeaders(),
+    headers: getAuthHeaders(true),       // <<< add true to set application/json
     body: JSON.stringify(venueData),
   });
 
   if (!response.ok) {
-    throw new Error(`Failed to create venue: ${response.statusText}`);
+    const txt = await response.text().catch(() => "");
+    throw new Error(`Failed to create venue: ${response.status} ${response.statusText} ${txt}`);
   }
-
   return await response.json();
 }
+
 
 /**
  * Get a single venue by ID.
@@ -81,19 +82,25 @@ export async function deleteVenue(id) {
  * Get all venues for the venue provider.
  * @returns {Promise<Array>} - Array of venue objects.
  */
+
+function unwrapApiData(json) {
+  if (Array.isArray(json)) return json;
+  if (json && Array.isArray(json.data)) return json.data;
+  if (json && Array.isArray(json.content)) return json.content;
+  if (json && json.data && Array.isArray(json.data.content)) return json.data.content;
+  return [];
+}
+
 export async function getAllVenues() {
   const url = buildApiUrl("/v1/venues/all");
-  const response = await fetch(url, {
-    method: "GET",
-    headers: getAuthHeaders(),
-  });
+  const response = await fetch(url, { method: "GET", headers: getAuthHeaders() });
+  if (!response.ok) throw new Error(`Failed to fetch venues: ${response.status} ${response.statusText}`);
 
-  if (!response.ok) {
-    throw new Error(`Failed to fetch venues: ${response.statusText}`);
-  }
-
-  return await response.json();
+  const json = await response.json();
+  // Spring Page -> take the content array
+  return Array.isArray(json) ? json : (json.content ?? []);
 }
+
 
 /**
  * Cancel a booking as a venue provider.

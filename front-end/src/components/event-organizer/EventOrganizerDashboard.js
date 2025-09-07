@@ -1,8 +1,9 @@
 import React, { useState, useEffect } from "react";
 import "./EventOrganizerDashboard.css";
 import { initializeAllDummyData } from "../../utils/initializeDummyData";
-import { bookVenue, bookService, bookCombinedResources } from "../../api/bookingApi";
-
+import { bookVenue, bookService } from "../../api/bookingApi";
+import { getMyServices } from "../../api/serviceApi";
+import { getAllVenues } from "../../api/venueApi";
 
 // Import new components
 import EventForm from "./components/EventForm";
@@ -66,6 +67,7 @@ const EventOrganizerDashboard = () => {
   }, []);
 
   // Load data from localStorage
+  // Venues / Services (now API-driven; localStorage fallback kept)
   const [venues, setVenues] = useState(() => {
     const stored = localStorage.getItem("venues");
     return stored ? JSON.parse(stored) : [];
@@ -172,7 +174,7 @@ const EventOrganizerDashboard = () => {
 
   // Helper: format service display
   const formatServiceDisplay = (service) => {
-    return `${service.name} - ${SERVICE_DESCRIPTIONS[service.description] || service.description} - $${service.price} (${service.location})`;
+    return `${service.name} - ${SERVICE_DESCRIPTIONS[service.description] || service.description || "Service"} - $${(service.price ?? service.pricePerHour ?? service.cost ?? 0)}${service.location ? ` (${service.location})` : ""}`;
   };
 
   // Helper: get venue name by ID
@@ -231,7 +233,23 @@ const EventOrganizerDashboard = () => {
     }
   };
 
-  // Add or Edit Event
+    useEffect(() => {
+    (async () => {
+      try {
+        const [v, s] = await Promise.all([getAllVenues(), getMyServices()]);
+        // our APIs return arrays already; if a Page object ever comes back, unwrap its content
+        const vv = Array.isArray(v) ? v : (v?.content ?? []);
+        const ss = Array.isArray(s) ? s : (s?.content ?? []);
+        setVenues(vv);
+        setServices(ss);
+        localStorage.setItem("venues", JSON.stringify(vv));
+        localStorage.setItem("services", JSON.stringify(ss));
+      } catch (e) {
+        console.error("Failed to load venues/services from API", e);
+      }
+    })();
+  }, []);
+ // Add or Edit Event
   const handleEventFormSubmit = async (e) => {
     e.preventDefault();
     
@@ -246,53 +264,33 @@ const EventOrganizerDashboard = () => {
       const requests = [];
       
       // Use combined booking if both venue and services are selected
-      if (formEvent.venueId && formEvent.serviceIds && formEvent.serviceIds.length > 0) {
-        const combinedBookingData = {
-          startTime: `${formEvent.startTime}:00.000Z`,
-          endTime: `${formEvent.endTime}:00.000Z`,
-          currency: "USD",
-          organizerId: "current-organizer-id", // Get from auth context
-          eventId: newEvent.id || null,
-          venueId: parseInt(formEvent.venueId),
-          serviceIds: formEvent.serviceIds.map(id => parseInt(id))
-        };
-        
-        const combinedBooking = await bookCombinedResources(combinedBookingData);
-        requests.push(combinedBooking);
-      } else {
-        // Individual bookings if only one type is selected
-        
-        // Venue booking request using API
-        if (formEvent.venueId) {
-          const startTime = `${formEvent.startTime}:00.000Z`;
-          const endTime = `${formEvent.endTime}:00.000Z`;
-          
-          const venueBooking = await createVenueBookingRequest(
-            formEvent.venueId, 
-            newEvent, 
-            startTime, 
-            endTime
-          );
-          requests.push(venueBooking);
-        }
-
-        // Service booking requests using API
-        if (formEvent.serviceIds && formEvent.serviceIds.length > 0) {
-          const startTime = `${formEvent.startTime}:00.000Z`;
-          const endTime = `${formEvent.endTime}:00.000Z`;
-          
-          for (const serviceId of formEvent.serviceIds) {
-            try {
-              const serviceBooking = await createServiceBookingRequest(
-                serviceId, 
-                newEvent, 
-                startTime, 
-                endTime
-              );
-              requests.push(serviceBooking);
-            } catch (error) {
-              console.error(`Error booking service ${serviceId}:`, error);
-            }
+      // Venue booking (optional)
+      if (formEvent.venueId) {
+        const startTime = `${formEvent.startTime}:00.000Z`;
+        const endTime = `${formEvent.endTime}:00.000Z`;
+        const venueBooking = await createVenueBookingRequest(
+          formEvent.venueId,
+          newEvent,
+          startTime,
+          endTime
+        );
+        requests.push(venueBooking);
+      }
+      // Service bookings (optional)
+      if (formEvent.serviceIds && formEvent.serviceIds.length > 0) {
+        const startTime = `${formEvent.startTime}:00.000Z`;
+        const endTime = `${formEvent.endTime}:00.000Z`;
+        for (const serviceId of formEvent.serviceIds) {
+          try {
+            const serviceBooking = await createServiceBookingRequest(
+              serviceId,
+              newEvent,
+              startTime,
+              endTime
+            );
+            requests.push(serviceBooking);
+          } catch (error) {
+            console.error(`Error booking service ${serviceId}:`, error);
           }
         }
       }
@@ -305,8 +303,8 @@ const EventOrganizerDashboard = () => {
 
       // Show confirmation message
       const requestCount = requests.length;
-      const bookingType = formEvent.venueId && formEvent.serviceIds && formEvent.serviceIds.length > 0 
-        ? "combined" 
+      const bookingType = (formEvent.venueId && formEvent.serviceIds && formEvent.serviceIds.length > 0)
+        ? "multi-resource"
         : "individual";
       
       setAlerts([...alerts, {
