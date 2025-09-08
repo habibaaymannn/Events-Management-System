@@ -1,15 +1,16 @@
 package com.example.cdr.eventsmanagementsystem.Controller;
 
-import com.example.cdr.eventsmanagementsystem.Model.Booking.BookingType;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestHeader;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.example.cdr.eventsmanagementsystem.Constants.PaymentConstants;
+import com.example.cdr.eventsmanagementsystem.Model.Booking.BookingType;
 import com.example.cdr.eventsmanagementsystem.Service.Payment.StripeWebhookService;
 import com.stripe.model.Event;
 
@@ -28,7 +29,7 @@ public class StripeWebhookController {
     @PostMapping(PaymentConstants.STRIPE_WEBHOOK_URL)
     @Transactional
     public ResponseEntity<String> handle(
-            @RequestBody BookingType type,
+            @RequestParam BookingType type,
             @RequestBody String payload,
             @RequestHeader(name = "Stripe-Signature", required = false) String sigHeader
     ) {

@@ -56,7 +56,7 @@ public class EventBookingService {
     }
 
     public Page<EventBookingResponse> getAllEventBookingsByEventId(Long eventId, Pageable pageable) {
-        Page<EventBooking> bookings = bookingRepository.findByEventId(eventId, pageable);
+        Page<EventBooking> bookings = bookingRepository.findByEventIdOrderByCreatedAtDesc(eventId, pageable);
         return bookings.map(bookingMapper::toEventBookingResponse);
     }
 

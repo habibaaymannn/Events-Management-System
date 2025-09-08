@@ -46,7 +46,8 @@ public interface EventBookingRepository extends JpaRepository<EventBooking, Long
 
     List<EventBooking> findByEventId(Long eventId);
 
-    Page<EventBooking> findByEventId(Long eventId, Pageable pageable);
-
+    @Query("select eb from EventBooking eb where eb.eventId = :eventId order by eb.createdAt desc")
+    Page<EventBooking> findByEventIdOrderByCreatedAtDesc(Long eventId, Pageable pageable);
+    
     Page<EventBooking> findByCreatedBy(String createdBy, Pageable pageable);
 }
