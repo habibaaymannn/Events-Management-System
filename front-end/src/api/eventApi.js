@@ -29,7 +29,7 @@ export async function updateEvent(id, eventData) {
   const url = buildApiUrl(`/v1/events/${id}`);
   const response = await fetch(url, {
     method: "PUT",
-    headers: getAuthHeaders(),
+    headers: getAuthHeaders(true),    // Add JSON header for PUT requests
     body: JSON.stringify(eventData),
   });
 

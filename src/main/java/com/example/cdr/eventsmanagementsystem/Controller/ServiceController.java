@@ -15,7 +15,7 @@ import org.springframework.data.web.PageableDefault;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
-
+import static com.example.cdr.eventsmanagementsystem.Constants.ControllerConstants.RoleConstants.*;
 /**
  * REST controller for service provider operations.
  * Provides endpoints to create services, update service availability,
@@ -30,7 +30,7 @@ public class ServiceController {
 
     @Operation(summary = "Get all services", description = "Retrieves a paginated list of all services")
     @GetMapping(ServiceControllerConstants.GET_ALL_SERVICES_URL)
-    @PreAuthorize("hasAnyRole('" + RoleConstants.SERVICE_PROVIDER_ROLE + "')")
+    @PreAuthorize("hasAnyRole('" + ORGANIZER_ROLE + "', '" + VENUE_PROVIDER_ROLE + "','" + ADMIN_ROLE + "')")
     public Page<ServicesDTO> getAllServices(@ParameterObject @PageableDefault() Pageable pageable) {
         return servicesService.getAllServices(pageable);
     }

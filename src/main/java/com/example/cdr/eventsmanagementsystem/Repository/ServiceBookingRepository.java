@@ -18,4 +18,6 @@ public interface ServiceBookingRepository extends JpaRepository<ServiceBooking, 
 
     @Query("SELECT sb FROM ServiceBooking sb JOIN Services s ON s.id = sb.serviceId WHERE s.serviceProvider.id = :providerId")
     Page<ServiceBooking> findByServiceProviderId(@Param("providerId") String providerId, Pageable pageable);
+    
+    Page<ServiceBooking> findByEventId(Long eventId, Pageable pageable);
 }
