@@ -25,6 +25,38 @@ export async function addNewService(serviceData) {
 }
 
 /**
+ * Update a service by ID.
+ * PUT /v1/services/{serviceId}
+ */
+export async function updateService(serviceId, serviceData) {
+  const url = buildApiUrl(`/v1/services/${encodeURIComponent(serviceId)}`);
+  const response = await fetch(url, {
+    method: 'PUT',
+    headers: getAuthHeaders(true),
+    body: JSON.stringify(serviceData),
+  });
+  if (!response.ok) {
+    throw new Error(`Failed to update service: ${response.status} ${response.statusText}`);
+  }
+  return await response.json();
+}
+
+/**
+ * Get details of a single service by ID
+ * GET /v1/services/{serviceId}
+ */
+export async function getServiceById(serviceId) {
+  const url = buildApiUrl(`/v1/services/${encodeURIComponent(serviceId)}`);
+  const response = await fetch(url, {
+    method: 'GET',
+    headers: getAuthHeaders(true),
+  });
+  if (!response.ok) throw new Error(`Failed to fetch service details: ${response.status} ${response.statusText}`);
+  return await response.json();
+}
+
+
+/**
  * Accept or reject a booking request as a service provider.
  * POST /v1/services/bookings/{bookingId}/status
  * Body: { status: "ACCEPTED" | "REJECTED", cancellationReason?: string }
@@ -129,3 +161,18 @@ export async function getMyServices() {
   const json = await response.json();
   return unwrapApiData(json);
 }
+  /**
+   * Delete a service by ID.
+   * DELETE /v1/services/{serviceId}
+   */
+export async function deleteService(serviceId) {
+    const url = buildApiUrl(`/v1/services/${encodeURIComponent(serviceId)}`);
+    const response = await fetch(url, {
+      method: 'DELETE',
+      headers: getAuthHeaders(true),
+    });
+    if (!response.ok) {
+      throw new Error(`Failed to delete service: ${response.status} ${response.statusText}`);
+    }
+    return true;
+  }

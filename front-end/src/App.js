@@ -8,6 +8,7 @@ import AdminDashboard from "./components/admin/AdminDashboard";
 import SetAvailability from "./components/venue-provider/SetAvailability";
 import BookVenue from "./components/venue-provider/BookVenue";
 import VenueDetails from "./components/venue-provider/VenueDetails";
+import ServiceDetails from "./components/service-provider/ServiceDetails"; // <-- import the new page
 import ProtectedRoute from "./auth/ProtectedRoute";
 import "./App.css";
 
@@ -61,8 +62,16 @@ function App() {
             </ProtectedRoute>
           }
         />
+          <Route
+              path="/service/:id"
+              element={
+                  <ProtectedRoute allowedRoles={["service_provider", "admin"]}>
+                      <ServiceDetails />
+                  </ProtectedRoute>
+              }
+          />
 
-        {/* Venue Provider */}
+          {/* Venue Provider */}
         <Route
           path="/venue-provider/*"
           element={
@@ -71,6 +80,14 @@ function App() {
             </ProtectedRoute>
           }
         />
+          <Route
+              path="/venue/:id"
+              element={
+                  <ProtectedRoute allowedRoles={["venue_provider", "admin"]}>
+                      <VenueDetails />
+                  </ProtectedRoute>
+              }
+          />
 
         {/* Attendee */}
         <Route
