@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from "react";
+import { getVenueById } from "../../api/venueApi";
 import { useParams, useNavigate } from "react-router-dom";
 import "./VenueDetails.css";
 
@@ -10,19 +11,15 @@ const VenueDetails = () => {
 
   useEffect(() => {
     if (!id) return;
-    
-    const stored = localStorage.getItem("venues");
-    if (stored) {
-      const venuesData = JSON.parse(stored);
-      const foundVenue = venuesData.find(v => {
-        if (!v || typeof v.id === 'undefined' || v.id === null) {
-          return false;
-        }
-        return String(v.id) === String(id);
-      });
-      
-      setVenue(foundVenue);
-    }
+    const fetchVenue = async () => {
+      try {
+        const data = await getVenueById(id);
+        setVenue(data);
+      } catch (err) {
+        console.error(err);
+      }
+    };
+    fetchVenue();
   }, [id]);
 
   const handleSetAvailability = () => {
@@ -34,7 +31,14 @@ const VenueDetails = () => {
   };
 
   const getImageUrl = (img) => {
-    if (typeof img === "string" && (img.startsWith("data:") || img.startsWith("http"))) return img;
+    if (typeof img === "string") {
+      if (img.startsWith("data:") || img.startsWith("http")) {
+        return img;
+      } else {
+        // Assume it's a base64 string without prefix
+        return `data:image/jpeg;base64,${img}`;
+      }
+    }
     return null;
   };
 
@@ -50,6 +54,50 @@ const VenueDetails = () => {
         return type;
     }
   };
+  const formatEventType = (type) => {
+    switch(type) {
+      case 'WEDDING':
+        return 'Wedding';
+      case 'ENGAGEMENT_PARTY':
+        return 'Engagement Party';
+      case 'BIRTHDAY_PARTY':
+        return 'Birthday Party';
+      case 'FAMILY_REUNION':
+        return 'Family Reunion';
+      case 'PRIVATE_DINNER':
+        return 'Private Dinner';
+      case 'RETREAT':
+        return 'Retreat';
+      case 'BACHELORETTE_PARTY':
+        return 'Bachelorette Party';
+      case 'BABY_SHOWER':
+        return 'Baby Shower';
+      case 'CONFERENCE':
+        return 'Conference';
+      case 'WORKSHOP':
+        return 'Workshop';
+      case 'SEMINAR':
+        return 'Seminar';
+      case 'CORPORATE_DINNER':
+        return 'Corporate Dinner';
+      case 'NETWORKING_EVENT':
+        return 'Networking Event';
+      case 'PRODUCT_LAUNCH':
+        return 'Product Launch';
+      case 'AWARD_CEREMONY':
+        return 'Award Ceremony';
+      case 'FASHION_SHOW':
+        return 'Fashion Show';
+      case 'BUSINESS_EXPO':
+        return 'Business Expo';
+      case 'FUNDRAISER':
+        return 'Fundraiser';
+      default:
+        return type.replace(/_/g, ' ').toLowerCase()
+            .replace(/\b\w/g, c => c.toUpperCase());
+    }
+  };
+
 
   if (!venue) {
     return (
@@ -128,12 +176,28 @@ const VenueDetails = () => {
               </div>
               <div className="detail-item">
                 <span className="detail-label">Capacity Range:</span>
-                <span className="detail-value">{venue.capacity_minimum} - {venue.capacity_maximum} people</span>
+                <span className="detail-value">
+                  {venue.capacity?.minCapacity || 0} - {venue.capacity?.maxCapacity || 0} people
+                </span>
               </div>
               <div className="detail-item">
                 <span className="detail-label">Price:</span>
-                <span className="detail-value">${venue.price} ({venue.priceType})</span>
+                <span className="detail-value">
+                  {venue.pricing?.perHour ? `$${venue.pricing.perHour}/hr` : ""}
+                  {venue.pricing?.perHour && venue.pricing?.perEvent ? " | " : ""}
+                  {venue.pricing?.perEvent ? `$${venue.pricing.perEvent}/event` : ""}
+                </span>
               </div>
+              <div className="detail-item">
+                <span className="detail-label">Event Types:</span>
+                <span className="detail-value">
+                  {venue.eventTypes && venue.eventTypes.length > 0
+                  ? venue.eventTypes.map(type => formatEventType(type)).join(", ")
+                  : "N/A"}
+                </span>
+              </div>
+
+
             </div>
           </div>
 
@@ -141,13 +205,13 @@ const VenueDetails = () => {
           <div className="detail-card">
             <h3>Availability</h3>
             <p className="availability-count">
-              {venue.availability?.length || 0} dates currently available
+              {venue.availability === "AVAILABLE" ? "Available" : "Not Available"}
             </p>
-            <div className="action-buttons">
-              <button onClick={handleSetAvailability} className="action-button primary">
-                Manage Availability
-              </button>
-            </div>
+            {/*<div className="action-buttons">*/}
+            {/*  <button onClick={handleSetAvailability} className="action-button primary">*/}
+            {/*    Manage Availability*/}
+            {/*  </button>*/}
+            {/*</div>*/}
           </div>
 
           {/* Bookings Information */}
@@ -156,7 +220,7 @@ const VenueDetails = () => {
             <p className="booking-count">
               {venue.bookings?.length || 0} total bookings
             </p>
-            
+
             {venue.bookings && venue.bookings.length > 0 ? (
               <div className="bookings-list">
                 {venue.bookings.slice(0, 5).map((booking, index) => (
@@ -176,7 +240,7 @@ const VenueDetails = () => {
             ) : (
               <p style={{ color: '#6c757d', fontStyle: 'italic' }}>No bookings yet</p>
             )}
-            
+
             <div className="action-buttons">
               <button onClick={handleBookVenue} className="action-button secondary">
                 View All Bookings
