@@ -2,10 +2,13 @@ package com.example.cdr.eventsmanagementsystem.Service.Auth;
 
 import com.example.cdr.eventsmanagementsystem.Model.User.ServiceProvider;
 import com.example.cdr.eventsmanagementsystem.Model.User.BaseRoleEntity;
+import com.example.cdr.eventsmanagementsystem.Model.User.VenueProvider;
 import com.example.cdr.eventsmanagementsystem.Repository.UsersRepository.ServiceProviderRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
+
+import java.util.Optional;
 
 /**
  * Handler for managing serviceProvider users.
@@ -25,11 +28,6 @@ public class ServiceProviderHandler implements UserRoleHandler<ServiceProvider> 
     }
 
     @Override
-    public Class<ServiceProvider> getRoleClass() {
-        return ServiceProvider.class;
-    }
-
-    @Override
     @Transactional
     public ServiceProvider findUserById(String userId) {
         return serviceProviderRepository.findById(userId).orElse(null);
@@ -38,6 +36,11 @@ public class ServiceProviderHandler implements UserRoleHandler<ServiceProvider> 
     @Override
     @Transactional
     public ServiceProvider createNewUser(String userId, String email, String firstName, String lastName) {
+        Optional<ServiceProvider> existingUser = serviceProviderRepository.findByEmail(email);
+
+        if (existingUser.isPresent()) {
+            return existingUser.get();
+        }
         ServiceProvider serviceProvider = new ServiceProvider();
         serviceProvider.setId(userId);
         serviceProvider.setEmail(email);
@@ -45,12 +48,6 @@ public class ServiceProviderHandler implements UserRoleHandler<ServiceProvider> 
         serviceProvider.setLastName(lastName);
         serviceProvider.setActive(true);
         return serviceProviderRepository.save(serviceProvider);
-    }
-
-    @Override
-    @Transactional
-    public void deleteUser(String userId) {
-        serviceProviderRepository.deleteById(userId);
     }
 
     @Override
