@@ -17,7 +17,7 @@ export async function updateUserRole(userId, role) {
     throw new Error(`Failed to update user role: ${response.statusText}`);
   }
 
-  return await response.json();
+  return true;
 }
 
 /**
@@ -37,7 +37,9 @@ export async function getAllUsers(page = 0, size = 10) {
     throw new Error(`Failed to fetch users: ${response.statusText}`);
   }
 
-  return await response.json();
+  const json = await response.json();
+  // Normalize to { content: [...] } so callers can keep using response.content
+  return Array.isArray(json) ? { content: json } : json;
 }
 
 /**
@@ -55,6 +57,23 @@ export async function deactivateUser(userId) {
   if (!response.ok) {
     throw new Error(`Failed to deactivate user: ${response.statusText}`);
   }
+}
+export async function resetUserPassword(userId) {
+  const url = buildApiUrl(`/v1/admin/users/${userId}/reset-password`);
+  const r = await fetch(url, { method: "POST", headers: getAuthHeaders(true) });
+  if (!r.ok) throw new Error(`Failed to reset password: ${r.statusText}`);
+}
+
+export async function activateUser(userId) {
+  const url = buildApiUrl(`/v1/admin/users/${userId}/activate`);
+  const r = await fetch(url, { method: "POST", headers: getAuthHeaders(true) });
+  if (!r.ok) throw new Error(`Failed to activate user: ${r.statusText}`);
+}
+
+export async function deleteUser(userId) {
+  const url = buildApiUrl(`/v1/admin/users/${userId}`);
+  const r = await fetch(url, { method: "DELETE", headers: getAuthHeaders(true) });
+  if (!r.ok) throw new Error(`Failed to delete user: ${r.statusText}`);
 }
 
 /**
@@ -140,7 +159,7 @@ export async function getFlaggedEvents(page = 0, size = 10) {
  * @returns {Promise<object>} - Paginated events response.
  */
 export async function getEventsByStatus(status, page = 0, size = 10) {
-  const url = buildApiUrl(`/v1/admin/events/by-status?status=${encodeURIComponent(status)}&page=${page}&size=${size}`);
+const url = buildApiUrl(`/v1/admin/by-status?status=${encodeURIComponent(status)}&page=${page}&size=${size}`);
   const response = await fetch(url, {
     method: "GET",
     headers: getAuthHeaders(),
@@ -234,18 +253,19 @@ export async function getDailyBookings(start, end) {
  * @param {object} userData - User data to create.
  * @returns {Promise<object>} - Created user object.
  */
-export async function createUser(userData) {
-  const url = buildApiUrl("/v1/admin/users");
-  const response = await fetch(url, {
-    method: "POST",
-    headers: getAuthHeaders(true),
-    body: JSON.stringify(userData),
-  });
-
-  if (!response.ok) {
-    throw new Error(`Failed to create user: ${response.statusText}`);
-  }
-
-  return await response.json();
-}
-
+ export async function createUser({ firstName, lastName, email, role, username, password }) {
+   const url = buildApiUrl('/v1/admin/users');
+   const response = await fetch(url, {
+     method: 'POST',
+     headers: {
+       ...getAuthHeaders(true),
+       'Content-Type': 'application/json',
+     },
+     body: JSON.stringify({ firstName, lastName, email, role, username, password }),
+   });
+   if (!response.ok) {
+     const msg = await response.text();
+     throw new Error(msg || `Failed to create user: ${response.statusText}`);
+   }
+   return await response.json();
+ }

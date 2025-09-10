@@ -9,6 +9,19 @@ spring:
     hibernate:
       ddl-auto: create-drop
 
+
+keycloak:
+  base-url: ${KEYCLOAK_BASE_URL:http://localhost:8081}
+  realm: ${KEYCLOAK_REALM:EMS-realm}
+  admin:
+    client-id: ${KEYCLOAK_ADMIN_CLIENT_ID:admin-cli}     # if you insist on using admin-cli for ROPC
+    client-secret: ${KEYCLOAK_ADMIN_CLIENT_SECRET:}      # admin-cli has no secret by default
+    username: ${KEYCLOAK_ADMIN_USERNAME:admin1}          # <— your realm admin user
+    password: ${KEYCLOAK_ADMIN_PASSWORD:adminpass}  
+  create:
+    email-verified: false
+    password-temporary: false
+
 logging:
   level:
     com.example.cdr.eventsmanagementsystem.Aspect.LoggingAspect: INFO

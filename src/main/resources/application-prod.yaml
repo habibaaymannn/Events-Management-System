@@ -4,3 +4,16 @@ spring:
   jpa:
     hibernate:
       ddl-auto: update
+  
+
+keycloak:
+  base-url: ${KEYCLOAK_BASE_URL:http://ems-keycloak:8080}
+  realm: ${KEYCLOAK_REALM:EMS-realm}
+  admin:
+    client-id: ${KEYCLOAK_ADMIN_CLIENT_ID:ems-admin-api}
+    client-secret: ${KEYCLOAK_ADMIN_CLIENT_SECRET:}
+    username: ${KEYCLOAK_ADMIN_USERNAME:}     # set in your .env if you want ROPC in prod
+    password: ${KEYCLOAK_ADMIN_PASSWORD:}
+  create:
+    email-verified: false
+    password-temporary: false

@@ -42,7 +42,9 @@ public class SecurityConfig {
                 .requestMatchers("/v3/api-docs/**", "/swagger-ui/**", "/swagger-ui.html").permitAll()
                 .anyRequest().authenticated()
             )
-            .oauth2ResourceServer(oauth2 -> oauth2.jwt()); // resource server with JWT
+            .oauth2ResourceServer(oauth2 -> oauth2.jwt(jwt -> 
+    jwt.jwtAuthenticationConverter(jwtAuthenticationConverter())));  //because if we dont plug the bean htgbelna 403 unauthorized 
+
 
         return http.build();
     }

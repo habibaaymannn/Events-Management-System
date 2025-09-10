@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { getAllEvents, flagEvent, cancelEvent } from "../../api/adminApi";
-import { getBookingsByEventId } from "../../api/bookingApi";
+import { getEventBookingsByEventId } from "../../api/bookingApi";
 
 const EventMonitoring = () => {
   const navigate = useNavigate();
@@ -47,7 +47,7 @@ const EventMonitoring = () => {
 
   const handleViewEventDetails = async (event) => {
     try {
-      const bookings = await getBookingsByEventId(event.id);
+      const bookings = await getEventBookingsByEventId(event.id);
       setEventBookings(bookings);
       setSelectedEvent(event);
     } catch (error) {

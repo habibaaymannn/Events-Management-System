@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { getAllUsers, updateUserRole, deactivateUser, createUser } from "../../api/adminApi";
-import { getBookingsByAttendeeId } from "../../api/bookingApi";
+import { getAllUsers, updateUserRole, deactivateUser, createUser, resetUserPassword, activateUser } from "../../api/adminApi";
+import { getEventBookingsByAttendeeId} from "../../api/bookingApi";
 
 const UserManagement = () => {
   const navigate = useNavigate();
@@ -9,12 +9,62 @@ const UserManagement = () => {
   const [selectedUser, setSelectedUser] = useState(null);
   const [userBookings, setUserBookings] = useState([]);
   const [showCreateForm, setShowCreateForm] = useState(false);
+
   const [createFormData, setCreateFormData] = useState({
     firstName: '',
     lastName: '',
     email: '',
-    role: 'attendee' // Default role fixed to 'attendee'
+    role: 'attendee',
+    username: '',
+    password: '',
   });
+
+  const [errors, setErrors] = useState({});
+  const onChange = (e) => {
+    const { name, value } = e.target;
+    setCreateFormData((f) => ({ ...f, [name]: value }));
+  };
+  const [showPassword, setShowPassword] = useState(false);
+
+
+
+ const validate = () => {
+   const e = {};
+   if (!createFormData.firstName.trim()) e.firstName = 'Required';
+   if (!createFormData.lastName.trim()) e.lastName = 'Required';
+   if (!createFormData.username.trim()) e.username = 'Required';
+   if (!createFormData.password || createFormData.password.length < 8) e.password = 'Min 8 characters';
+   if (!createFormData.email.trim()) e.email = 'Required';
+   setErrors(e);
+   return Object.keys(e).length === 0;
+ };
+
+//  const handleSubmit = async (ev) => {
+//     ev.preventDefault();
+//     if (!validate()) return;
+
+//     await createUser({
+//       firstName: form.firstName.trim(),
+//       lastName: form.lastName.trim(),
+//       email: form.email.trim() || null,
+//       role: form.role,
+//       username: form.username.trim(),
+//       password: form.password,
+//     });
+
+//     // reset
+//     setForm({
+//       firstName: '',
+//       lastName: '',
+//       email: '',
+//       role: 'Organizer',
+//       username: '',
+//       password: '',
+//     });
+//   };
+
+
+
   const [createLoading, setCreateLoading] = useState(false);
   const [createError, setCreateError] = useState('');
 
@@ -48,11 +98,16 @@ const UserManagement = () => {
     }
   };
 
-  const handleResetPassword = (userId) => {
-    if (window.confirm("Are you sure you want to reset this user's password?")) {
-      alert("Password reset email sent to user!");
-    }
-  };
+const handleResetPassword = async (userId) => {
+  if (!window.confirm("Send password reset email to this user?")) return;
+  try {
+    await resetUserPassword(userId);
+    alert("Reset email sent via Keycloak.");
+  } catch (e) {
+    alert(e.message || "Failed to send reset email");
+  }
+};
+
 
   // Helper function to map frontend roles to backend roles
   const mapFrontendRoleToBackend = (frontendRole) => {
@@ -95,7 +150,7 @@ const UserManagement = () => {
       
       // If user is an attendee, load their bookings
       if (user.role === 'event-attendee') {
-        const bookings = await getBookingsByAttendeeId(user.id);
+        const bookings = await getEventBookingsByAttendeeId(user.id);
         setUserBookings(bookings);
       } else {
         setUserBookings([]);
@@ -107,55 +162,44 @@ const UserManagement = () => {
     }
   };
 
-  const handleCreateUser = async (e) => {
+  const handleActivateUser = async (userId) => {
+  try {
+    await activateUser(userId);
+    loadUsers();
+  } catch (error) { /* show toast */ }
+};
+
+
+ const handleCreateUser = async (e) => {
     e.preventDefault();
+    if (!validate()) return;  
     setCreateLoading(true);
     setCreateError('');
-
     try {
-      // Map frontend role to backend role format
       const backendRole = mapFrontendRoleToBackend(createFormData.role);
-      
-      const userDataForBackend = {
+      const payload = {
         ...createFormData,
-        role: backendRole // Use backend-compatible role format
+        role: backendRole
       };
-
-      const newUser = await createUser(userDataForBackend);
-      
-      // Also store user in localStorage for login functionality
-      // Map backend role back to frontend format for login
-      const frontendRole = mapBackendRoleToFrontend(newUser.role);
-      
-      const existingUsers = JSON.parse(localStorage.getItem('createdUsers') || '[]');
-      const userForLogin = {
-        id: newUser.id,
-        email: newUser.email,
-        password: 'password123', // Default password for testing
-        role: frontendRole, // Use frontend role format for login
-        firstName: newUser.firstName,
-        lastName: newUser.lastName,
-        createdAt: new Date().toISOString()
-      };
-      existingUsers.push(userForLogin);
-      localStorage.setItem('createdUsers', JSON.stringify(existingUsers));
-
+      const newUser = await createUser(payload);
       setShowCreateForm(false);
       setCreateFormData({
         firstName: '',
         lastName: '',
         email: '',
-        role: 'attendee' // Reset to default
+        role: 'attendee',
+        username: '',
+        password: ''
       });
       loadUsers();
-      
-      alert(`User created successfully! You can now login with:\nEmail: ${newUser.email}\nPassword: password123`);
+      alert(`User created successfully!`);
     } catch (error) {
       setCreateError(error.message);
     } finally {
       setCreateLoading(false);
     }
   };
+
 
   const handleCreateFormChange = (e) => {
     setCreateFormData({
@@ -279,6 +323,56 @@ const UserManagement = () => {
                   ))}
                 </select>
               </div>
+              {/* Username & Password */}
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem', marginBottom: '1rem' }}>
+                <div>
+                  <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: 'bold' }}>
+                    Username *
+                  </label>
+                  <input
+                    type="text"
+                    name="username"
+                    value={createFormData.username}
+                    onChange={handleCreateFormChange}
+                    className="form-control"
+                    required
+                    autoComplete="username"
+                    style={{ width: '100%', padding: '0.5rem', border: '1px solid #ccc', borderRadius: '4px' }}
+                  />
+                  {errors.username && <small style={{ color: '#c00' }}>{errors.username}</small>}
+                </div>
+
+                <div>
+                  <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: 'bold' }}>
+                    Password *
+                  </label>
+                  <div style={{ display: 'flex', gap: '0.5rem' }}>
+                    <input
+                      type={showPassword ? 'text' : 'password'}
+                      name="password"
+                      value={createFormData.password}
+                      onChange={handleCreateFormChange}
+                      className="form-control"
+                      required
+                      minLength={8}
+                      autoComplete="new-password"
+                      style={{ flex: 1, padding: '0.5rem', border: '1px solid #ccc', borderRadius: '4px' }}
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowPassword(v => !v)}
+                      className="btn btn-outline-secondary"
+                      title={showPassword ? 'Hide password' : 'Show password'}
+                    >
+                      {showPassword ? 'Hide' : 'Show'}
+                    </button>
+                  </div>
+                  {errors.password && <small style={{ color: '#c00' }}>{errors.password}</small>}
+                  <small style={{ display: 'block', color: '#6c757d', marginTop: '0.25rem' }}>
+                    Minimum 8 characters.
+                  </small>
+                </div>
+              </div>
 
               <div style={{ 
                 backgroundColor: '#d1ecf1', 
@@ -288,8 +382,7 @@ const UserManagement = () => {
                 marginBottom: '1.5rem',
                 fontSize: '0.9rem'
               }}>
-                <strong>Note:</strong> The user will be created with default password "password123". 
-                They can change it after first login.
+                <strong>Note:</strong> We now collect a real password and send it to the backend. 
               </div>
 
               <div style={{ display: 'flex', gap: '1rem', justifyContent: 'flex-end' }}>
@@ -376,12 +469,13 @@ const UserManagement = () => {
                           View Details
                         </button>
                         <button
-                          onClick={() => handleDeactivateUser(user.id)}
-                          className={`btn ${user.enabled !== false ? 'btn-danger' : 'btn-success'}`}
-                          style={{ padding: "6px 12px", fontSize: "0.8rem" }}
-                        >
-                          {user.enabled !== false ? 'Deactivate' : 'Activate'}
-                        </button>
+                        onClick={() => user.enabled !== false ? handleDeactivateUser(user.id) : handleActivateUser(user.id)}
+                        className={`btn ${user.enabled !== false ? 'btn-danger' : 'btn-success'}`}
+                        style={{ padding: "6px 12px", fontSize: "0.8rem" }}
+                      >
+                        {user.enabled !== false ? 'Deactivate' : 'Activate'}
+                      </button>
+
                         <button
                           onClick={() => handleResetPassword(user.id)}
                           className="btn btn-secondary"

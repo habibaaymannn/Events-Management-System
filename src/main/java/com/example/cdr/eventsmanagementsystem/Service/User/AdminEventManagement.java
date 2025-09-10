@@ -36,4 +36,23 @@ public class AdminEventManagement {
         event.setStatus(EventStatus.CANCELLED);
         eventRepository.save(event);
     }
+
+       public void flagEvent(Long eventId, String reason) {
+        Event event = eventRepository.findById(eventId)
+                .orElseThrow(() -> new EntityNotFoundException("Event not found with id: " + eventId));
+
+        // Normalize reason (optional, but nice)
+        String normalized = (reason == null || reason.isBlank())
+                ? "Flagged by admin"
+                : reason.trim();
+
+        event.setFlagged(true);
+        event.setFlagReason(normalized);
+        eventRepository.save(event);
+    }
+
+    public Page<EventDetailsDto> getFlaggedEvents(Pageable pageable) {
+        return eventRepository.findByFlaggedTrue(pageable)
+                .map(adminMapper::toEventDetailsDto);
+    }
 }

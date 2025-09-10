@@ -4,7 +4,11 @@ import UserManagement from "./UserManagement";
 import EventMonitoring from "./EventMonitoring";
 import { PieChart, Pie, Cell, ResponsiveContainer, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend } from "recharts";
 import "./AdminDashboard.css";
-import { getAdminDashboard } from "../../api/adminApi";
+import { getAdminDashboard,
+  getEventTypeDistribution,
+  getDailyBookings,
+  getDailyCancellations,
+ } from "../../api/adminApi";
 
 
 const AdminDashboard = () => {
@@ -31,7 +35,9 @@ const AdminDashboard = () => {
       bookings: 0,
       cancellations: 0
     },
-    revenueByOrganizer: []
+    revenueByOrganizer: [],
+    venueUtilizationRate: null,
+    serviceProviderUtilizationRate: null,
   });
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -44,31 +50,42 @@ const AdminDashboard = () => {
     try {
       setLoading(true);
       setError(null);
-      const data = await getAdminDashboard();
-      
-      
+      // CHANGE: fetch all required datasets in parallel
+      const today = new Date().toISOString().slice(0, 10);
+      const [dash, types, dailyB, dailyC] = await Promise.all([
+        getAdminDashboard(),               // totals + utilization
+        getEventTypeDistribution(),        // map<string, number>
+        getDailyBookings(today, today),    // map<YYYY-MM-DD, number>
+        getDailyCancellations(today, today)
+      ]);
+
+      // Sum the (start..end) window (today => single key)
+      const bookings = dailyB ? Object.values(dailyB).reduce((a, b) => a + b, 0) : 0;
+      const cancellations = dailyC ? Object.values(dailyC).reduce((a, b) => a + b, 0) : 0;
+
       setDashboardData({
-        users: data.users || {
-          admins: 0,
-          eventOrganizers: 0,
-          eventAttendees: 0,
-          serviceProviders: 0,
-          venueProviders: 0
+        users: {
+          admins: dash?.numAdmins ?? 0,
+          eventOrganizers: dash?.numOrganizers ?? 0,
+          eventAttendees: dash?.numAttendees ?? 0,
+          serviceProviders: dash?.numServiceProviders ?? 0,
+          venueProviders: dash?.numVenueProviders ?? 0
         },
-        events: data.events || {
-          upcoming: 0,
-          ongoing: 0,
-          completed: 0,
-          cancelled: 0
+        events: {
+          upcoming: dash?.totalUpcoming ?? 0,
+          ongoing: dash?.totalOngoing ?? 0,
+          completed: dash?.totalCompleted ?? 0,
+          cancelled: dash?.totalCancelled ?? 0
         },
-        venues: Array.isArray(data.venues) ? data.venues : [],
-        services: Array.isArray(data.services) ? data.services : [],
-        eventTypes: data.eventTypes || {},
-        dailyStats: data.dailyStats || {
-          bookings: 0,
-          cancellations: 0
-        },
-        revenueByOrganizer: Array.isArray(data.revenueByOrganizer) ? data.revenueByOrganizer : []
+        // leave these arrays if you plan to populate them later;
+        // they’re no longer used for utilization percentages
+        venues: [],
+        services: [],
+        eventTypes: types || {},
+        dailyStats: { bookings, cancellations },
+        revenueByOrganizer: Array.isArray(dash?.revenueByOrganizer) ? dash.revenueByOrganizer : [],
+        venueUtilizationRate: dash?.venueUtilizationRate ?? null,
+        serviceProviderUtilizationRate: dash?.serviceProviderUtilizationRate ?? null,
       });
     } catch (error) {
       console.error("Error loading dashboard data:", error);
@@ -79,15 +96,18 @@ const AdminDashboard = () => {
     }
   };
 
-  
-  const venueUtilization = dashboardData.venues && dashboardData.venues.length > 0 
-    ? Math.round((dashboardData.venues.filter(v => v.bookings && v.bookings.length > 0).length / dashboardData.venues.length) * 100)
-    : 0;
-  
-  const serviceUtilization = dashboardData.services && dashboardData.services.length > 0
-    ? Math.round((dashboardData.services.filter(s => s.bookings && s.bookings.length > 0).length / dashboardData.services.length) * 100)
-    : 0;
+  // CHANGE: prefer server-provided utilization (if available), otherwise fall back to array-based calc
+  const venueUtilization = typeof dashboardData.venueUtilizationRate === 'number'
+    ? Math.round(dashboardData.venueUtilizationRate)
+    : (dashboardData.venues && dashboardData.venues.length > 0
+        ? Math.round((dashboardData.venues.filter(v => v.bookings && v.bookings.length > 0).length / dashboardData.venues.length) * 100)
+        : 0);
 
+  const serviceUtilization = typeof dashboardData.serviceProviderUtilizationRate === 'number'
+    ? Math.round(dashboardData.serviceProviderUtilizationRate)
+    : (dashboardData.services && dashboardData.services.length > 0
+        ? Math.round((dashboardData.services.filter(s => s.bookings && s.bookings.length > 0).length / dashboardData.services.length) * 100)
+        : 0);
  
   const eventStatusData = [
     { name: "Upcoming", value: dashboardData.events.upcoming, color: "#ffc107" },

@@ -42,4 +42,21 @@ public class AdminEventController extends AdminController {
     public void cancelEvent(@PathVariable Long eventId) {
         adminService.cancelEvent(eventId);
     }
+
+     // CHANGE: Added flag endpoints because your frontend calls:
+    // POST /v1/admin/events/{eventId}/flag?reason=...
+    // GET  /v1/admin/events/flagged
+    // We expose them here and delegate to AdminService.
+    @Operation(summary = "Flag an event", description = "Flags an event for admin review")
+    @PostMapping(AdminControllerConstants.ADMIN_EVENT_FLAG_URL)
+    public void flagEvent(@PathVariable Long eventId, @RequestParam String reason) {
+        adminService.flagEvent(eventId, reason);
+    }
+
+    @Operation(summary = "Get flagged events", description = "Retrieves all flagged events with pagination")
+    @GetMapping(AdminControllerConstants.ADMIN_EVENTS_FLAGGED_URL)
+    public Page<EventDetailsDto> getFlaggedEvents(
+            @ParameterObject @PageableDefault Pageable pageable) {
+        return adminService.getFlaggedEvents(pageable);
+    }
 }

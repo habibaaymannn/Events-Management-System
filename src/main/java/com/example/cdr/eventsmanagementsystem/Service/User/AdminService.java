@@ -70,6 +70,13 @@ public class AdminService {
         eventManagement.cancelEvent(eventId);
     }
 
+    public void flagEvent(Long eventId, String reason) {
+        eventManagement.flagEvent(eventId, reason);
+    }
+
+    public Page<EventDetailsDto> getFlaggedEvents(Pageable pageable) {
+        return eventManagement.getFlaggedEvents(pageable);
+    }
     public DashboardStatisticsDto getDashboardStatistics() {
         return statisticsManagement.getDashboardStatistics();
     }

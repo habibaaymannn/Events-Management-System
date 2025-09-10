@@ -1,45 +1,106 @@
 package com.example.cdr.eventsmanagementsystem.Controller.AdminController;
 
-import com.example.cdr.eventsmanagementsystem.Constants.ControllerConstants.AdminControllerConstants;
-import com.example.cdr.eventsmanagementsystem.DTO.Admin.UserCreateDto;
-import com.example.cdr.eventsmanagementsystem.DTO.Admin.UserDetailsDto;
-import com.example.cdr.eventsmanagementsystem.Service.User.AdminService;
-import io.swagger.v3.oas.annotations.Operation;
-import io.swagger.v3.oas.annotations.tags.Tag;
+import com.example.cdr.eventsmanagementsystem.keycloak.KeycloakAdminService;
 import lombok.RequiredArgsConstructor;
-import org.springdoc.core.annotations.ParameterObject;
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.Pageable;
-import org.springframework.data.web.PageableDefault;
+import org.keycloak.representations.idm.UserRepresentation;
+import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
-/// this controller will be removed
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+
 @RestController
+@RequestMapping("/v1/admin")
 @RequiredArgsConstructor
-@Tag(name = "Admin - users", description = "Admin user management APIs")
-public class AdminUserController extends AdminController {
-    private final AdminService adminService;
-    @Operation(summary = "Get all users", description = "Retrieves all users with pagination")
-    @GetMapping(AdminControllerConstants.ADMIN_USERS_URL)
-    public Page<UserDetailsDto> getAllUsers(@ParameterObject @PageableDefault() Pageable pageable) {
-        return adminService.getAllUsers(pageable);
+@PreAuthorize("hasRole('admin')")
+public class AdminUserController {
+
+  private final KeycloakAdminService keycloakService;
+
+  /** Request body for creating a user — includes username & password to match your UI */
+  public record CreateUserRequest(
+      String firstName,
+      String lastName,
+      String email,
+      String role,
+      String username,
+      String password
+  ) {}
+
+  /** Create user */
+  @PostMapping("/users")
+  public ResponseEntity<?> create(@RequestBody CreateUserRequest req) {
+    if (req.username() == null || req.username().isBlank()) {
+      return ResponseEntity.badRequest().body("username is required");
+    }
+    if (req.password() == null || req.password().length() < 8) {
+      return ResponseEntity.badRequest().body("password must be at least 8 chars");
+    }
+    if (req.email() == null || req.email().isBlank()) {
+      return ResponseEntity.badRequest().body("email is required");
     }
 
-    @Operation(summary = "Create a new user", description = "Creates a new user with the provided details")
-    @PostMapping(AdminControllerConstants.ADMIN_USERS_URL)
-    public UserDetailsDto createUser(@RequestBody UserCreateDto dto) {
-        return adminService.createUser(dto);
-    }
+    String id = keycloakService.createUser(
+        req.username().trim(),
+        req.email().trim(),
+        req.firstName(),
+        req.lastName(),
+        req.password(),
+        req.role() // e.g. admin | organizer | attendee | service_provider | venue_provider
+    );
 
-    @Operation(summary = "Update user role", description = "Updates the role of an existing user")
-    @PutMapping(AdminControllerConstants.ADMIN_UPDATE_USER_ROLE_URL)
-    public UserDetailsDto updateUserRole(@PathVariable String userId, @RequestParam String role) {
-        return adminService.updateUserRole(userId, role);
-    }
+    Map<String, Object> body = new HashMap<>();
+    body.put("id", id);
+    return ResponseEntity.ok(body);
+  }
 
-    @Operation(summary = "Deactivate user", description = "Deactivates an existing user")
-    @PostMapping(AdminControllerConstants.ADMIN_USER_DEACTIVATE_URL)
-    public void deactivateUser(@PathVariable String userId) {
-        adminService.deactivateUser(userId);
-    }
+  /** List users (make the shape `{ content: [...] }` to match your frontend’s `response.content || []`) */
+  @GetMapping("/users")
+  public ResponseEntity<Map<String, Object>> list(@RequestParam(defaultValue = "0") int page,
+                                                  @RequestParam(defaultValue = "50") int size) {
+    int first = Math.max(0, page) * Math.max(1, size);
+    int max = Math.max(1, size);
+    List<UserRepresentation> users = keycloakService.listUsers(first, max);
+    Map<String, Object> body = new HashMap<>();
+    body.put("content", users);
+    body.put("page", page);
+    body.put("size", size);
+    return ResponseEntity.ok(body);
+  }
+
+  /** Update a user’s role (query param) */
+  @PutMapping("/users/{id}/role")
+  public ResponseEntity<Void> updateRole(@PathVariable String id, @RequestParam String role) {
+    keycloakService.updateUserRole(id, role);
+    return ResponseEntity.ok().build();
+  }
+
+  /** Deactivate / Activate */
+  @PostMapping("/users/{id}/deactivate")
+  public ResponseEntity<Void> deactivate(@PathVariable String id) {
+    keycloakService.setEnabled(id, false);
+    return ResponseEntity.ok().build();
+  }
+
+  @PostMapping("/users/{id}/activate")
+  public ResponseEntity<Void> activate(@PathVariable String id) {
+    keycloakService.setEnabled(id, true);
+    return ResponseEntity.ok().build();
+  }
+
+  /** Send reset password email */
+  @PostMapping("/users/{id}/reset-password")
+  public ResponseEntity<Void> reset(@PathVariable String id) {
+    keycloakService.sendResetPasswordEmail(id);
+    return ResponseEntity.ok().build();
+  }
+
+  /** Delete */
+  @DeleteMapping("/users/{id}")
+  public ResponseEntity<Void> delete(@PathVariable String id) {
+    keycloakService.deleteUser(id);
+    return ResponseEntity.noContent().build();
+  }
 }
