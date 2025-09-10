@@ -101,12 +101,23 @@ const UserManagement = () => {
 const handleResetPassword = async (userId) => {
   if (!window.confirm("Send password reset email to this user?")) return;
   try {
-    await resetUserPassword(userId);
-    alert("Reset email sent via Keycloak.");
+    const res = await resetUserPassword(userId);
+    const msg = [
+      "✅ Reset email sent via Keycloak.",
+      "",
+      "If the user can’t find the email, share this link so they can trigger reset from the login screen:",
+      res.forgotPasswordEntryUrl,
+      "",
+      "They can also manage their account here:",
+      res.accountUrl
+    ].join("\n");
+    // You can replace with a nice modal/toast; this is quick:
+    window.prompt("Copy this info (Ctrl+C):", msg);
   } catch (e) {
     alert(e.message || "Failed to send reset email");
   }
 };
+
 
 
   // Helper function to map frontend roles to backend roles
@@ -133,23 +144,27 @@ const handleResetPassword = async (userId) => {
     return roleMapping[backendRole] || 'event-attendee';
   };
 
-  const handleAssignRole = async (userId, newRole) => {
-    try {
-      // Map frontend role to backend role before sending
-      const backendRole = mapFrontendRoleToBackend(newRole);
-      await updateUserRole(userId, backendRole);
-      loadUsers();
-    } catch (error) {
-      console.error("Error updating user role:", error);
-    }
-  };
+// UserManagement.js
+const handleAssignRole = async (userId, newRole) => {
+  try {
+    const backendRole = mapFrontendRoleToBackend(newRole);
+    await updateUserRole(userId, backendRole);
+    // Optimistic local update so the select + details reflect immediately
+    setUsers(prev => prev.map(u => u.id === userId ? { ...u, role: backendRole } : u));
+    // (Optional) then still refresh from server
+    // await loadUsers();
+  } catch (error) {
+    console.error("Error updating user role:", error);
+  }
+};
+
 
   const handleViewUserDetails = async (user) => {
     try {
       setSelectedUser(user);
       
       // If user is an attendee, load their bookings
-      if (user.role === 'event-attendee') {
+      if (user.role === 'attendee') {
         const bookings = await getEventBookingsByAttendeeId(user.id);
         setUserBookings(bookings);
       } else {
@@ -521,7 +536,7 @@ const handleResetPassword = async (userId) => {
                 </div>
               </div>
 
-              {selectedUser.role === 'event-attendee' && (
+              {selectedUser.role === 'attendee' && (
                 <div style={{ marginBottom: '1.5rem' }}>
                   <h5 style={{ color: '#2c3e50', marginBottom: '1rem' }}>
                     Attendee Bookings ({userBookings.length})

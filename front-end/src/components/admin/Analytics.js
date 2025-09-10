@@ -120,9 +120,9 @@ const Analytics = () => {
         setEventTypeDist(types || {});
 
         // Daily stats (sum over map range; today == single key)
-        setDailyBookings(bookingsMap ? Object.values(bookingsMap).reduce((a, b) => a + b, 0) : 0);
-        setDailyCancellations(cancelsMap ? Object.values(cancelsMap).reduce((a, b) => a + b, 0) : 0);
-
+        const num = v => Number(v) || 0;
+        setDailyBookings(bookingsMap ? Object.values(bookingsMap).map(num).reduce((a, b) => a + b, 0) : 0);
+        setDailyCancellations(cancelsMap ? Object.values(cancelsMap).map(num).reduce((a, b) => a + b, 0) : 0);
         // Revenue per organizer (if present in dashboard payload)
         if (Array.isArray(dash?.revenueByOrganizer)) {
           const agg = {};

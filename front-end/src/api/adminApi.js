@@ -1,4 +1,5 @@
 import { buildApiUrl, getAuthHeaders } from '../config/apiConfig';
+import { keycloakSettings } from '../config/keycloakConfig';
 
 /**
  * Update a user's role via the admin endpoint.
@@ -58,12 +59,34 @@ export async function deactivateUser(userId) {
     throw new Error(`Failed to deactivate user: ${response.statusText}`);
   }
 }
+
 export async function resetUserPassword(userId) {
   const url = buildApiUrl(`/v1/admin/users/${userId}/reset-password`);
   const r = await fetch(url, { method: "POST", headers: getAuthHeaders(true) });
-  if (!r.ok) throw new Error(`Failed to reset password: ${r.statusText}`);
-}
+  if (!r.ok) throw new Error(`Failed to reset password: ${r.status} ${r.statusText}`);
 
+  // Try to parse JSON (new backend behavior)
+  const ct = r.headers.get("content-type") || "";
+  if (ct.includes("application/json")) {
+    return await r.json(); // { emailSent, forgotPasswordEntryUrl, accountUrl }
+  }
+
+  // Fallback for 204 / empty body (old behavior): build useful links client-side
+  const base = (keycloakSettings.url || "").replace(/\/$/, "");
+  const realm = keycloakSettings.realm;
+  const clientId = keycloakSettings.clientId;
+  const redirect = encodeURIComponent(`${window.location.origin}/password-updated`);
+
+  return {
+    emailSent: true,
+    forgotPasswordEntryUrl:
+      `${base}/realms/${realm}/protocol/openid-connect/auth` +
+      `?client_id=${encodeURIComponent(clientId)}` +
+      `&redirect_uri=${redirect}` +
+      `&response_type=code&scope=openid`,
+    accountUrl: `${base}/realms/${realm}/account`,
+  };
+}
 export async function activateUser(userId) {
   const url = buildApiUrl(`/v1/admin/users/${userId}/activate`);
   const r = await fetch(url, { method: "POST", headers: getAuthHeaders(true) });

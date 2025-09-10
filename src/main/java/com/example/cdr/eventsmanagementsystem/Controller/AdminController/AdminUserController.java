@@ -7,6 +7,10 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
+import com.example.cdr.eventsmanagementsystem.DTO.Admin.PasswordResetResponse;
+
+
+
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -92,10 +96,11 @@ public class AdminUserController {
 
   /** Send reset password email */
   @PostMapping("/users/{id}/reset-password")
-  public ResponseEntity<Void> reset(@PathVariable String id) {
-    keycloakService.sendResetPasswordEmail(id);
-    return ResponseEntity.ok().build();
+  public ResponseEntity<PasswordResetResponse> reset(@PathVariable String id) {
+      PasswordResetResponse res = keycloakService.sendResetPasswordAndOptions(id);
+      return ResponseEntity.ok(res);
   }
+
 
   /** Delete */
   @DeleteMapping("/users/{id}")
