@@ -29,6 +29,7 @@ services:
     ports:
       - '8080:8080'
     volumes:
+      - keycloak_data:/opt/keycloak/data
       - ./Keycloak/realm.json:/opt/keycloak/data/import/realm.json
     networks:
       - ems-network
@@ -77,6 +78,8 @@ services:
 volumes:
   postgres_data:
     name: ems-postgres-data
+  keycloak_data:
+    name: ems-keycloak-data
 networks:
   ems-network:
     driver: bridge

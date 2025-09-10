@@ -43,6 +43,14 @@ public class ServiceController {
         return ResponseEntity.ok(servicesDTO);
     }
 
+    @Operation(summary = "Update an existing service", description = "Updates the details of a service by ID")
+    @PreAuthorize("hasRole('" + RoleConstants.SERVICE_PROVIDER_ROLE + "')")
+    @PutMapping(ServiceControllerConstants.UPDATE_SERVICE_URL)
+    public ResponseEntity<ServicesDTO> updateService(@PathVariable Long serviceId, @Valid @RequestBody ServicesDTO dto) {
+        ServicesDTO updatedService = servicesService.updateService(serviceId, dto);
+        return ResponseEntity.ok(updatedService);
+    }
+
     @Operation(summary = "Get service by ID", description = "Retrieves service details by its ID")
     @GetMapping(ServiceControllerConstants.GET_SERVICE_BY_ID_URL)
     @PreAuthorize("hasAnyRole('" + RoleConstants.SERVICE_PROVIDER_ROLE + "')")
@@ -50,11 +58,11 @@ public class ServiceController {
         return servicesService.getServiceById(id);
     }
 
-    @Operation(summary = "Update the availability of a service")
+    @Operation(summary = "Delete a service", description = "Deletes a service by its ID")
     @PreAuthorize("hasRole('" + RoleConstants.SERVICE_PROVIDER_ROLE + "')")
-    @PatchMapping(ServiceControllerConstants.UPDATE_SERVICE_AVAILABILITY)
-    public ResponseEntity<ServicesDTO> updateServiceAvailability(@PathVariable Long serviceId,@RequestParam String availability) {
-        ServicesDTO updatedService =  servicesService.updateAvailability(serviceId, availability);
-        return ResponseEntity.ok(updatedService);
+    @DeleteMapping(ServiceControllerConstants.DELETE_SERVICE_URL)
+    public ResponseEntity<Void> deleteService(@PathVariable Long serviceId) {
+        servicesService.deleteService(serviceId);
+        return ResponseEntity.noContent().build();
     }
 }

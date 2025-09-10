@@ -43,22 +43,38 @@ public class ServicesService {
         return serviceMapper.toServiceDTO(savedService);
     }
 
+    @Transactional
+    public ServicesDTO updateService(Long serviceId, ServicesDTO dto) {
+        Services service = serviceRepository.findById(serviceId)
+                .orElseThrow(() -> new EntityNotFoundException("Service not found"));
+
+        String serviceProviderId = AuthUtil.getCurrentUserId();
+        if (!service.getServiceProvider().getKeycloakId().equals(serviceProviderId)) {
+            throw new AccessDeniedException("You are not allowed to update this service");
+        }
+
+        serviceMapper.updateService(dto, service);
+
+        Services updatedVenue = serviceRepository.save(service);
+        return serviceMapper.toServiceDTO(updatedVenue);
+    }
+
     public ServicesDTO getServiceById(Long serviceId) {
         Services service = serviceRepository.findById(serviceId).orElseThrow(() -> new EntityNotFoundException("Service not found"));
         return serviceMapper.toServiceDTO(service);
     }
 
     @Transactional
-    public ServicesDTO updateAvailability(Long serviceId, String availability) {
-        String keycloakId = AuthUtil.getCurrentUserId();
+    public void deleteService(Long serviceId) {
         Services service = serviceRepository.findById(serviceId)
-                .orElseThrow(() -> new IllegalArgumentException("Service not found"));
+                .orElseThrow(() -> new EntityNotFoundException("Service not found"));
 
-        if (!service.getServiceProvider().getKeycloakId().equals(keycloakId)) {
-            throw new AccessDeniedException("You are not allowed to update this service");
+        String serviceProviderId = AuthUtil.getCurrentUserId();
+
+        if (!service.getServiceProvider().getKeycloakId().equals(serviceProviderId)) {
+            throw new AccessDeniedException("You are not allowed to delete this service");
         }
-        service.setAvailability(Availability.valueOf(availability.toUpperCase()));
 
-        return serviceMapper.toServiceDTO(serviceRepository.save(service));
+        serviceRepository.deleteById(serviceId);
     }
 }

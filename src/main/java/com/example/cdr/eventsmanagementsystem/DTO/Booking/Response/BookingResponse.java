@@ -11,6 +11,8 @@ import lombok.EqualsAndHashCode;
 @Data
 @EqualsAndHashCode(callSuper = true)
 public class BookingResponse extends BaseBookingDTO {
+
+    private Long id;
     private BookingStatus status;
     private String paymentUrl;
 

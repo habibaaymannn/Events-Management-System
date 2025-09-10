@@ -49,17 +49,17 @@ const MyServices = () => {
         e.preventDefault();
         try {
             const areas = (formData.servicesAreasText || "")
-            .split(",") 
-            .map(s => s.trim()) 
-            .filter(Boolean); 
-            
-            const serviceData = { 
-                name: formData.name.trim(), 
-                type: formData.type,                 // REQUIRED by BE 
-                price: Number(formData.price),       // REQUIRED by BE 
-                servicesAreas: areas,                // REQUIRED by BE (List<String>) 
-                availability: formData.availability, // REQUIRED by BE 
-                description: formData.description?.trim() || undefined // optional 
+            .split(",")
+            .map(s => s.trim())
+            .filter(Boolean);
+
+            const serviceData = {
+                name: formData.name.trim(),
+                type: formData.type,                 // REQUIRED by BE
+                price: Number(formData.price),       // REQUIRED by BE
+                servicesAreas: areas,                // REQUIRED by BE (List<String>)
+                availability: formData.availability, // REQUIRED by BE
+                description: formData.description?.trim() || undefined // optional
             };
 
             if (editingService) {
@@ -68,7 +68,7 @@ const MyServices = () => {
             } else {
                 await addNewService(serviceData);
             }
-            
+
             resetForm();
             setShowAddForm(false);
             loadServices();
@@ -112,7 +112,7 @@ const MyServices = () => {
         try {
             const service = services.find(s => s.id === serviceId);
             const newAvailability = service.availability === "AVAILABLE" ? "UNAVAILABLE" : "AVAILABLE";
-            
+
             await updateServiceAvailability(serviceId, { availability: newAvailability });
             loadServices();
         } catch (error) {
@@ -145,10 +145,10 @@ const MyServices = () => {
                             <div className="form-grid">
                                 <div className="form-group">
                                     <label className="form-label">Service Name</label>
-                                    <input 
-                                        type="text" 
+                                    <input
+                                        type="text"
                                         name="name"
-                                        className="form-control" 
+                                        className="form-control"
                                         placeholder="Enter service name"
                                         value={formData.name}
                                         onChange={handleInputChange}
@@ -157,7 +157,7 @@ const MyServices = () => {
                                 </div>
                                 <div className="form-group">
                                     <label className="form-label">Category</label>
-                                    <select 
+                                    <select
                                         name="type"
                                         className="form-control"
                                         value={formData.type}
@@ -173,10 +173,10 @@ const MyServices = () => {
                                 </div>
                                 <div className="form-group">
                                     <label className="form-label">Price</label>
-                                    <input 
-                                        type="number" 
+                                    <input
+                                        type="number"
                                         name="price"
-                                        className="form-control" 
+                                        className="form-control"
                                         placeholder="Enter price"
                                         value={formData.price}
                                         onChange={handleInputChange}
@@ -185,10 +185,10 @@ const MyServices = () => {
                                 </div>
                                 <div className="form-group">
                                     <label className="form-label">Location</label>
-                                    <input 
-                                        type="text" 
+                                    <input
+                                        type="text"
                                         name="servicesAreasText"
-                                        className="form-control" 
+                                        className="form-control"
                                         placeholder="Enter location"
                                         value={formData.servicesAreasText}
                                         onChange={handleInputChange}
@@ -221,15 +221,15 @@ const MyServices = () => {
                                 <p className="service-category">
                                     {serviceCategories.find(cat => cat.value === service.type)?.label || service.type}
                                 </p>
-                                <p className="service-price">💰 ${Number(service.price ?? 0)}</p>
-                                <p className="service-location">📍{(service.servicesAreas ?? []).join(", ")}</p>
+                                <p className="service-price"> ${Number(service.price ?? 0)}</p>
+                                <p className="service-location">{(service.servicesAreas ?? []).join(", ")}</p>
                             </div>
                             <div className="service-card-actions">
                                 <button className="service-btn" onClick={() => handleEdit(service)}>
                                     Edit
                                 </button>
-                                <button 
-                                    className="service-btn secondary" 
+                                <button
+                                    className="service-btn secondary"
                                     onClick={() => handleToggleStatus(service.id)}
                                 >
                                     Toggle Status

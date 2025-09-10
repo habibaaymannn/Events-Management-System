@@ -4,6 +4,7 @@ import com.example.cdr.eventsmanagementsystem.DTO.Service.ServicesDTO;
 import com.example.cdr.eventsmanagementsystem.Model.Service.Services;
 import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;
+import org.mapstruct.MappingTarget;
 
 @Mapper(componentModel = "spring")
 public interface ServiceMapper {
@@ -11,4 +12,7 @@ public interface ServiceMapper {
 
     @Mapping(source = "serviceProvider.keycloakId", target = "serviceProviderId")
     ServicesDTO toServiceDTO(Services service);
+
+    @Mapping(target = "id", ignore = true)
+    void updateService(ServicesDTO dto, @MappingTarget Services service);
 }

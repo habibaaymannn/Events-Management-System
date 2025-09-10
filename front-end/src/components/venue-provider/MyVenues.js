@@ -57,7 +57,7 @@ const MyVenues = () => {
     };
 
     const handleViewDetails = (venueId) => {
-        navigate(`/venue/${venueId}/details`);
+        navigate(`/venue/${venueId}`);
     };
 
     const handleSaveVenue = async () => {
@@ -234,9 +234,9 @@ const MyVenues = () => {
                                 </span>
                             </div>
                             <div className="venue-card-content">
-                                <p className="venue-location">📍 {venue.location}</p>
-                                <p className="venue-capacity">👥 Capacity: {venue.capacity?.minCapacity}-{venue.capacity?.maxCapacity}</p>
-                                <p className="venue-price">💰 ${venue.pricing?.perHour || 0}/hour | ${venue.pricing?.perEvent || 0}/event</p>
+                                <p className="venue-location"> {venue.location}</p>
+                                <p className="venue-capacity"> Capacity: {venue.capacity?.minCapacity}-{venue.capacity?.maxCapacity}</p>
+                                <p className="venue-price"> ${venue.pricing?.perHour || 0}/hour | ${venue.pricing?.perEvent || 0}/event</p>
                                 <p className="venue-description">{venue.description}</p>
                                 <div className="venue-amenities">
                                     {venue.supportedEventTypes?.map((eventType, index) => (

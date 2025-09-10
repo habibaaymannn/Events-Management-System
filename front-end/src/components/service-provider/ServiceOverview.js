@@ -103,8 +103,8 @@ const ServiceOverview = () => {
                     <div className="stat-icon bookings-icon">📅</div>
                     <div className="stat-content">
                         <h3 className="stat-number">{totalBookings}</h3>
-                        <p className="stat-label">Total Bookings</p>
-                        <span className="stat-link">View Bookings →</span>
+                        <p className="stat-label">Total ServiceBookings</p>
+                        <span className="stat-link">View ServiceBookings →</span>
                     </div>
                 </div>
 
@@ -163,7 +163,7 @@ const ServiceOverview = () => {
             {/* Recent Activity */}
             <div className="activity-section">
                 <div className="section-header">
-                    <h4 className="section-title">Recent Bookings</h4>
+                    <h4 className="section-title">Recent ServiceBookings</h4>
                     <button className="view-all-btn" onClick={handleBookingsClick}>
                         View All →
                     </button>
@@ -207,7 +207,7 @@ const ServiceOverview = () => {
                             <div className="service-stats">
                                 <div className="service-stat">
                                     <span className="stat-value">{service.bookings}</span>
-                                    <span className="stat-name">Bookings</span>
+                                    <span className="stat-name">ServiceBookings</span>
                                 </div>
                                 <div className="service-stat">
                                     <span className="stat-value">${service.revenue.toLocaleString()}</span>
@@ -234,7 +234,7 @@ const ServiceOverview = () => {
                     <button className="action-card" onClick={handleBookingsClick}>
                         <div className="action-icon">📋</div>
                         <div className="action-content">
-                            <h5>Manage Bookings</h5>
+                            <h5>Manage ServiceBookings</h5>
                             <p>Review pending requests and confirmations</p>
                         </div>
                     </button>

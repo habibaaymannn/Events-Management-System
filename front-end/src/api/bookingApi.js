@@ -14,11 +14,11 @@ function unwrapApiData(json) {
  * @param {string} status - New status (PENDING, BOOKED, ACCEPTED, REJECTED, CANCELLED).
  * @returns {Promise<object>} - Updated booking object.
  */
-export async function updateBookingStatus(bookingId, status) {
-  const url = buildApiUrl(`/v1/bookings/${bookingId}/status/${status}`);
+export async function updateServiceBookingStatus(bookingId, status) {
+  const url = buildApiUrl(`/v1/bookings/services/${bookingId}/status/${status}`);
   const response = await fetch(url, {
     method: "PUT",
-    headers: getAuthHeaders(),
+    headers: getAuthHeaders(true),
   });
 
   if (!response.ok) {
@@ -151,17 +151,35 @@ export async function bookService(bookingData) {
 }
 
 
-
 /**
  * Get booking details by ID.
  * @param {number} bookingId - The booking ID.
  * @returns {Promise<object>} - Booking details object.
  */
-export async function getBookingById(bookingId) {
-  const url = buildApiUrl(`/v1/bookings/${bookingId}`);
+export async function getVenueBookingById(bookingId) {
+  const url = buildApiUrl(`/v1/bookings/venues/${bookingId}`);
   const response = await fetch(url, {
     method: "GET",
-    headers: getAuthHeaders(),
+    headers: getAuthHeaders(true),
+  });
+
+  if (!response.ok) {
+    throw new Error(`Failed to get booking details: ${response.statusText}`);
+  }
+
+
+  return await response.json();
+}
+/**
+ * Get booking details by ID.
+ * @param {number} bookingId - The booking ID.
+ * @returns {Promise<object>} - Booking details object.
+ */
+export async function getServiceBookingById(bookingId) {
+  const url = buildApiUrl(`/v1/bookings/services/${bookingId}`);
+  const response = await fetch(url, {
+    method: "GET",
+    headers: getAuthHeaders(true),
   });
 
   if (!response.ok) {
@@ -208,6 +226,48 @@ export async function getBookingsByAttendeeId(attendeeId) {
 
   return await response.json();
 }
+
+/**
+ * Cancel booking
+ * @param {Long} bookingId - The attendee ID.
+ * @param cancellationReason
+ */
+export async function cancelVenueBooking(bookingId, cancellationReason = "") {
+  const url = buildApiUrl(`/v1/bookings/venues/cancel`);
+  const response = await fetch(url, {
+    method: "POST",
+    headers: getAuthHeaders(true),
+    body: JSON.stringify({
+      bookingId: bookingId,
+      cancellationReason: cancellationReason
+    }),
+  });
+
+  if (!response.ok) {
+    throw new Error(`Failed to cancel booking: ${response.statusText}`);
+  }
+
+  return await response.json();
+}
+/**
+ * Cancel booking
+ * @param {Long} bookingId - The attendee ID.
+ * @param cancellationReason
+ */
+export async function cancelServiceBooking(bookingId, cancellationReason = "") {
+  const url = buildApiUrl(`/v1/bookings/services/cancel`);
+  const response = await fetch(url, {
+    method: "POST",
+    headers: getAuthHeaders(true),
+    body: JSON.stringify({
+      bookingId: bookingId,
+      cancellationReason: cancellationReason
+    }),
+  });
+
+  if (!response.ok) {
+    throw new Error(`Failed to cancel booking: ${response.statusText}`);
+
 
 /**
  * Get venue bookings by event ID
@@ -271,6 +331,7 @@ export async function confirmPayment(bookingType, sessionId, canceled = false) {
 
   if (!response.ok) {
     throw new Error(`Failed to confirm payment: ${response.statusText}`);
+
   }
 
   return await response.json();

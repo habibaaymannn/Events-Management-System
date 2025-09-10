@@ -8,8 +8,11 @@ import AdminDashboard from "./components/admin/AdminDashboard";
 import SetAvailability from "./components/venue-provider/SetAvailability";
 import BookVenue from "./components/venue-provider/BookVenue";
 import VenueDetails from "./components/venue-provider/VenueDetails";
+import ServiceDetails from "./components/service-provider/ServiceDetails";
 import ProtectedRoute from "./auth/ProtectedRoute";
+import Bookings from "./components/venue-provider/Bookings";
 import "./App.css";
+import ServiceBookings from "./components/service-provider/ServiceBookings";
 
 function roleHome(roles = []) {
   if (roles.includes("admin")) return "/admin";
@@ -61,8 +64,24 @@ function App() {
             </ProtectedRoute>
           }
         />
+          <Route
+              path="/service/:id"
+              element={
+                  <ProtectedRoute allowedRoles={["service_provider", "admin"]}>
+                      <ServiceDetails />
+                  </ProtectedRoute>
+              }
+          />
+          <Route
+              path="/service-bookings"
+              element={
+                  <ProtectedRoute allowedRoles={["service_provider", "admin"]}>
+                      <ServiceBookings />
+                  </ProtectedRoute>
+              }
+          />
 
-        {/* Venue Provider */}
+          {/* Venue Provider */}
         <Route
           path="/venue-provider/*"
           element={
@@ -71,8 +90,25 @@ function App() {
             </ProtectedRoute>
           }
         />
+          <Route
+              path="/venue/:id"
+              element={
+                  <ProtectedRoute allowedRoles={["venue_provider", "admin"]}>
+                      <VenueDetails />
+                  </ProtectedRoute>
+              }
+          />
+          <Route
+              path="/venue-bookings"
+              element={
+                  <ProtectedRoute allowedRoles={["venue_provider", "admin"]}>
+                      <Bookings />
+                  </ProtectedRoute>
+              }
+          />
 
-        {/* Attendee */}
+
+          {/* Attendee */}
         <Route
           path="/attendee/*"
           element={
