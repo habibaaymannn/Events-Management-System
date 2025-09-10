@@ -3,6 +3,8 @@ package com.example.cdr.eventsmanagementsystem.Service.Booking;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
+import com.example.cdr.eventsmanagementsystem.Model.Booking.BookingType;
+
 import com.example.cdr.eventsmanagementsystem.Service.Payment.StripeService;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.data.domain.Page;
@@ -67,6 +69,11 @@ public class ServiceBookingService {
         return bookings.map(bookingMapper::toServiceBookingResponse);
     }
 
+    public Page<ServiceBookingResponse> getAllServiceBookingsByEventId(Long eventId, Pageable pageable) {
+        Page<ServiceBooking> bookings = bookingRepository.findByEventId(eventId, pageable);
+        return bookings.map(bookingMapper::toServiceBookingResponse);
+    }
+
     public ServiceBookingResponse getBookingById(Long bookingId) {
         ServiceBooking booking = bookingRepository.findById(bookingId).orElseThrow(() -> new EntityNotFoundException(BOOKING_NOT_FOUND));
 
@@ -102,7 +109,8 @@ public class ServiceBookingService {
                 "Service booking for: " + service.getName(),
                 booking.getId(),
                 SETUP_FUTURE_USAGE_ON_SESSION,
-                request.getIsCaptured() != null ? request.getIsCaptured() : false
+                request.getIsCaptured() != null ? request.getIsCaptured() : false,
+                BookingType.SERVICE
         );
         booking.setStripeSessionId(session.getId());
 

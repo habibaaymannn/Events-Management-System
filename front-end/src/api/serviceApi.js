@@ -171,3 +171,18 @@ export async function deleteService(serviceId) {
     }
     return true;
   }
+
+/**
+ * Get all available services for booking (for event organizers).
+ */
+export async function getAllAvailableServices() {
+  const url = buildApiUrl('/v1/services/all');
+  const response = await fetch(url, {
+    method: 'GET',
+    headers: getAuthHeaders(),
+  });
+  if (!response.ok) throw new Error(`Failed to fetch available services: ${response.status} ${response.statusText}`);
+
+  const json = await response.json();
+  return unwrapApiData(json);
+}

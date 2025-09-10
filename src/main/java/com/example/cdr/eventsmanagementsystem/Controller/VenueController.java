@@ -16,10 +16,14 @@ import com.example.cdr.eventsmanagementsystem.DTO.Venue.VenueDTO;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
+
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
 import java.util.List;
+
+import static com.example.cdr.eventsmanagementsystem.Constants.ControllerConstants.RoleConstants.*;
+
 
 /**
  * REST controller for venue management.
@@ -35,7 +39,7 @@ public class VenueController {
 
     @Operation(summary = "Get all venues", description = "Retrieves a paginated list of all venues")
     @GetMapping(VenueControllerConstants.GET_ALL_VENUES_URL)
-    @PreAuthorize("hasAnyRole('" + RoleConstants.VENUE_PROVIDER_ROLE + "')")
+    @PreAuthorize("hasAnyRole('" + ORGANIZER_ROLE + "', '" + VENUE_PROVIDER_ROLE + "','" + ADMIN_ROLE + "')")
     public Page<VenueDTO> getAllVenues(@ParameterObject @PageableDefault() Pageable pageable) {
         return venueService.getAllVenues(pageable);
     }

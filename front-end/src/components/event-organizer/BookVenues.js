@@ -201,7 +201,11 @@ const BookVenues = () => {
       });
       
       // Reload venues to update availability
-      loadVenues();
+      const fetchVenues = async () => {
+        const result = await getAllVenues();
+        setVenues(result);
+      };
+      fetchVenues();
     } catch (error) {
       console.error("Error booking venue:", error);
       alert("Failed to book venue. Please try again.");

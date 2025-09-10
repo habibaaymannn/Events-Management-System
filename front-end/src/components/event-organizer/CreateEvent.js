@@ -1,15 +1,10 @@
-import React, { useState, useEffect } from "react";
+import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { createEvent } from "../../api/eventApi";
-import { bookVenue, bookService } from "../../api/bookingApi";
-import { getAllVenues } from "../../api/venueApi";
-import { getMyServices } from "../../api/serviceApi";
 
 const CreateEvent = () => {
   const navigate = useNavigate();
   const [currentStep, setCurrentStep] = useState(1);
-  const [venues, setVenues] = useState([]);
-  const [services, setServices] = useState([]);
   const [eventData, setEventData] = useState({
     // Basic Information - matching backend API
     name: "",
@@ -18,9 +13,6 @@ const CreateEvent = () => {
     startTime: "",
     endTime: "",
     retailPrice: "",
-    // Booking Information
-    venueId: "",
-    serviceIds: [], // New option for combined booking
   });
 
   const eventTypes = [
@@ -44,22 +36,6 @@ const CreateEvent = () => {
     { value: "FUNDRAISER", label: "Fundraiser" }
   ];
 
-  useEffect(() => {
-    loadVenuesAndServices();
-  }, []);
-
-  const loadVenuesAndServices = async () => {
-    try {
-      const [venuesPage, servicesPage] = await Promise.all([getAllVenues(), getMyServices()]);
-      // Both helpers now return arrays (we unwrapped Page.content in the APIs)
-      setVenues(Array.isArray(venuesPage) ? venuesPage : (venuesPage?.content ?? []));
-      setServices(Array.isArray(servicesPage) ? servicesPage : (servicesPage?.content ?? []));
-    } catch (err) {
-      console.error("Failed to load venues/services", err);
-      setVenues([]);
-      setServices([]);
-    }
-  };
 
 
   const handleInputChange = (e) => {
@@ -73,7 +49,7 @@ const CreateEvent = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
-      // Create the event first
+      // Create the event
       const apiEventData = {
         name: eventData.name,
         description: eventData.description,
@@ -83,41 +59,10 @@ const CreateEvent = () => {
         retailPrice: parseFloat(eventData.retailPrice) || 0
       };
 
-      const createdEvent = await createEvent(apiEventData);
-
-    // After createEvent(...)
-    if (eventData.venueId || eventData.serviceIds.length > 0) {
-      // Book venue first if selected
-      if (eventData.venueId) {
-        await bookVenue({
-          startTime: eventData.startTime + ':00.000Z',
-          endTime:   eventData.endTime   + ':00.000Z',
-          currency: 'USD',
-          organizerId: 'current-organizer-id', // TODO: pull from Keycloak
-          eventId: createdEvent.id,
-          venueId: parseInt(eventData.venueId)
-        });
-      }
-      // Then each selected service
-      if (eventData.serviceIds.length > 0) {
-        for (const sid of eventData.serviceIds) {
-          await bookService({
-            startTime: eventData.startTime + ':00.000Z',
-            endTime:   eventData.endTime   + ':00.000Z',
-            currency: 'USD',
-            organizerId: 'current-organizer-id',
-            eventId: createdEvent.id,
-            serviceId: parseInt(sid)
-          });
-        }
-      }
-      alert('Event created and resources booked successfully!');
-    } else {
-      alert("Event created successfully!");
-    }
-
+      await createEvent(apiEventData);
       
-      navigate('/event-organizer/my-events');
+      alert("Event created successfully!");
+      navigate('/organizer');
     } catch (error) {
       console.error("Error creating event:", error);
       alert("Failed to create event. Please try again.");
@@ -125,7 +70,7 @@ const CreateEvent = () => {
   };
 
   const nextStep = () => {
-    if (currentStep < 4) setCurrentStep(currentStep + 1);
+    if (currentStep < 3) setCurrentStep(currentStep + 1);
   };
 
   const prevStep = () => {
@@ -155,14 +100,13 @@ const CreateEvent = () => {
       {/* Progress Indicator */}
       <div className="progress-container">
         <div className="progress-steps">
-          {[1, 2, 3, 4].map(step => (
+          {[1, 2, 3].map(step => (
             <div key={step} className={`progress-step ${step <= currentStep ? 'active' : ''}`}>
               <div className="step-number">{step}</div>
               <div className="step-label">
                 {step === 1 && "Basic Info"}
                 {step === 2 && "Details"}
-                {step === 3 && "Resources"}
-                {step === 4 && "Review"}
+                {step === 3 && "Review"}
               </div>
             </div>
           ))}
@@ -170,7 +114,7 @@ const CreateEvent = () => {
         <div className="progress-bar">
           <div
             className="progress-fill"
-            style={{ width: `${(currentStep / 4) * 100}%` }}
+            style={{ width: `${(currentStep / 3) * 100}%` }}
           />
         </div>
       </div>
@@ -182,8 +126,9 @@ const CreateEvent = () => {
             <h4 className="step-title">📝 Basic Event Information</h4>
             <div className="form-grid">
               <div className="form-group">
-                <label className="form-label">Event Name *</label>
+                <label className="form-label" htmlFor="event-name">Event Name *</label>
                 <input
+                  id="event-name"
                   type="text"
                   name="name"
                   value={eventData.name}
@@ -195,8 +140,9 @@ const CreateEvent = () => {
               </div>
 
               <div className="form-group">
-                <label className="form-label">Event Type *</label>
+                <label className="form-label" htmlFor="event-type">Event Type *</label>
                 <select
+                  id="event-type"
                   name="type"
                   value={eventData.type}
                   onChange={handleInputChange}
@@ -210,8 +156,9 @@ const CreateEvent = () => {
               </div>
 
               <div className="form-group">
-                <label className="form-label">Start Date & Time *</label>
+                <label className="form-label" htmlFor="start-time">Start Date & Time *</label>
                 <input
+                  id="start-time"
                   type="datetime-local"
                   name="startTime"
                   value={eventData.startTime}
@@ -222,8 +169,9 @@ const CreateEvent = () => {
               </div>
 
               <div className="form-group">
-                <label className="form-label">End Date & Time *</label>
+                <label className="form-label" htmlFor="end-time">End Date & Time *</label>
                 <input
+                  id="end-time"
                   type="datetime-local"
                   name="endTime"
                   value={eventData.endTime}
@@ -242,8 +190,9 @@ const CreateEvent = () => {
             <h4 className="step-title">🎯 Event Details</h4>
             <div className="form-grid">
               <div className="form-group full-width">
-                <label className="form-label">Event Description *</label>
+                <label className="form-label" htmlFor="event-description">Event Description *</label>
                 <textarea
+                  id="event-description"
                   name="description"
                   value={eventData.description}
                   onChange={handleInputChange}
@@ -255,8 +204,9 @@ const CreateEvent = () => {
               </div>
 
               <div className="form-group">
-                <label className="form-label">Retail Price ($) *</label>
+                <label className="form-label" htmlFor="retail-price">Retail Price ($) *</label>
                 <input
+                  id="retail-price"
                   type="number"
                   step="0.01"
                   name="retailPrice"
@@ -277,81 +227,8 @@ const CreateEvent = () => {
           </div>
         )}
 
-        {/* Step 3: Resource Booking (New Step) */}
+        {/* Step 3: Review */}
         {currentStep === 3 && (
-          <div className="form-step">
-            <h4 className="step-title">🏢 Resource Booking (Optional)</h4>
-            <div className="form-grid">
-              <div className="form-group">
-                <label className="form-label">Select Venue</label>
-                <select
-                  name="venueId"
-                  value={eventData.venueId || ""}
-                  onChange={(e) => setEventData(d => ({ ...d, venueId: e.target.value || null }))}
-                  className="form-control"
-                >
-                  <option value="">No Venue</option>
-                      {venues.map(v => (
-                        <option key={v.id} value={v.id}>{v.name}</option>
-                      ))}
-                </select>
-              </div>
-
-              <div className="form-group">
-                <label className="form-label">Select Services</label>
-                <div className="services-selection">
-                    <select
-                    multiple
-                    value={eventData.serviceIds || []}
-                    onChange={(e) => {
-                      const selected = Array.from(e.target.selectedOptions).map(o => o.value);
-                      setEventData(d => ({ ...d, serviceIds: selected }));
-                    }}
-                    className="form-control"
-                  >
-                    {services.length === 0 ? (
-                      <option disabled>No services available</option>
-                    ) : (
-                      services.map(s => (
-                        <option key={s.id} value={s.id}>{s.name}</option>
-                      ))
-                    )}
-                  </select>
-                </div>
-              </div>
-
-              {(eventData.venueId || eventData.serviceIds.length > 0) && (
-                <div className="form-group full-width">
-                  <label className="checkbox-label">
-                    <input
-                      type="checkbox"
-                      checked={eventData.bookCombined}
-                      onChange={(e) => setEventData(prev => ({
-                        ...prev,
-                        bookCombined: e.target.checked
-                      }))}
-                    />
-                    Book resources immediately with combined booking
-                  </label>
-                  <small className="form-hint">
-                    {eventData.venueId && eventData.serviceIds.length > 0 
-                      ? "This will use the combined booking API for better coordination"
-                      : "Individual bookings will be created separately"
-                    }
-                  </small>
-                </div>
-              )}
-            </div>
-
-            <div className="info-box">
-              <h5>💡 Tip</h5>
-              <p>You can also book venues and services later from your dashboard if you prefer to create the event first.</p>
-            </div>
-          </div>
-        )}
-
-        {/* Step 4: Review (Updated) */}
-        {currentStep === 4 && (
           <div className="form-step">
             <h4 className="step-title">📋 Review & Confirm</h4>
             <div className="review-section">
@@ -368,15 +245,9 @@ const CreateEvent = () => {
                 </div>
 
                 <div className="review-card">
-                  <h5>Resource Booking</h5>
+                  <h5>Description</h5>
                   <div className="review-details">
-                    <p><strong>Venue:</strong> {eventData.venueId ? venues.find(v => v.id === parseInt(eventData.venueId))?.name : "None selected"}</p>
-                    <p><strong>Services:</strong> {eventData.serviceIds.length > 0 ? eventData.serviceIds.length + " selected" : "None selected"}</p>
-                    <p><strong>Booking Type:</strong> {
-                      eventData.bookCombined 
-                        ? (eventData.venueId && eventData.serviceIds.length > 0 ? "Combined booking" : "Individual booking")
-                        : "Book separately later"
-                    }</p>
+                    <p>{eventData.description}</p>
                   </div>
                 </div>
 
@@ -407,7 +278,7 @@ const CreateEvent = () => {
 
           <div className="nav-spacer"></div>
 
-          {currentStep < 4 ? (
+          {currentStep < 3 ? (
             <button
               type="button"
               onClick={nextStep}
@@ -418,7 +289,7 @@ const CreateEvent = () => {
             </button>
           ) : (
             <button type="submit" className="event-btn success">
-              Create Event {eventData.bookCombined && (eventData.venueId || eventData.serviceIds.length > 0) ? "& Book Resources" : ""} 🎉
+              Create Event 🎉
             </button>
           )}
         </div>
