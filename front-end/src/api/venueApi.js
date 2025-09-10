@@ -121,23 +121,23 @@ export async function getAllVenues() {
   return Array.isArray(json) ? json : (json.content ?? []);
 }
 
-
-/**
- * Cancel a booking as a venue provider.
- * @param {number|string} bookingId - Booking ID.
- * @returns {Promise<void>} - Resolves if successful.
- */
-export async function cancelVenueBooking(bookingId) {
-  const url = buildApiUrl(`/v1/venues/bookings/${bookingId}/cancel`);
-  const response = await fetch(url, {
-    method: "POST",
-    headers: getAuthHeaders(true),
-  });
-
-  if (!response.ok) {
-    throw new Error(`Failed to cancel booking: ${response.statusText}`);
-  }
-}
+//
+// /**
+//  * Cancel a booking as a venue provider.
+//  * @param {number|string} bookingId - Booking ID.
+//  * @returns {Promise<void>} - Resolves if successful.
+//  */
+// export async function cancelVenueBooking(bookingId) {
+//   const url = buildApiUrl(`/v1/venues/bookings/${bookingId}/cancel`);
+//   const response = await fetch(url, {
+//     method: "POST",
+//     headers: getAuthHeaders(true),
+//   });
+//
+//   if (!response.ok) {
+//     throw new Error(`Failed to cancel booking: ${response.statusText}`);
+//   }
+// }
 
 /**
  * Accept or reject a venue booking request.
@@ -167,4 +167,24 @@ export async function respondToVenueBookingRequest(bookingId, status, reason = "
 
   return await response.json();
 }
+/**
+ * Get all bookings for a venue provider.
+ * @param {string} venueProviderId - Current venue provider's ID.
+ * @param {number} page - Page number (optional, default 0).
+ * @param {number} size - Page size (optional, default 20).
+ * @returns {Promise<object>} - Paginated booking data.
+ */
+export async function getBookingsByVenueProviderId(venueProviderId, page = 0, size = 20) {
+  const url = buildApiUrl(`/v1/bookings/venues/venue-provider/${encodeURIComponent(venueProviderId)}?page=${page}&size=${size}`);
+  const response = await fetch(url, {
+    method: "GET", headers: getAuthHeaders(true) });
+
+  if (!response.ok) {
+    throw new Error(`Failed to fetch bookings: ${response.statusText}`);
+  }
+
+  const json = await response.json();
+  return json;
+}
+
 

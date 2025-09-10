@@ -4,7 +4,6 @@ import Calendar from "react-calendar";
 import VenueDetails from "./VenueDetails";
 import "react-calendar/dist/Calendar.css";
 import { getAllVenues, createVenue, updateVenue, deleteVenue } from "../../api/venueApi";
-import { updateBookingStatus } from "../../api/bookingApi";
 import SetAvailability from "./SetAvailability";
 import BookVenue from "./BookVenue";
 
@@ -30,7 +29,10 @@ const allEventTypes = [
 ];
 
 const initialVenues = [];
-
+const AVAILABILITY_OPTIONS = [
+  { key: "AVAILABLE", label: "Available" },
+  { key: "UNAVAILABLE", label: "Unavailable" },
+];
 const VenueProviderDashboard = () => {
   const navigate = useNavigate();
   const [venues, setVenues] = useState([]);
@@ -64,25 +66,6 @@ const VenueProviderDashboard = () => {
     localStorage.setItem("bookingRequests", JSON.stringify(bookingRequests));
   }, [bookingRequests]);
 
-  // Handle booking request approval/rejection
-  const handleBookingRequest = async (requestId, action) => {
-    try {
-      if (action === 'approve') {
-        await updateBookingStatus(requestId, "ACCEPTED");
-      } else {
-        await updateBookingStatus(requestId, "REJECTED");
-      }
-      
-      // Remove from local booking requests since it's now handled by backend
-      const updatedRequests = bookingRequests.filter(req => req.id !== requestId);
-      setBookingRequests(updatedRequests);
-      
-      // Reload venues to get updated booking data
-      loadVenues();
-    } catch (error) {
-      console.error("Error handling booking request:", error);
-    }
-  };
 
   const [showAdd, setShowAdd] = useState(false);
   const [editVenueId, setEditVenueId] = useState(null);
@@ -130,16 +113,24 @@ const VenueProviderDashboard = () => {
 
   // Helper to format venue type for display
   const formatVenueType = (type) => {
-    switch (type) {
-      case "VILLA":
-        return "Villa";
-      case "CHALET":
-        return "Chalet";
-      case "SCHOOL_HALL":
-        return "School Hall";
-      default:
-        return type;
-    }
+    const typeMap = {
+      "VILLA": "Villa",
+      "CHALET": "Chalet",
+      "FARMHOUSE": "Farmhouse",
+      "HOTEL": "Hotel",
+      "RESTAURANT": "Restaurant",
+      "CONFERENCE_CENTER": "Conference Center",
+      "CLUB": "Club",
+      "SCHOOL_HALL": "School Hall",
+      "UNIVERSITY_AUDITORIUM": "University Auditorium",
+      "PARK": "Park",
+      "GARDEN": "Garden",
+      "BEACH": "Beach",
+      "THEATER": "Theater",
+      "ART_GALLERY": "Art Gallery",
+      "SPORTS_ARENA": "Sports Arena"
+    };
+    return typeMap[type] || type;
   };
 
   // Add or Edit Venue
@@ -361,7 +352,7 @@ const VenueProviderDashboard = () => {
   //         boxShadow: "0 2px 12px #eee",
   //       }}
   //     >
-  //       <h3>Bookings for: {venue.name}</h3>
+  //       <h3>ServiceBookings for: {venue.name}</h3>
   //       <Calendar
   //         value={selectedDate}
   //         onChange={setSelectedDate}
@@ -393,7 +384,7 @@ const VenueProviderDashboard = () => {
   //         )}
   //       </div>
   //       <div style={{ marginTop: 16 }}>
-  //         <strong>All Bookings:</strong>
+  //         <strong>All ServiceBookings:</strong>
   //         <ul>
   //           {venue.bookings.length === 0 && <li style={{ color: "#888" }}>No bookings yet.</li>}
   //           {venue.bookings.map((b) => (
@@ -448,14 +439,14 @@ const VenueProviderDashboard = () => {
                       <td>
                         <div style={{ display: "flex", gap: 4 }}>
                           <button
-                            onClick={() => handleBookingRequest(req.id, 'approve')}
+                            // onClick={() => handleBookingRequest(req.id, 'approve')}
                             className="btn btn-success"
                             style={{ padding: "6px 12px", fontSize: "0.8rem" }}
                           >
                             Approve
                           </button>
                           <button
-                            onClick={() => handleBookingRequest(req.id, 'reject')}
+                            // onClick={() => handleBookingRequest(req.id, 'reject')}
                             className="btn btn-danger"
                             style={{ padding: "6px 12px", fontSize: "0.8rem" }}
                           >
@@ -523,9 +514,40 @@ const VenueProviderDashboard = () => {
                   className="form-control"
               >
                 <option value="">Select Venue Type</option>
-                <option value="Villa">Villa</option>
-                <option value="Chalet">Chalet</option>
-                <option value="School_Hall">School Hall</option>
+                {/* Private venues */}
+                <optgroup label="Private Venues">
+                  <option value="VILLA">Villa</option>
+                  <option value="CHALET">Chalet</option>
+                  <option value="FARMHOUSE">Farmhouse</option>
+                </optgroup>
+
+                {/* Public venues */}
+                <optgroup label="Public Venues">
+                  <option value="HOTEL">Hotel</option>
+                  <option value="RESTAURANT">Restaurant</option>
+                  <option value="CONFERENCE_CENTER">Conference Center</option>
+                  <option value="CLUB">Club</option>
+                </optgroup>
+
+                {/* Institutional venues */}
+                <optgroup label="Institutional Venues">
+                  <option value="SCHOOL_HALL">School Hall</option>
+                  <option value="UNIVERSITY_AUDITORIUM">University Auditorium</option>
+                </optgroup>
+
+                {/* Outdoor venues */}
+                <optgroup label="Outdoor Venues">
+                  <option value="PARK">Park</option>
+                  <option value="GARDEN">Garden</option>
+                  <option value="BEACH">Beach</option>
+                </optgroup>
+
+                {/* Cultural/Sports venues */}
+                <optgroup label="Cultural & Sports Venues">
+                  <option value="THEATER">Theater</option>
+                  <option value="ART_GALLERY">Art Gallery</option>
+                  <option value="SPORTS_ARENA">Sports Arena</option>
+                </optgroup>
               </select>
             </div>
             <div className="form-group">
@@ -715,80 +737,73 @@ const VenueProviderDashboard = () => {
                 </tr>
               ) : (
                 venues.map((v) => (
-                  <tr 
-                    key={v.id} 
-                    style={{ cursor: "pointer" }}
-                    onClick={(e) => {
-                      // Don't navigate if clicking on buttons
-                      if (e.target.tagName === 'BUTTON' || e.target.closest('button')) {
-                        return;
-                      }
-                      handleViewVenueDetails(v.id);
-                    }}
-                  >
-                    <td style={{ fontWeight: 600, color: "#2c3e50" }}>
-                      {v.name}
-                    </td>
-                    <td>{formatVenueType(v.type)}</td>
-                    <td>{v.location}</td>
-                    <td>{v.capacity?.minCapacity} - {v.capacity?.maxCapacity}</td>
-                    <td>
-                      {v.pricing?.perHour ? `$${v.pricing.perHour}/hr` : ''}
-                      {v.pricing?.perHour && v.pricing?.perEvent ? ' | ' : ''}
-                      {v.pricing?.perEvent ? `$${v.pricing.perEvent}/event` : ''}
-                    </td>
-                    <td>
-                      {/*<button*/}
-                      {/*  onClick={(e) => {*/}
-                      {/*    e.stopPropagation();*/}
-                      {/*    setCalendarVenue(v);*/}
-                      {/*    setCalendarMode("availability");*/}
-                      {/*  }}*/}
-                      {/*  className="btn btn-primary"*/}
-                      {/*  style={{ padding: "6px 12px", fontSize: "0.8rem" }}*/}
-                      {/*>*/}
-                      {/*  Set Availability*/}
-                      {/*</button>*/}
-                        {v.availability === "AVAILABLE" ? "Available" : "Not Available"}
-                    </td>
-                    <td>
-                      <button
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            // setCalendarVenue(v);
-                            // setCalendarMode("bookings");
-                          }}
-                          className="btn btn-success"
-                          style={{padding: "6px 12px", fontSize: "0.8rem"}}
-                      >
-                        View Bookings
-                      </button>
-                    </td>
-                    <td>
-                      <div style={{ display: "flex", gap: 4 }}>
+                    <tr
+                        key={v.id}
+                        style={{cursor: "pointer"}}
+                        onClick={(e) => {
+                          // Don't navigate if clicking on buttons
+                          if (e.target.tagName === 'BUTTON' || e.target.closest('button')) {
+                            return;
+                          }
+                          handleViewVenueDetails(v.id);
+                        }}
+                    >
+                      <td style={{fontWeight: 600, color: "#2c3e50"}}>
+                        {v.name}
+                      </td>
+                      <td>{formatVenueType(v.type)}</td>
+                      <td>{v.location}</td>
+                      <td>{v.capacity?.minCapacity} - {v.capacity?.maxCapacity}</td>
+                      <td>
+                        {v.pricing?.perHour ? `$${v.pricing.perHour}/hr` : ''}
+                        {v.pricing?.perHour && v.pricing?.perEvent ? ' | ' : ''}
+                        {v.pricing?.perEvent ? `$${v.pricing.perEvent}/event` : ''}
+                      </td>
+                      <td>
+                        <span className={`status-badge ${v.availability === "AVAILABLE" ? "status-confirmed" : "status-pending"}`}>
+                          {AVAILABILITY_OPTIONS.find((opt) => opt.key === v.availability)?.label ?? v.availability}
+                        </span>
+                      </td>
+
+                      <td>
                         <button
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            handleEditVenue(v);
-                          }}
-                          className="btn btn-warning"
-                          style={{ padding: "6px 12px", fontSize: "0.8rem" }}
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              navigate("/venue-bookings", {state: {venueId: v.id}});
+                              // setCalendarVenue(v);
+                              // setCalendarMode("bookings");
+                            }}
+                            className="btn btn-success"
+                            style={{padding: "6px 12px", fontSize: "0.8rem"}}
                         >
-                          Edit
+                          View Bookings
                         </button>
-                        <button
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            handleRemoveVenue(v.id);
-                          }}
-                          className="btn btn-danger"
-                          style={{ padding: "6px 12px", fontSize: "0.8rem" }}
-                        >
-                          Remove
-                        </button>
-                      </div>
-                    </td>
-                  </tr>
+                      </td>
+                      <td>
+                        <div style={{display: "flex", gap: 4}}>
+                          <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleEditVenue(v);
+                              }}
+                              className="btn btn-warning"
+                              style={{padding: "6px 12px", fontSize: "0.8rem"}}
+                          >
+                            Edit
+                          </button>
+                          <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleRemoveVenue(v.id);
+                              }}
+                              className="btn btn-danger"
+                              style={{padding: "6px 12px", fontSize: "0.8rem"}}
+                          >
+                            Remove
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
                 ))
               )}
             </tbody>
@@ -833,7 +848,7 @@ const VenueProviderDashboard = () => {
       {/*  <div className="modal-overlay" onClick={() => { setCalendarVenue(null); setCalendarMode(null); }}>*/}
       {/*    <div className="modal-content" onClick={(e) => e.stopPropagation()}>*/}
       {/*      <div className="modal-header">*/}
-      {/*        <h4>Bookings for: {calendarVenue.name}</h4>*/}
+      {/*        <h4>ServiceBookings for: {calendarVenue.name}</h4>*/}
       {/*        <button className="modal-close" onClick={() => { setCalendarVenue(null); setCalendarMode(null); }}>*/}
       {/*          ×*/}
       {/*        </button>*/}
@@ -897,7 +912,7 @@ const VenueProviderDashboard = () => {
       {/*      </div>*/}
 
       {/*      <div style={{ marginTop: 20 }}>*/}
-      {/*        <h5 style={{ color: "#2c3e50", marginBottom: 10 }}>All Bookings:</h5>*/}
+      {/*        <h5 style={{ color: "#2c3e50", marginBottom: 10 }}>All ServiceBookings:</h5>*/}
       {/*        {calendarVenue.bookings.length === 0 ? (*/}
       {/*          <p style={{ color: "#6c757d", fontStyle: "italic" }}>No bookings yet.</p>*/}
       {/*        ) : (*/}
