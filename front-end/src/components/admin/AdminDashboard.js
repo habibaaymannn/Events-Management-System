@@ -60,8 +60,9 @@ const AdminDashboard = () => {
       ]);
 
       // Sum the (start..end) window (today => single key)
-      const bookings = dailyB ? Object.values(dailyB).reduce((a, b) => a + b, 0) : 0;
-      const cancellations = dailyC ? Object.values(dailyC).reduce((a, b) => a + b, 0) : 0;
+      const num = v => Number(v) || 0;
+      const bookings = dailyB ? Object.values(dailyB).map(num).reduce((a, b) => a + b, 0) : 0;
+      const cancellations = dailyC ? Object.values(dailyC).map(num).reduce((a, b) => a + b, 0) : 0;
 
       setDashboardData({
         users: {
@@ -84,8 +85,8 @@ const AdminDashboard = () => {
         eventTypes: types || {},
         dailyStats: { bookings, cancellations },
         revenueByOrganizer: Array.isArray(dash?.revenueByOrganizer) ? dash.revenueByOrganizer : [],
-        venueUtilizationRate: dash?.venueUtilizationRate ?? null,
-        serviceProviderUtilizationRate: dash?.serviceProviderUtilizationRate ?? null,
+        venueUtilizationRate: dash?.venueUtilizationRate != null ? Number(dash.venueUtilizationRate) : null,
+        serviceProviderUtilizationRate: dash?.serviceProviderUtilizationRate != null ? Number(dash.serviceProviderUtilizationRate) : null,
       });
     } catch (error) {
       console.error("Error loading dashboard data:", error);

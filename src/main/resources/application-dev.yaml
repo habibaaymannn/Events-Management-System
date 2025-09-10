@@ -10,14 +10,22 @@ spring:
       ddl-auto: create-drop
 
 
+
 keycloak:
-  base-url: ${KEYCLOAK_BASE_URL:http://localhost:8081}
+  base-url: ${KEYCLOAK_BASE_URL}         # REQUIRED (dev: http://localhost:8080, docker: http://ems-keycloak:8080)
   realm: ${KEYCLOAK_REALM:EMS-realm}
+  # internal URL used INSIDE Docker (backend -> keycloak)
+  internalBaseUrl: ${KEYCLOAK_BASE_URL:http://keycloak:8080}
+  # public URL used by browsers / emails
+  publicBaseUrl: ${KEYCLOAK_PUBLIC_BASE_URL:http://localhost:8080}
+  # SPA client and where to land after finishing actions
+  frontendClientId: ${KEYCLOAK_FRONTEND_CLIENT_ID:ems-frontend}
+  postActionRedirectUri: ${FRONTEND_REDIRECT_URI:http://localhost:3000/password-updated}
   admin:
-    client-id: ${KEYCLOAK_ADMIN_CLIENT_ID:admin-cli}     # if you insist on using admin-cli for ROPC
-    client-secret: ${KEYCLOAK_ADMIN_CLIENT_SECRET:}      # admin-cli has no secret by default
-    username: ${KEYCLOAK_ADMIN_USERNAME:admin1}          # <— your realm admin user
-    password: ${KEYCLOAK_ADMIN_PASSWORD:adminpass}  
+    client-id: ${KEYCLOAK_ADMIN_CLIENT_ID}               # REQUIRED
+    client-secret: ${KEYCLOAK_ADMIN_CLIENT_SECRET:}      # optional in user/password mode
+    username: ${KEYCLOAK_ADMIN_USERNAME:}                # fill if you want backend to act as admin user
+    password: ${KEYCLOAK_ADMIN_PASSWORD:}  
   create:
     email-verified: false
     password-temporary: false

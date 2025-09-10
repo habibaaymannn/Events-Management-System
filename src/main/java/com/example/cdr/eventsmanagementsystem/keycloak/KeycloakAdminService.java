@@ -17,12 +17,21 @@ import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
+import com.example.cdr.eventsmanagementsystem.DTO.Admin.PasswordResetResponse;
+import java.util.Set;
+
+
 @Service
 public class KeycloakAdminService {
 
     private final KeycloakAdminProps props;
     private final Keycloak kc;
 
+    private static final java.util.List<String> MANAGED =
+        java.util.List.of("admin", "organizer", "attendee", "service_provider", "venue_provider");
+    // If you want a display priority (optional):
+    private static final java.util.List<String> ROLE_PRIORITY =
+        java.util.List.of("admin", "organizer", "service_provider", "venue_provider", "attendee");
     // Single explicit constructor so Spring knows exactly what to use
     @Autowired
     public KeycloakAdminService(KeycloakAdminProps props) {
@@ -87,6 +96,19 @@ public class KeycloakAdminService {
     }
 
     // ---------- UPDATE ROLE ----------
+
+
+    // Return the first managed realm role the user currently has (with priority)
+    public String resolveManagedRole(String userId) {
+        UserResource u = realm().users().get(userId);
+        Set<String> names = u.roles().realmLevel().listAll()
+                .stream().map(RoleRepresentation::getName).collect(Collectors.toSet());
+        for (String r : ROLE_PRIORITY) {
+            if (names.contains(r)) return r;
+        }
+        // no managed role found — null or a default you prefer:
+        return null;
+    }
     public void updateUserRole(String userId, String targetRealmRole) {
         UserResource u = realm().users().get(userId);
         List<RoleRepresentation> current = u.roles().realmLevel().listAll();
@@ -117,9 +139,42 @@ public class KeycloakAdminService {
         u.update(rep);
     }
 
-    // ---------- RESET PASSWORD (send email action) ----------
-    public void sendResetPasswordEmail(String userId) {
-        realm().users().get(userId).executeActionsEmail(List.of("UPDATE_PASSWORD"));
+// ---------- RESET PASSWORD (send email action) ----------
+public PasswordResetResponse sendResetPasswordAndOptions(String userId) {
+    var realm = props.getRealm();
+
+    // ✅ Use your existing helper; do NOT call a non-existent keycloak()
+    UsersResource users = realm().users();
+
+    // ✅ Use the simple, stable overload that only takes List<String>
+    users.get(userId).executeActionsEmail(java.util.List.of("UPDATE_PASSWORD"));
+
+    // --- 2) Build a "Forgot password" ENTRY link (no token needed) ---
+    // This lands on Keycloak login page for your client; the user clicks "Forgot password?"
+    String publicBase = trimTrailingSlash(props.getPublicBaseUrl());
+    String redirect   = urlEncode(props.getPostActionRedirectUri());
+    String clientId   = props.getFrontendClientId();
+
+    String forgotPasswordEntryUrl =
+        publicBase + "/realms/" + realm + "/protocol/openid-connect/auth"
+        + "?client_id=" + clientId
+        + "&redirect_uri=" + redirect
+        + "&response_type=code&scope=openid";
+
+    // Optional: direct link to Account Console
+    String accountUrl = publicBase + "/realms/" + realm + "/account";
+
+    return new PasswordResetResponse(true, forgotPasswordEntryUrl, accountUrl);
+}
+
+
+    private static String trimTrailingSlash(String s) {
+        if (s == null) return "";
+        return s.endsWith("/") ? s.substring(0, s.length()-1) : s;
+    }
+    private static String urlEncode(String s) {
+        try { return java.net.URLEncoder.encode(s, java.nio.charset.StandardCharsets.UTF_8); }
+        catch (Exception e) { return s; }
     }
 
     // ---------- DELETE ----------
@@ -140,4 +195,6 @@ public class KeycloakAdminService {
             return Optional.empty();
         }
     }
+
+
 }

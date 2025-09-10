@@ -26,6 +26,9 @@ services:
     environment:
       KEYCLOAK_ADMIN: ${KEYCLOAK_ADMIN}
       KEYCLOAK_ADMIN_PASSWORD: ${KEYCLOAK_ADMIN_PASSWORD}
+      KC_HOSTNAME_URL: http://localhost:8080
+      KC_HOSTNAME_ADMIN_URL: http://localhost:8080
+      KC_HOSTNAME_STRICT: "false"
       
     ports:
       - '8080:8080'
