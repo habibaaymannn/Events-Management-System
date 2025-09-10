@@ -41,7 +41,7 @@ services:
   backend:
     container_name: ems-backend
     build:
-      context: .
+      context: ./back-end
       dockerfile: Dockerfile
     ports:
       - "8180:8180"
@@ -57,11 +57,13 @@ services:
     networks:
       - ems-network
     env_file:
-      - .env
+      - ./back-end/.env
 
   frontend:
     container_name: ems-frontend
-    build: ./front-end
+    build:
+      context: ./front-end
+      dockerfile: Dockerfile
     ports:
       - "3000:3000"
     environment:
