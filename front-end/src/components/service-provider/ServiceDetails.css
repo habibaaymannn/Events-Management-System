@@ -44,7 +44,7 @@
     text-align: center;
 }
 
-/* Sections (Details, Availability, Bookings) */
+/* Sections (Details, Availability, ServiceBookings) */
 .detail-card {
     border: 1px solid #ddd;
     border-radius: 10px;
@@ -113,7 +113,7 @@
     background-color: #5c636a;
 }
 
-/* Bookings list */
+/* ServiceBookings list */
 .bookings-list {
     display: flex;
     flex-direction: column;

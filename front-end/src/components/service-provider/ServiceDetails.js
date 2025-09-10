@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import { getServiceById } from "../../api/serviceApi";
+import { getServiceById, getServiceProviderBookings } from "../../api/serviceApi";
 import "./ServiceDetails.css";
 
 const SERVICE_CATEGORIES = [
@@ -14,7 +14,16 @@ const ServiceDetails = () => {
     const { id } = useParams();
     const navigate = useNavigate();
     const [service, setService] = useState(null);
+    const [serviceBookings, setServiceBookings] = useState([]);
+    const [serviceProviderId, setServiceProviderId] = useState(null);
     const [loading, setLoading] = useState(true);
+
+    useEffect(() => {
+        const kc = window.keycloak;
+        if (kc && kc.tokenParsed?.sub) {
+            setServiceProviderId(kc.tokenParsed.sub);
+        }
+    }, []);
 
     useEffect(() => {
         const loadService = async () => {
@@ -27,8 +36,23 @@ const ServiceDetails = () => {
                 setLoading(false);
             }
         };
+        const loadServiceBookings = async () => {
+            try {
+                if (!serviceProviderId) return;
+
+                const data = await getServiceProviderBookings(serviceProviderId);
+                // Filter bookings for this specific service
+                const bookingsForThisService = data.content.filter(booking =>
+                    booking.serviceId === parseInt(id)
+                );
+                setServiceBookings(bookingsForThisService);
+            } catch (error) {
+                console.error("Error fetching service bookings:", error);
+            }
+        };
         loadService();
-    }, [id]);
+        loadServiceBookings()
+    }, [id, serviceProviderId]);
 
     if (loading) return <p>Loading service details...</p>;
     if (!service) return <p>Service not found.</p>;
@@ -64,10 +88,10 @@ const ServiceDetails = () => {
                 {Array.isArray(service.servicesAreas) ? service.servicesAreas.join(", ") : service.location}
               </span>
                         </div>
-                        <div className="detail-item">
-                            <span className="detail-label">Availability:</span>
-                            <span className="detail-value">{service.availability}</span>
-                        </div>
+                        {/*<div className="detail-item">*/}
+                        {/*    <span className="detail-label">Availability:</span>*/}
+                        {/*    <span className="detail-value">{service.availability}</span>*/}
+                        {/*</div>*/}
                     </div>
                     <p style={{ marginTop: "12px" }}>
                         <strong>Description:</strong> {service.description ?? "No description"}
@@ -82,23 +106,28 @@ const ServiceDetails = () => {
                     </p>
                 </div>
 
-                {/* Bookings Section */}
+                {/* ServiceBookings Section */}
                 <div className="detail-card">
                     <h3>Bookings</h3>
-                    <p className="booking-count">{service.bookings?.length || 0} total bookings</p>
-                    {service.bookings && service.bookings.length > 0 ? (
+                    <p className="booking-count">{serviceBookings.length} total bookings</p>
+                    {serviceBookings.length > 0 ? (
                         <div className="bookings-list">
-                            {service.bookings.slice(0, 5).map((booking, index) => (
+                            {serviceBookings.slice(0, 5).map((booking, index) => (
                                 <div key={index} className="booking-item">
-                  <span className="booking-date">
-                    {new Date(booking.date + "T00:00:00").toLocaleDateString()}
-                  </span>
-                                    <span className="booking-user">{booking.user}</span>
+                                    <span className="booking-date">
+                                        {new Date(booking.startTime).toLocaleDateString()}
+                                    </span>
+                                    <span className="booking-user">
+                                        Booking #{booking.id || 'N/A'}
+                                    </span>
+                                    <span className={`booking-status status-${booking.status?.toLowerCase()}`}>
+                                        {booking.status}
+                                    </span>
                                 </div>
                             ))}
-                            {service.bookings.length > 5 && (
+                            {serviceBookings.length > 5 && (
                                 <p className="more-bookings">
-                                    ... and {service.bookings.length - 5} more bookings
+                                    ... and {serviceBookings.length - 5} more bookings
                                 </p>
                             )}
                         </div>

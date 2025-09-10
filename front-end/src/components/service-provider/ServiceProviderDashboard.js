@@ -6,7 +6,7 @@ import {
   respondToBookingRequest,
   getServiceById
 } from "../../api/serviceApi";
-import { updateBookingStatus } from "../../api/bookingApi";
+import { updateServiceBookingStatus } from "../../api/bookingApi";
 import { deleteService } from "../../api/serviceApi";
 import { useNavigate } from "react-router-dom";
 
@@ -108,10 +108,10 @@ const ServiceProviderDashboard = () => {
     setUpdatingRequestId(requestId); // 🔹
     try {
       if (action === 'approve') {
-        await updateBookingStatus(requestId, "ACCEPTED");
+        await updateServiceBookingStatus(requestId, "ACCEPTED");
       } else {
         const reason = prompt("Please provide a reason for rejection:") || "No reason provided";
-        await updateBookingStatus(requestId, "REJECTED", reason);
+        await updateServiceBookingStatus(requestId, "REJECTED", reason);
       }
       const updatedRequests = bookingRequests.filter(req => req.id !== requestId);
       setBookingRequests(updatedRequests);
@@ -392,6 +392,7 @@ const ServiceProviderDashboard = () => {
                 <th>Locations</th>
                 <th>Price</th>
                 <th>Availability</th>
+                <th>Bookings</th>
                 <th>Actions</th>
               </tr>
               </thead>
@@ -405,10 +406,10 @@ const ServiceProviderDashboard = () => {
               ) : (
                   services.map((s) => (
                       <tr key={s.id}
-                      style={{cursor: "pointer"}}
-                      onClick={() => handleServiceClick(s.id)}>
+                          style={{cursor: "pointer"}}
+                          onClick={() => handleServiceClick(s.id)}>
                         <td
-                            style={{ fontWeight: 600, cursor: "pointer", color: "#0d6efd" }}
+                            style={{fontWeight: 600, cursor: "pointer", color: "#0d6efd"}}
                         >
                           {s.name}
                         </td>
@@ -416,16 +417,31 @@ const ServiceProviderDashboard = () => {
                         <td>{Array.isArray(s.servicesAreas) ? s.servicesAreas.join(", ") : (s.location || "")}</td>
                         <td>${s.price ?? 0}</td>
                         <td>
-                    <span className={`status-badge ${s.availability === "AVAILABLE" ? "status-confirmed" : "status-pending"}`}>
+                    <span
+                        className={`status-badge ${s.availability === "AVAILABLE" ? "status-confirmed" : "status-pending"}`}>
                       {AVAILABILITY_OPTIONS.find((opt) => opt.key === s.availability)?.label ?? s.availability}
                     </span>
                         </td>
+                        <td>
+                          <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                navigate("/service-bookings", {state: {serviceId: s.id}});
+                              }}
+                              className="btn btn-success"
+                              style={{padding: "6px 12px", fontSize: "0.8rem"}}
+                          >
+                            View Bookings
+                          </button>
+                        </td>
                         <td onClick={(e) => e.stopPropagation()}>
-                          <div style={{ display: "flex", gap: 4 }}>
-                            <button onClick={() => handleEditService(s)} className="btn btn-warning" style={{ padding: "6px 12px", fontSize: "0.8rem" }}>
+                          <div style={{display: "flex", gap: 4}}>
+                            <button onClick={() => handleEditService(s)} className="btn btn-warning"
+                                    style={{padding: "6px 12px", fontSize: "0.8rem"}}>
                               Edit
                             </button>
-                            <button onClick={() => handleRemoveService(s.id)} className="btn btn-danger" style={{ padding: "6px 12px", fontSize: "0.8rem" }}>
+                            <button onClick={() => handleRemoveService(s.id)} className="btn btn-danger"
+                                    style={{padding: "6px 12px", fontSize: "0.8rem"}}>
                               Remove
                             </button>
                           </div>
