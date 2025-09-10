@@ -64,7 +64,7 @@ export async function deleteEvent(id) {
  * @returns {Promise<object>} - Paginated events response.
  */
 export async function getAllEvents(page = 0, size = 10) {
-  const url = buildApiUrl(`/v1/events/?page=${page}&size=${size}`);
+  const url = buildApiUrl(`/v1/events/all?page=${page}&size=${size}`);
   const response = await fetch(url, {
     method: 'GET',
     headers: getAuthHeaders(),
