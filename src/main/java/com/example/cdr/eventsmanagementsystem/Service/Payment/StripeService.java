@@ -159,7 +159,7 @@ public class StripeService {
         }
     }
 
-    public Session createCheckoutSession(String customerId, BigDecimal amount, String currency, String name, Long bookingId, String setupFutureUsage, boolean manualCapture) {
+    public Session createCheckoutSession(String customerId, BigDecimal amount, String currency, String name, Long bookingId, String setupFutureUsage, boolean manualCapture,BookingType bookingType) {
         try {
             ProductData product = ProductData.builder()
                 .setName(name)
