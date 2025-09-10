@@ -2,7 +2,7 @@ import React, { useState, useEffect } from "react";
 import { Routes, Route, useLocation } from "react-router-dom";
 import "./EventOrganizerDashboard.css";
 import { initializeAllDummyData } from "../../utils/initializeDummyData";
-import { createEvent, updateEvent } from "../../api/eventApi";
+import { createEvent, updateEvent, getAllEvents } from "../../api/eventApi";
 import { bookVenue, bookService, confirmPayment, getVenueBookingsByEventId, getServiceBookingsByEventId, cancelVenueBooking, cancelServiceBooking } from "../../api/bookingApi";
 import { getAllVenues } from "../../api/venueApi";
 import { getAllAvailableServices } from "../../api/serviceApi";
@@ -66,12 +66,30 @@ const EventOrganizerDashboard = () => {
     const stored = localStorage.getItem("organizerEvents");
     return stored ? JSON.parse(stored) : initialEvents;
   });
-  const [filter, setFilter] = useState("current");
+  const [filter, setFilter] = useState("upcoming");
 
   // Save to localStorage when data changes
   useEffect(() => {
     localStorage.setItem("organizerEvents", JSON.stringify(events));
   }, [events]);
+
+  // Load events from backend on mount
+  useEffect(() => {
+    const loadEventsFromApi = async () => {
+      try {
+        const data = await getAllEvents(0, 100);
+        const list = Array.isArray(data)
+          ? data
+          : (data?.content ?? data?.data?.content ?? []);
+        if (list && list.length >= 0) {
+          setEvents(list);
+        }
+      } catch (error) {
+        console.error("Error loading events:", error);
+      }
+    };
+    loadEventsFromApi();
+  }, []);
 
   useEffect(() => {
     const loadVenuesAndServices = async () => {
