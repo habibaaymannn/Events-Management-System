@@ -7,9 +7,11 @@ import java.util.Map;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
+import com.example.cdr.eventsmanagementsystem.Constants.RefundConstants;
+import com.example.cdr.eventsmanagementsystem.Model.Booking.BookingType;
 import com.stripe.Stripe;
 import com.stripe.exception.StripeException;
-import com.example.cdr.eventsmanagementsystem.Constants.RefundConstants;
+
 import com.stripe.model.Customer;
 import com.stripe.model.PaymentIntent;
 import com.stripe.model.PaymentMethod;
@@ -180,8 +182,8 @@ public class StripeService {
             SessionCreateParams.Builder builder = SessionCreateParams.builder()
                 .setMode(SessionCreateParams.Mode.PAYMENT)
                 .setCustomer(customerId)
-                .setSuccessUrl(paymentReturnUrl + "?session_id={CHECKOUT_SESSION_ID}")
-                .setCancelUrl(paymentReturnUrl + "?canceled=true")
+                 .setSuccessUrl(paymentReturnUrl + "?session_id={CHECKOUT_SESSION_ID}&booking_type=" + bookingType.name())
+                .setCancelUrl(paymentReturnUrl + "?canceled=true&booking_type=" + bookingType.name())
                 .addLineItem(lineItem)
                 .putAllMetadata(metadata);
 

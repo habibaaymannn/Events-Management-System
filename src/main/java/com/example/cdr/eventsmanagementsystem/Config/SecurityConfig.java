@@ -40,6 +40,8 @@ public class SecurityConfig {
             .authorizeHttpRequests(auth -> auth
                 .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll() // allow preflight
                 .requestMatchers("/v3/api-docs/**", "/swagger-ui/**", "/swagger-ui.html").permitAll()
+                .requestMatchers("/stripe/webhook").permitAll() // allow Stripe webhooks without authentication
+                .requestMatchers("/v1/payments/confirm").permitAll() // allow payment confirmation without authentication
                 .anyRequest().authenticated()
             )
             .oauth2ResourceServer(oauth2 -> oauth2.jwt()); // resource server with JWT

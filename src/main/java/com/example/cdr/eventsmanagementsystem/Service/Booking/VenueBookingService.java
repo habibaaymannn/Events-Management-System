@@ -5,6 +5,8 @@ import java.time.LocalDateTime;
 
 import com.example.cdr.eventsmanagementsystem.Service.Payment.StripeService;
 import org.springframework.context.ApplicationEventPublisher;
+
+import com.example.cdr.eventsmanagementsystem.Model.Booking.BookingType;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.security.core.Authentication;
@@ -67,6 +69,11 @@ public class VenueBookingService {
         return bookings.map(bookingMapper::toVenueBookingResponse);
     }
 
+    public Page<VenueBookingResponse> getAllVenueBookingsByEventId(Long eventId, Pageable pageable) {
+        Page<VenueBooking> bookings = bookingRepository.findByEventId(eventId, pageable);
+        return bookings.map(bookingMapper::toVenueBookingResponse);
+    }
+
     public VenueBookingResponse getBookingById(Long bookingId) {
         VenueBooking booking = bookingRepository.findById(bookingId).orElseThrow(() -> new EntityNotFoundException(BOOKING_NOT_FOUND));
         String currentUserId = AuthUtil.getCurrentUserId();
@@ -102,7 +109,8 @@ public class VenueBookingService {
                 "Venue booking for: " + venue.getName(),
                 booking.getId(),
                 SETUP_FUTURE_USAGE_ON_SESSION,
-                request.getIsCaptured() != null ? request.getIsCaptured() : false
+                request.getIsCaptured() != null ? request.getIsCaptured() : false,
+                BookingType.VENUE
         );
         booking.setStripeSessionId(session.getId());
 
