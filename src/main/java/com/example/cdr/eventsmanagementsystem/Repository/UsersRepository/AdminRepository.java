@@ -5,6 +5,9 @@ import org.springframework.stereotype.Repository;
 
 import com.example.cdr.eventsmanagementsystem.Model.User.Admin;
 
+import java.util.Optional;
+
 @Repository
 public interface AdminRepository extends JpaRepository<Admin, String> {
+    Optional<Admin> findByEmail(String email);
 }

@@ -3,7 +3,6 @@ package com.example.cdr.eventsmanagementsystem.Service.Venue;
 import com.example.cdr.eventsmanagementsystem.Model.Venue.Availability;
 import org.springframework.security.access.AccessDeniedException;
 import java.util.Objects;
-
 import jakarta.persistence.EntityNotFoundException;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
@@ -58,6 +57,11 @@ public class VenueService {
 
         Venue updatedVenue = venueRepository.save(venue);
         return venueMapper.toVenueDTO(updatedVenue);
+    }
+
+    public VenueDTO getVenueById(Long venueId) {
+        Venue venue = venueRepository.findById(venueId).orElseThrow(() -> new EntityNotFoundException("Venue not found"));
+        return venueMapper.toVenueDTO(venue);
     }
 
     @Transactional

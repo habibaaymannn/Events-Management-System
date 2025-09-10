@@ -22,41 +22,8 @@ import lombok.RequiredArgsConstructor;
 @Transactional
 @RequiredArgsConstructor
 public class AdminService {
-    private final AdminUserManagement userManagement;
     private final AdminEventManagement eventManagement;
     private final StatisticsManagement statisticsManagement;
-
-    /// let keycloak handle it
-    /// /// using admin token
-    ///
-    /// GET http://localhost:8080/admin/realms/EMS-realm/users
-    public Page<UserDetailsDto> getAllUsers(Pageable pageable) {
-        return userManagement.getAllUsers(pageable);
-    }
-
-    /// POST /admin/realms/EMS-realm/users
-    public UserDetailsDto createUser(UserCreateDto userCreateDto) {
-        return userManagement.createUser(userCreateDto);
-    }
-    /// Get the role ID:
-    /// GET /admin/realms/EMS-realm/roles/{role-name}
-    ///
-    /// Assign role to a user:
-    /// POST /admin/realms/EMS-realm/users/{user-id}/role-mappings/realm
-    public UserDetailsDto updateUserRole(String userId, String role) {
-        return userManagement.updateUserRole(userId, role);
-    }
-    /// PUT /admin/realms/EMS-realm/users/{user-id}
-    ///  "enabled": false
-    public void deactivateUser(String userId) {
-        userManagement.deactivateUser(userId);
-    }
-
-    /// PUT /admin/realms/EMS-realm/users/{user-id}/reset-password
-    public void resetPassword(String userId) {
-        // TODO: Implement password reset
-        throw new UnsupportedOperationException("Not implemented");
-    }
 
     public Page<EventDetailsDto> getAllEvents(Pageable pageable) {
         return eventManagement.getAllEvents(pageable);

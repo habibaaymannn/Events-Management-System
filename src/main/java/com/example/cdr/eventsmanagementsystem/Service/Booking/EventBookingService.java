@@ -2,6 +2,7 @@ package com.example.cdr.eventsmanagementsystem.Service.Booking;
 
 import java.time.LocalDateTime;
 
+import com.example.cdr.eventsmanagementsystem.Service.Payment.StripeService;
 import org.springframework.context.ApplicationEventPublisher;
 
 import com.example.cdr.eventsmanagementsystem.Model.Booking.BookingType;
@@ -58,7 +59,7 @@ public class EventBookingService {
     }
 
     public Page<EventBookingResponse> getAllEventBookingsByEventId(Long eventId, Pageable pageable) {
-        Page<EventBooking> bookings = bookingRepository.findByEventId(eventId, pageable);
+        Page<EventBooking> bookings = bookingRepository.findByEventIdOrderByCreatedAtDesc(eventId, pageable);
         return bookings.map(bookingMapper::toEventBookingResponse);
     }
 

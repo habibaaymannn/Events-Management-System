@@ -11,7 +11,7 @@ import com.example.cdr.eventsmanagementsystem.NotificationEvent.BookingCreation.
 import com.example.cdr.eventsmanagementsystem.NotificationEvent.BookingCreation.ServiceBookingCreated;
 import com.example.cdr.eventsmanagementsystem.NotificationEvent.BookingUpdates.ServiceBookingUpdate;
 import com.example.cdr.eventsmanagementsystem.NotificationEvent.Payment.BookingPaymentFailed;
-import com.example.cdr.eventsmanagementsystem.Service.Notifications.NotificationService;
+import com.example.cdr.eventsmanagementsystem.Service.Notifications.EmailNotificationService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.event.EventListener;
 import org.springframework.stereotype.Component;
@@ -20,7 +20,7 @@ import org.springframework.stereotype.Component;
 @RequiredArgsConstructor
 public class BookingEventListener {
 
-    private final NotificationService notificationService;
+    private final EmailNotificationService notificationService;
 
     @EventListener
     public void handleEventBookingCreated(EventBookingCreated event) {

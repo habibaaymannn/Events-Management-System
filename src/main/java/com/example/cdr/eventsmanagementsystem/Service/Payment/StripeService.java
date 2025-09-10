@@ -1,4 +1,4 @@
-package com.example.cdr.eventsmanagementsystem.Service.Booking;
+package com.example.cdr.eventsmanagementsystem.Service.Payment;
 
 import java.math.BigDecimal;
 import java.util.HashMap;
@@ -30,7 +30,7 @@ import lombok.extern.slf4j.Slf4j;
 @Slf4j
 @Service
 @RequiredArgsConstructor
-public class StripeService implements StripeServiceInterface {
+public class StripeService {
     
     @Value("${spring.stripe.api-key}")
     private String stripeApiKey;
@@ -43,7 +43,6 @@ public class StripeService implements StripeServiceInterface {
         Stripe.apiKey = stripeApiKey;
     }
 
-    @Override
     public PaymentIntent createManualCapturePaymentIntent(BigDecimal amount, String currency, String customerId, String description) {
         try {
             PaymentIntentCreateParams params = PaymentIntentCreateParams.builder()
@@ -66,7 +65,6 @@ public class StripeService implements StripeServiceInterface {
         }
     }
 
-    @Override
     public PaymentIntent retrievePaymentIntent(String paymentIntentId) {
         try {
             return PaymentIntent.retrieve(paymentIntentId);
@@ -75,7 +73,6 @@ public class StripeService implements StripeServiceInterface {
         }
     }
 
-    @Override
     public Customer createCustomer(String email, String name, String phone) {
         try {
             Map<String, Object> params = new HashMap<>();
@@ -96,8 +93,6 @@ public class StripeService implements StripeServiceInterface {
         }
     }
 
-
-    @Override
     public Refund createRefund(String paymentIntentId, BigDecimal amount, String reason) {
         try {
             Map<String, Object> params = new HashMap<>();
@@ -126,7 +121,6 @@ public class StripeService implements StripeServiceInterface {
         }
     }
 
-    @Override
     public PaymentIntent capturePaymentIntent(String paymentIntentId, BigDecimal amountToCapture) {
         try {
             PaymentIntent intent = PaymentIntent.retrieve(paymentIntentId);
@@ -139,7 +133,6 @@ public class StripeService implements StripeServiceInterface {
         }
     }
 
-    @Override
     public PaymentIntent cancelPaymentIntent(String paymentIntentId, String cancellationReason) {
         try {
             PaymentIntent intent = PaymentIntent.retrieve(paymentIntentId);
@@ -153,7 +146,6 @@ public class StripeService implements StripeServiceInterface {
         }
     }
 
-    @Override
     public void attachPaymentMethodToCustomer(String paymentMethodId, String customerId) {
         try {
             PaymentMethod paymentMethod = PaymentMethod.retrieve(paymentMethodId);
@@ -166,8 +158,7 @@ public class StripeService implements StripeServiceInterface {
         }
     }
 
-    @Override
-    public Session createCheckoutSession(String customerId, BigDecimal amount, String currency, String name, Long bookingId, String setupFutureUsage, boolean manualCapture, BookingType bookingType) {
+    public Session createCheckoutSession(String customerId, BigDecimal amount, String currency, String name, Long bookingId, String setupFutureUsage, boolean manualCapture) {
         try {
             ProductData product = ProductData.builder()
                 .setName(name)
@@ -210,7 +201,6 @@ public class StripeService implements StripeServiceInterface {
         }
     }
 
-    @Override
     public Session createSetupSession(String customerId, String userId) {
         try {
             Map<String, String> metadata = new HashMap<>();
@@ -230,7 +220,6 @@ public class StripeService implements StripeServiceInterface {
         }
     }
 
-    @Override
     public Session retrieveSession(String sessionId) {
         try {
             return Session.retrieve(sessionId);
