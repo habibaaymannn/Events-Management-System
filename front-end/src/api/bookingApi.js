@@ -1,3 +1,5 @@
+// src/api/bookingApi.js
+
 import { buildApiUrl, getAuthHeaders } from '../config/apiConfig';
 
 function unwrapApiData(json) { 

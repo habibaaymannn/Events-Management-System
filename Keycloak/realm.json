@@ -310,7 +310,18 @@
     }
   ],
 
-  "smtpServer": {},
+
+"smtpServer": {
+  "host": "smtp.gmail.com",
+  "port": "587",
+  "from": "mahmoud.smtp.test@gmail.com",
+  "fromDisplayName": "EMS",
+  "auth": "true",
+  "user": "mahmoud.smtp.test@gmail.com",
+  "password": "hpah vdtw ielf guyr",
+  "starttls": "true",
+  "ssl": "false"
+  },
   "loginTheme": "",
   "eventsEnabled": true,
   "eventsListeners": ["role-assignment-listener", "jboss-logging"]

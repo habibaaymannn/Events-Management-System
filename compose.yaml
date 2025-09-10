@@ -26,6 +26,7 @@ services:
     environment:
       KEYCLOAK_ADMIN: ${KEYCLOAK_ADMIN}
       KEYCLOAK_ADMIN_PASSWORD: ${KEYCLOAK_ADMIN_PASSWORD}
+      
     ports:
       - '8080:8080'
     volumes:
@@ -50,6 +51,15 @@ services:
       SPRING_PROFILES_ACTIVE: prod
       ISSUER_URI: http://keycloak:8080/realms/EMS-realm
       #      - SPRING_CLOUD_CONFIG_URI=http://config-server:8888
+      # Keycloak for backend (inside Docker network)
+      KEYCLOAK_BASE_URL: ${KEYCLOAK_BASE_URL}         # -> http://keycloak:8080
+      KEYCLOAK_REALM: ${KEYCLOAK_REALM}               # -> EMS-realm
+
+      # Admin mode: ROPC with realm admin user admin1/adminpass
+      KEYCLOAK_ADMIN_CLIENT_ID: ${KEYCLOAK_ADMIN_CLIENT_ID}       # admin-cli (no secret)
+      KEYCLOAK_ADMIN_CLIENT_SECRET: ${KEYCLOAK_ADMIN_CLIENT_SECRET}
+      KEYCLOAK_ADMIN_USERNAME: ${KEYCLOAK_ADMIN_USERNAME}         # admin1
+      KEYCLOAK_ADMIN_PASSWORD: ${KEYCLOAK_ADMIN_PASSWORD}    
     depends_on:
       postgres:
         condition: service_healthy

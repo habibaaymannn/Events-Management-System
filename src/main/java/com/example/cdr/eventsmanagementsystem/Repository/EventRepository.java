@@ -30,6 +30,9 @@ public interface EventRepository extends JpaRepository<Event, Long> {
 
     long countByStatus(EventStatus status);
 
+    // ADD this query method to support getFlaggedEvents():
+    Page<Event> findByFlaggedTrue(Pageable pageable);
+
     @Query("select e.type as type, count(e) as count from Event e group by e.type")
     List<EventTypeCount> countEventsByType();
 }
