@@ -3,7 +3,7 @@ package com.example.cdr.eventsmanagementsystem.Controller.AdminController;
 import com.example.cdr.eventsmanagementsystem.Constants.ControllerConstants.AdminControllerConstants;
 import com.example.cdr.eventsmanagementsystem.DTO.Admin.DashboardStatisticsDto;
 import com.example.cdr.eventsmanagementsystem.Service.User.AdminService;
-import com.example.cdr.eventsmanagementsystem.keycloak.KeycloakAdminService;
+import com.example.cdr.eventsmanagementsystem.Keycloak.KeycloakAdminService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;

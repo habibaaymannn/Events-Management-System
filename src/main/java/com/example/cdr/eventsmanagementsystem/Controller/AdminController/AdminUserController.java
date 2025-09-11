@@ -1,6 +1,6 @@
 package com.example.cdr.eventsmanagementsystem.Controller.AdminController;
 
-import com.example.cdr.eventsmanagementsystem.keycloak.KeycloakAdminService;
+import com.example.cdr.eventsmanagementsystem.Keycloak.KeycloakAdminService;
 import lombok.RequiredArgsConstructor;
 import org.keycloak.representations.idm.UserRepresentation;
 import org.springframework.http.ResponseEntity;
@@ -8,7 +8,7 @@ import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import com.example.cdr.eventsmanagementsystem.DTO.Admin.PasswordResetResponse;
-
+import com.example.cdr.eventsmanagementsystem.Email.TerminationEmailService;
 
 
 import java.util.HashMap;
@@ -22,7 +22,7 @@ import java.util.Map;
 public class AdminUserController {
 
   private final KeycloakAdminService keycloakService;
-
+  private final TerminationEmailService terminationEmailService;
   /** Request body for creating a user — includes username & password to match your UI */
   public record CreateUserRequest(
       String firstName,
@@ -104,9 +104,36 @@ public ResponseEntity<Map<String, String>> updateRole(@PathVariable String id,
 
 
   /** Delete */
-  @DeleteMapping("/users/{id}")
-  public ResponseEntity<Void> delete(@PathVariable String id) {
-    keycloakService.deleteUser(id);
-    return ResponseEntity.noContent().build();
+@DeleteMapping("/users/{id}")
+public ResponseEntity<Map<String, Object>> delete(@PathVariable String id,
+                                                  @RequestParam(defaultValue = "false") boolean notify,
+                                                  @RequestParam(required = false) String reason) {
+  // Fetch user first so we can email them
+  var userOpt = keycloakService.findById(id);
+  boolean notified = false;
+
+  if (notify && userOpt.isPresent()) {
+    var u = userOpt.get();
+    String email = u.getEmail();
+    String username = (u.getUsername() != null && !u.getUsername().isBlank())
+            ? u.getUsername()
+            : (u.getEmail() != null ? u.getEmail() : "user");
+    if (email != null && !email.isBlank()) {
+      // send mail
+      terminationEmailService.sendAccountTerminationEmail(email, username, reason);
+      notified = true;
+    }
   }
+
+  // Delete from Keycloak
+  keycloakService.deleteUser(id);
+
+  return ResponseEntity.ok(
+      java.util.Map.of(
+          "deleted", true,
+          "notified", notified
+      )
+  );
+}
+
 }

@@ -1,4 +1,4 @@
-package com.example.cdr.eventsmanagementsystem.keycloak;
+package com.example.cdr.eventsmanagementsystem.Keycloak;
 
 import lombok.Getter;
 import org.springframework.beans.factory.annotation.Value;

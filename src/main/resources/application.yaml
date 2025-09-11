@@ -3,40 +3,53 @@ spring:
     name: Events-Management-System
   profiles:
     active: dev
+
   datasource:
     username: ${DB_USERNAME}
     password: ${DB_PASSWORD}
     driver-class-name: org.postgresql.Driver
+
   mail:
     host: smtp.gmail.com
     port: 587
     username: ${MAIL_USERNAME}
     password: ${MAIL_PASSWORD}
+    protocol: smtp
     properties:
       mail:
         smtp:
           auth: true
           starttls:
             enable: true
-    protocol: smtp
+          connectiontimeout: 10000
+          timeout: 10000
+          writetimeout: 10000
+        debug: false            # set true temporarily to troubleshoot SMTP
+    test-connection: false      # set true to fail fast if SMTP creds are wrong
+
   oauth2:
     resourceserver:
       jwt:
         issuer-uri: ${ISSUER_URI}
         jwk-set-uri: ${spring.oauth2.resourceserver.jwt.issuer-uri}/protocol/openid-connect/certs
+
   stripe:
     api-key: ${SECRET_KEY}
+
 server:
   port: 8180
+
 app:
+  name: Events Management System
+  mail:
+    from: ${MAIL_FROM:${spring.mail.username}}   # default to the same Gmail sender
+  supportEmail: ${SUPPORT_EMAIL:${spring.mail.username}}  # fallback to sender
   payment:
     return-url: http://localhost:8180/v1/payments/confirm
     webhook-secret: ${STRIPE_WEBHOOK_SECRET:}
   booking:
     free-cancel-days-before-start: 1
     penalty-percent: 0.
-    
-
 
 keycloak:
   base-url: ${KEYCLOAK_BASE_URL}         # REQUIRED (dev: http://localhost:8080, docker: http://ems-keycloak:8080)
@@ -52,7 +65,7 @@ keycloak:
     client-id: ${KEYCLOAK_ADMIN_CLIENT_ID}               # REQUIRED
     client-secret: ${KEYCLOAK_ADMIN_CLIENT_SECRET:}      # optional in user/password mode
     username: ${KEYCLOAK_ADMIN_USERNAME:}                # fill if you want backend to act as admin user
-    password: ${KEYCLOAK_ADMIN_PASSWORD:}  
+    password: ${KEYCLOAK_ADMIN_PASSWORD:}
   create:
     email-verified: false
     password-temporary: false

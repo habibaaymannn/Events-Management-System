@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { getAllUsers, updateUserRole, deactivateUser, createUser, resetUserPassword, activateUser } from "../../api/adminApi";
+import { getAllUsers, updateUserRole, deactivateUser, createUser, resetUserPassword, activateUser, deleteUser } from "../../api/adminApi";
 import { getEventBookingsByAttendeeId} from "../../api/bookingApi";
 
 const UserManagement = () => {
@@ -234,6 +234,27 @@ const handleAssignRole = async (userId, newRole) => {
       setCreateLoading(false);
     }
   };
+
+
+  const handleDeleteUser = async (user) => {
+  if (!window.confirm(`Are you sure you want to permanently delete ${user.email || user.username || 'this user'}?`)) {
+    return;
+  }
+
+  const notify = window.confirm("Notify the user by email about the termination?\nOK = Notify, Cancel = Don’t notify.");
+  let reason = "";
+  if (notify) {
+    reason = window.prompt("Enter the reason to include in the email (optional):", "Violation of terms of service.");
+    if (reason == null) return; // user cancelled the prompt
+  }
+
+  try {
+    await deleteUser(user.id, { notify, reason });
+    setUsers(prev => prev.filter(u => u.id !== user.id));
+  } catch (e) {
+    alert(e.message || "Failed to delete user.");
+  }
+};
 
 
   const handleCreateFormChange = (e) => {
@@ -517,6 +538,13 @@ const handleAssignRole = async (userId, newRole) => {
                           style={{ padding: "6px 12px", fontSize: "0.8rem" }}
                         >
                           Reset Password
+                        </button>
+                        <button
+                          onClick={() => handleDeleteUser(user)}
+                          className="btn btn-outline-danger"
+                          style={{ padding: "6px 12px", fontSize: "0.8rem" }}
+                        >
+                          Delete
                         </button>
                       </div>
                     </td>
