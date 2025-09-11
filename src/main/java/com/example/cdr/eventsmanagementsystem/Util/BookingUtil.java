@@ -14,6 +14,8 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 
+import java.util.Objects;
+
 @Slf4j
 @Component
 @RequiredArgsConstructor
@@ -97,6 +99,15 @@ public class BookingUtil {
             case EVENT -> eventBookingRepository.findByStripePaymentId(paymentId);
             case VENUE -> venueBookingRepository.findByStripePaymentId(paymentId);
             case SERVICE -> serviceBookingRepository.findByStripePaymentId(paymentId);
+        };
+    }
+
+    public String mapToStripeRefundReason(String reason) {
+        return switch (reason.toLowerCase()) {
+            case "duplicate" -> "duplicate";
+            case "fraudulent" -> "fraudulent";
+            case "requested_by_customer", "customer requested cancellation" -> "requested_by_customer";
+            default -> "requested_by_customer"; // fallback for any other string
         };
     }
 }

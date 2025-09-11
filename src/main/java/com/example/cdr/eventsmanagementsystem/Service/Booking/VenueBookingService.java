@@ -4,6 +4,7 @@ import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
 import com.example.cdr.eventsmanagementsystem.Service.Payment.StripeService;
+import com.example.cdr.eventsmanagementsystem.Util.BookingUtil;
 import org.springframework.context.ApplicationEventPublisher;
 
 import com.example.cdr.eventsmanagementsystem.Model.Booking.BookingType;
@@ -53,6 +54,7 @@ public class VenueBookingService {
     private final StripeService stripeService;
     private final VenueBookingMapper bookingMapper;
     private final ApplicationEventPublisher eventPublisher;
+    private final BookingUtil bookingUtil;
 
     public Page<VenueBookingResponse> getAllVenueBookings(Pageable pageable) {
         Page<VenueBooking> bookings = bookingRepository.findAll(pageable);
@@ -164,7 +166,8 @@ public class VenueBookingService {
         }
 
         if (booking.getStripePaymentId() != null && booking.getStatus() == BookingStatus.BOOKED) {
-            stripeService.createRefund(booking.getStripePaymentId(), null, "Customer requested cancellation");
+            String stripeReason = bookingUtil.mapToStripeRefundReason(request.getReason());
+            stripeService.createRefund(booking.getStripePaymentId(), null, stripeReason);
             booking.setRefundProcessedAt(LocalDateTime.now());
         }
 

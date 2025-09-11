@@ -3,6 +3,7 @@ package com.example.cdr.eventsmanagementsystem.Service.Booking;
 import java.time.LocalDateTime;
 
 import com.example.cdr.eventsmanagementsystem.Service.Payment.StripeService;
+import com.example.cdr.eventsmanagementsystem.Util.BookingUtil;
 import org.springframework.context.ApplicationEventPublisher;
 
 import com.example.cdr.eventsmanagementsystem.Model.Booking.BookingType;
@@ -52,6 +53,7 @@ public class EventBookingService {
     private final StripeService stripeService;
     private final EventBookingMapper bookingMapper;
     private final ApplicationEventPublisher eventPublisher;
+    private final BookingUtil bookingUtil;
 
     public Page<EventBookingResponse> getAllEventBookings(Pageable pageable) {
         Page<EventBooking> bookings = bookingRepository.findAll(pageable);
@@ -168,7 +170,8 @@ public class EventBookingService {
         }
 
         if (booking.getStripePaymentId() != null && booking.getStatus() == BookingStatus.BOOKED) {
-            stripeService.createRefund(booking.getStripePaymentId(), null, "Customer requested cancellation");
+            String stripeReason = bookingUtil.mapToStripeRefundReason(request.getReason());
+            stripeService.createRefund(booking.getStripePaymentId(), null, stripeReason);
             booking.setRefundProcessedAt(LocalDateTime.now());
         }
 

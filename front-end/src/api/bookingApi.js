@@ -187,7 +187,7 @@ export async function cancelVenueBooking(bookingId, cancellationReason = "") {
     headers: getAuthHeaders(true),
     body: JSON.stringify({
       bookingId: bookingId,
-      cancellationReason: cancellationReason
+      reason: cancellationReason
     }),
   });
 
@@ -209,7 +209,7 @@ export async function cancelServiceBooking(bookingId, cancellationReason = "") {
     headers: getAuthHeaders(true),
     body: JSON.stringify({
       bookingId: bookingId,
-      cancellationReason: cancellationReason
+      reason: cancellationReason
     }),
   });
 
