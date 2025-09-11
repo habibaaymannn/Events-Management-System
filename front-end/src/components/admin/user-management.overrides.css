@@ -1,0 +1,59 @@
+/* glowy delete button */
+.btn-glow-danger {
+  background: #dc3545;
+  color: #fff;
+  border: none;
+  box-shadow: 0 0 12px rgba(220, 53, 69, 0.6), inset 0 0 2px rgba(255, 255, 255, 0.15);
+  transition: transform 0.05s ease, box-shadow 0.2s ease, filter 0.15s ease;
+}
+.btn-glow-danger:hover {
+  box-shadow: 0 0 18px rgba(220, 53, 69, 0.85), inset 0 0 3px rgba(255, 255, 255, 0.25);
+  filter: brightness(1.03);
+}
+.btn-glow-danger:active { transform: translateY(1px) scale(0.98); }
+
+/* dark orange (deactivate) */
+.btn-dark-orange {
+  background: #c05621;
+  color: #fff;
+  border: none;
+  transition: filter 0.15s ease, transform 0.05s ease;
+}
+.btn-dark-orange:hover { filter: brightness(1.05); }
+.btn-dark-orange:active { transform: translateY(1px) scale(0.99); }
+
+/* tiny toast system */
+.toast-wrap {
+  position: fixed;
+  top: 18px;
+  right: 18px;
+  z-index: 9999;
+}
+.toast {
+  min-width: 260px;
+  max-width: 420px;
+  padding: 12px 14px;
+  border-radius: 8px;
+  box-shadow: 0 8px 24px rgba(0,0,0,.12);
+  color: #fff;
+  font-weight: 600;
+}
+.toast.info { background: #3b82f6; }
+.toast.success { background: #16a34a; }
+.toast.error { background: #dc2626; }
+
+/* controls used in the delete flow */
+.delete-flow-actions {
+  display: flex;
+  gap: .5rem;
+  justify-content: flex-end;
+  margin-top: 1rem;
+}
+.delete-flow-textarea {
+  width: 100%;
+  min-height: 110px;
+  padding: 10px;
+  border: 1px solid #e2e8f0;
+  border-radius: 6px;
+  resize: vertical;
+}
