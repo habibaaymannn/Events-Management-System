@@ -13,12 +13,15 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.util.Collections;
-import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
 import com.example.cdr.eventsmanagementsystem.DTO.Admin.PasswordResetResponse;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.Set;
+import java.util.List;
+
 
 
 @Service
@@ -95,6 +98,77 @@ public class KeycloakAdminService {
         return userId;
     }
 
+
+    //  public long countUsersByUserType(String userType) {
+    //     try {
+    //         // Keycloak search-by-attribute support varies; the safe approach:
+    //         // list a reasonable page and filter client-side. For larger realms, page through.
+    //         List<UserRepresentation> page = realm().users().search("", 0, 1000);
+    //         return page.stream().filter(u -> {
+    //             Map<String, List<String>> attrs = u.getAttributes();
+    //             if (attrs == null) return false;
+    //             List<String> vals = attrs.getOrDefault("userType", Collections.emptyList());
+    //             return vals.stream().anyMatch(v -> v != null && v.equalsIgnoreCase(userType));
+    //         }).count();
+    //     } catch (Exception e) {
+    //         // log if you want: log.warn("countUsersByUserType failed", e);
+    //         return 0L;
+    //     }
+    // }
+
+
+//     ** Normalize a single role string from Keycloak user attributes.
+//  *  We prioritize the custom attribute "userType". */
+private String extractRole(UserRepresentation u) {
+    // 1) Preferred: attribute userType: ["admin" | "organizer" | "attendee" | "service_provider" | "venue_provider"]
+    if (u.getAttributes() != null) {
+        List<String> vals = u.getAttributes().get("userType");
+        if (vals != null && !vals.isEmpty() && vals.get(0) != null && !vals.get(0).isBlank()) {
+            return vals.get(0).trim().toLowerCase();
+        }
+    }
+    // 2) Fallback default — keeps your UI consistent
+    return "attendee";
+}
+
+/** Count ALL realm users quickly. */
+public long countUsers() {
+    return realm().users().count();
+}
+
+/** Count users grouped by normalized role (from userType attribute). */
+public Map<String, Long> countUsersByRole() {
+    long total = countUsers();
+    long admins = 0, organizers = 0, attendees = 0, serviceProviders = 0, venueProviders = 0;
+
+    // page through users in batches
+    final int pageSize = 100;
+    for (int offset = 0; offset < total; offset += pageSize) {
+        List<UserRepresentation> batch = realm()
+                .users()
+                .search("", offset, pageSize);
+
+        for (UserRepresentation u : batch) {
+            String role = extractRole(u);
+            switch (role) {
+                case "admin" -> admins++;
+                case "organizer" -> organizers++;
+                case "service_provider" -> serviceProviders++;
+                case "venue_provider" -> venueProviders++;
+                default -> attendees++; // treat any unknown/missing as attendee
+            }
+        }
+    }
+
+    Map<String, Long> map = new HashMap<>();
+    map.put("total", total);
+    map.put("admins", admins);
+    map.put("organizers", organizers);
+    map.put("attendees", attendees);
+    map.put("service_providers", serviceProviders);
+    map.put("venue_providers", venueProviders);
+    return map;
+}
     // ---------- UPDATE ROLE ----------
 
 
@@ -109,23 +183,33 @@ public class KeycloakAdminService {
         // no managed role found — null or a default you prefer:
         return null;
     }
-    public void updateUserRole(String userId, String targetRealmRole) {
-        UserResource u = realm().users().get(userId);
-        List<RoleRepresentation> current = u.roles().realmLevel().listAll();
+public UserRepresentation updateUserRole(String userId, String targetRealmRole) {
+    UserResource u = realm().users().get(userId);
 
-        // Only remove roles that you manage
-        List<RoleRepresentation> managed = current.stream()
-                .filter(rr -> isManagedRole(rr.getName()))
-                .collect(Collectors.toList());
-        if (!managed.isEmpty()) {
-            u.roles().realmLevel().remove(managed);
-        }
-
-        if (targetRealmRole != null && !targetRealmRole.isBlank()) {
-            RoleRepresentation rr = realm().roles().get(targetRealmRole).toRepresentation();
-            u.roles().realmLevel().add(Collections.singletonList(rr));
-        }
+    // Remove any managed roles, then add the target
+    List<RoleRepresentation> current = u.roles().realmLevel().listAll();
+    List<RoleRepresentation> managed = current.stream()
+            .filter(rr -> isManagedRole(rr.getName()))
+            .toList();
+    if (!managed.isEmpty()) {
+        u.roles().realmLevel().remove(managed);
     }
+    if (targetRealmRole != null && !targetRealmRole.isBlank()) {
+        RoleRepresentation rr = realm().roles().get(targetRealmRole).toRepresentation();
+        u.roles().realmLevel().add(java.util.List.of(rr));
+    }
+
+    // Mirror into the userType attribute so your list shows the new role
+    UserRepresentation rep = u.toRepresentation();
+    java.util.Map<String, java.util.List<String>> attrs = rep.getAttributes();
+    if (attrs == null) attrs = new java.util.HashMap<>();
+    attrs.put("userType", java.util.List.of(targetRealmRole));
+    rep.setAttributes(attrs);
+    u.update(rep);
+
+    return u.toRepresentation();
+}
+
 
     private boolean isManagedRole(String name) {
         return List.of("admin", "organizer", "attendee", "service_provider", "venue_provider").contains(name);
