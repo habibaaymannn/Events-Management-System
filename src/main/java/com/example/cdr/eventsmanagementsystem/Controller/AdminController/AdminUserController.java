@@ -75,11 +75,12 @@ public class AdminUserController {
   }
 
   /** Update a user’s role (query param) */
-  @PutMapping("/users/{id}/role")
-  public ResponseEntity<Void> updateRole(@PathVariable String id, @RequestParam String role) {
-    keycloakService.updateUserRole(id, role);
-    return ResponseEntity.ok().build();
-  }
+@PutMapping("/users/{id}/role")
+public ResponseEntity<Map<String, String>> updateRole(@PathVariable String id,
+                                                      @RequestParam String role) {
+    keycloakService.updateUserRole(id, role);  // this updates KC (and your userType attr if you added that)
+    return ResponseEntity.ok(java.util.Map.of("role", role));
+}
 
   /** Deactivate / Activate */
   @PostMapping("/users/{id}/deactivate")

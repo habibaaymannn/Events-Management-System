@@ -80,14 +80,18 @@ const UserManagement = () => {
     loadUsers();
   }, []);
 
-  const loadUsers = async () => {
-    try {
-      const response = await getAllUsers(0, 100); // adjust page/size as needed
-      setUsers(response.content || []);
-    } catch (error) {
-      // Handle error
-    }
-  };
+const loadUsers = async () => {
+  try {
+    const response = await getAllUsers(0, 100);
+    const normalized = (response.content || []).map(u => ({
+      ...u,
+      role: u.role || u.attributes?.userType?.[0] || 'attendee',
+    }));
+    setUsers(normalized);
+  } catch (error) {
+    // Handle error
+  }
+};
 
   const handleDeactivateUser = async (userId) => {
     try {
@@ -148,15 +152,31 @@ const handleResetPassword = async (userId) => {
 const handleAssignRole = async (userId, newRole) => {
   try {
     const backendRole = mapFrontendRoleToBackend(newRole);
-    await updateUserRole(userId, backendRole);
-    // Optimistic local update so the select + details reflect immediately
-    setUsers(prev => prev.map(u => u.id === userId ? { ...u, role: backendRole } : u));
-    // (Optional) then still refresh from server
-    // await loadUsers();
+    const data = await updateUserRole(userId, backendRole); // returns {role} or full user
+
+    const confirmedRole =
+      data?.role ||
+      data?.attributes?.userType?.[0] ||
+      backendRole;
+
+    setUsers(prev =>
+      prev.map(u =>
+        u.id === userId
+          ? {
+              ...u,
+              role: confirmedRole,
+              // keep compatibility if the list reads attributes.userType
+              attributes: { ...(u.attributes || {}), userType: [confirmedRole] }
+            }
+          : u
+      )
+    );
   } catch (error) {
     console.error("Error updating user role:", error);
+    // optionally show a toast
   }
 };
+
 
 
   const handleViewUserDetails = async (user) => {
