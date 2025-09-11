@@ -2,6 +2,8 @@ import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { getAllUsers, updateUserRole, deactivateUser, createUser, resetUserPassword, activateUser, deleteUser } from "../../api/adminApi";
 import { getEventBookingsByAttendeeId} from "../../api/bookingApi";
+import "./user-management.overrides.css";
+
 
 const UserManagement = () => {
   const navigate = useNavigate();
@@ -9,6 +11,55 @@ const UserManagement = () => {
   const [selectedUser, setSelectedUser] = useState(null);
   const [userBookings, setUserBookings] = useState([]);
   const [showCreateForm, setShowCreateForm] = useState(false);
+
+  // toast
+  const [toast, setToast] = useState(null);
+  const showToast = (msg, type = 'info') => {
+    setToast({ msg, type });
+    setTimeout(() => setToast(null), 3000);
+  };
+
+  // delete flow
+  const [deleteFlow, setDeleteFlow] = useState({
+    open: false,
+    step: 'confirm', // 'confirm' | 'notify' | 'reason'
+    user: null,
+    notify: false,
+    reason: 'Violation of terms of service.'
+  });
+
+  const startDeleteFlow = (user) => {
+    setDeleteFlow({
+      open: true,
+      step: 'confirm',
+      user,
+      notify: false,
+      reason: 'Violation of terms of service.'
+    });
+  };
+  const closeDeleteFlow = () => setDeleteFlow(df => ({ ...df, open: false }));
+
+  const proceedFromConfirm = () =>
+    setDeleteFlow(df => ({ ...df, step: 'notify' }));
+
+  const chooseNotify = (notify) => {
+    if (!notify) {
+      performDelete(false, '');
+    } else {
+      setDeleteFlow(df => ({ ...df, notify: true, step: 'reason' }));
+    }
+  };
+
+  const performDelete = async (notify, reason) => {
+    try {
+      await deleteUser(deleteFlow.user.id, { notify, reason });
+      setUsers(prev => prev.filter(u => u.id !== deleteFlow.user.id));
+      closeDeleteFlow();
+      showToast(`Deleted ${deleteFlow.user.email || deleteFlow.user.username}${notify ? ' (user notified)' : ''}`, 'success');
+    } catch (e) {
+      showToast(e.message || 'Failed to delete user.', 'error');
+    }
+  };
 
   const [createFormData, setCreateFormData] = useState({
     firstName: '',
@@ -524,13 +575,14 @@ const handleAssignRole = async (userId, newRole) => {
                         >
                           View Details
                         </button>
-                        <button
+                      <button
                         onClick={() => user.enabled !== false ? handleDeactivateUser(user.id) : handleActivateUser(user.id)}
-                        className={`btn ${user.enabled !== false ? 'btn-danger' : 'btn-success'}`}
+                        className={`btn ${user.enabled !== false ? 'btn-dark-orange' : 'btn-success'}`}
                         style={{ padding: "6px 12px", fontSize: "0.8rem" }}
                       >
                         {user.enabled !== false ? 'Deactivate' : 'Activate'}
                       </button>
+
 
                         <button
                           onClick={() => handleResetPassword(user.id)}
@@ -539,13 +591,14 @@ const handleAssignRole = async (userId, newRole) => {
                         >
                           Reset Password
                         </button>
-                        <button
-                          onClick={() => handleDeleteUser(user)}
-                          className="btn btn-outline-danger"
-                          style={{ padding: "6px 12px", fontSize: "0.8rem" }}
-                        >
-                          Delete
-                        </button>
+                          <button
+                            onClick={() => startDeleteFlow(user)}
+                            className="btn btn-glow-danger"
+                            style={{ padding: "6px 12px", fontSize: "0.8rem" }}
+                          >
+                            Delete
+                          </button>
+
                       </div>
                     </td>
                   </tr>
@@ -556,6 +609,8 @@ const handleAssignRole = async (userId, newRole) => {
         </div>
       </div>
 
+
+      
       {/* User Details Modal */}
       {selectedUser && (
         <div className="modal-overlay" onClick={() => setSelectedUser(null)}>
@@ -627,6 +682,94 @@ const handleAssignRole = async (userId, newRole) => {
           </div>
         </div>
       )}
+
+            {/* Delete Flow Modal */}
+      {deleteFlow.open && (
+        <div className="modal-overlay" onClick={closeDeleteFlow}>
+          <div className="modal-content" onClick={(e) => e.stopPropagation()}>
+            {deleteFlow.step === 'confirm' && (
+              <>
+                <div className="modal-header">
+                  <h4>Delete User</h4>
+                  <button className="modal-close" onClick={closeDeleteFlow}>×</button>
+                </div>
+                <div style={{ padding: '1.5rem' }}>
+                  <p>
+                    Are you sure you want to permanently delete{' '}
+                    <strong>{deleteFlow.user?.email || deleteFlow.user?.username || 'this user'}</strong>?
+                  </p>
+                  <div className="delete-flow-actions">
+                    <button className="btn btn-secondary" onClick={closeDeleteFlow}>No</button>
+                    <button className="btn btn-glow-danger" onClick={proceedFromConfirm}>Yes, delete</button>
+                  </div>
+                </div>
+              </>
+            )}
+
+            {deleteFlow.step === 'notify' && (
+              <>
+                <div className="modal-header">
+                  <h4>Notify the user?</h4>
+                  <button className="modal-close" onClick={closeDeleteFlow}>×</button>
+                </div>
+                <div style={{ padding: '1.5rem' }}>
+                  <p>Would you like to send an email informing the user that their account was terminated?</p>
+                  <div className="delete-flow-actions">
+                    <button className="btn btn-secondary" onClick={closeDeleteFlow}>Cancel</button>
+                    <button className="btn btn-outline-secondary" onClick={() => chooseNotify(false)}>Don’t notify</button>
+                    <button className="btn btn-primary" onClick={() => chooseNotify(true)}>Notify</button>
+                  </div>
+                </div>
+              </>
+            )}
+
+            {deleteFlow.step === 'reason' && (
+              <>
+                <div className="modal-header">
+                  <h4>Reason (optional)</h4>
+                  <button className="modal-close" onClick={closeDeleteFlow}>×</button>
+                </div>
+                <div style={{ padding: '1.5rem' }}>
+                  <p style={{ marginBottom: 8 }}>
+                    Enter a reason to include in the email. A default is provided:
+                  </p>
+                  <textarea
+                    className="delete-flow-textarea"
+                    value={deleteFlow.reason}
+                    onChange={(e) => setDeleteFlow(df => ({ ...df, reason: e.target.value }))}
+                    placeholder="e.g. Violation of terms of service."
+                  />
+                  <div className="delete-flow-actions">
+                    <button className="btn btn-secondary" onClick={closeDeleteFlow}>Cancel</button>
+                    <button
+                      className="btn btn-outline-secondary"
+                      onClick={() => performDelete(true, '')}
+                    >
+                      Skip reason &amp; delete
+                    </button>
+                    <button
+                      className="btn btn-glow-danger"
+                      onClick={() => performDelete(true, deleteFlow.reason || '')}
+                    >
+                      Send &amp; delete
+                    </button>
+                  </div>
+                </div>
+              </>
+            )}
+          </div>
+        </div>
+      )}
+
+            {/* Toasts */}
+      {toast && (
+        <div className="toast-wrap">
+          <div className={`toast ${toast.type}`}>{toast.msg}</div>
+        </div>
+      )}
+
+
+
     </div>
   );
 
