@@ -130,11 +130,24 @@ export async function activateUser(userId) {
   if (!r.ok) throw new Error(`Failed to activate user: ${r.statusText}`);
 }
 
-export async function deleteUser(userId) {
-  const url = buildApiUrl(`/v1/admin/users/${userId}`);
-  const r = await fetch(url, { method: "DELETE", headers: getAuthHeaders(true) });
-  if (!r.ok) throw new Error(`Failed to delete user: ${r.statusText}`);
+export async function deleteUser(userId, { notify = false, reason = "" } = {}) {
+  const qs = new URLSearchParams();
+  if (notify) qs.set("notify", "true");
+  if (notify && reason) qs.set("reason", reason);
+
+  const url = buildApiUrl(`/v1/admin/users/${encodeURIComponent(userId)}${qs.toString() ? "?" + qs.toString() : ""}`);
+  const res = await fetch(url, {
+    method: "DELETE",
+    headers: getAuthHeaders(true),
+  });
+  if (!res.ok) {
+    const msg = await res.text();
+    throw new Error(msg || `Failed to delete user: ${res.status} ${res.statusText}`);
+  }
+  const ct = res.headers.get("content-type") || "";
+  return ct.includes("application/json") ? res.json() : { deleted: true, notified: notify };
 }
+
 
 /**
  * Flag an event via the admin endpoint.

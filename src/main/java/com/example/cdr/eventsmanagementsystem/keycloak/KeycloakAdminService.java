@@ -1,4 +1,4 @@
-package com.example.cdr.eventsmanagementsystem.keycloak;
+package com.example.cdr.eventsmanagementsystem.Keycloak;
 
 import jakarta.annotation.PreDestroy;
 import jakarta.ws.rs.core.Response;
