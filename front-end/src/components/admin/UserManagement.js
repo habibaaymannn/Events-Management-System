@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { getAllUsers, updateUserRole, deactivateUser, createUser, resetUserPassword, activateUser, deleteUser } from "../../api/adminApi";
-import { getEventBookingsByAttendeeId} from "../../api/bookingApi";
+import { getBookingsByAttendeeId} from "../../api/bookingApi";
 import "./user-management.overrides.css";
 
 
@@ -236,7 +236,7 @@ const handleAssignRole = async (userId, newRole) => {
       
       // If user is an attendee, load their bookings
       if (user.role === 'attendee') {
-        const bookings = await getEventBookingsByAttendeeId(user.id);
+        const bookings = await getBookingsByAttendeeId(user.id);
         setUserBookings(bookings);
       } else {
         setUserBookings([]);
