@@ -61,10 +61,111 @@ const UserManagement = () => {
     }
   };
 
+
+  // toast
+  const [toast, setToast] = useState(null);
+  const showToast = (msg, type = 'info') => {
+    setToast({ msg, type });
+    setTimeout(() => setToast(null), 3000);
+  };
+
+  // delete flow
+  const [deleteFlow, setDeleteFlow] = useState({
+    open: false,
+    step: 'confirm', // 'confirm' | 'notify' | 'reason'
+    user: null,
+    notify: false,
+    reason: 'Violation of terms of service.'
+  });
+
+  const startDeleteFlow = (user) => {
+    setDeleteFlow({
+      open: true,
+      step: 'confirm',
+      user,
+      notify: false,
+      reason: 'Violation of terms of service.'
+    });
+  };
+  const closeDeleteFlow = () => setDeleteFlow(df => ({ ...df, open: false }));
+
+  const proceedFromConfirm = () =>
+    setDeleteFlow(df => ({ ...df, step: 'notify' }));
+
+  const chooseNotify = (notify) => {
+    if (!notify) {
+      performDelete(false, '');
+    } else {
+      setDeleteFlow(df => ({ ...df, notify: true, step: 'reason' }));
+    }
+  };
+
+  const performDelete = async (notify, reason) => {
+    try {
+      await deleteUser(deleteFlow.user.id, { notify, reason });
+      setUsers(prev => prev.filter(u => u.id !== deleteFlow.user.id));
+      closeDeleteFlow();
+      showToast(`Deleted ${deleteFlow.user.email || deleteFlow.user.username}${notify ? ' (user notified)' : ''}`, 'success');
+    } catch (e) {
+      showToast(e.message || 'Failed to delete user.', 'error');
+    }
+  };
+
   const [createFormData, setCreateFormData] = useState({
     firstName: '',
     lastName: '',
     email: '',
+    role: 'attendee',
+    username: '',
+    password: '',
+  });
+
+  const [errors, setErrors] = useState({});
+  const onChange = (e) => {
+    const { name, value } = e.target;
+    setCreateFormData((f) => ({ ...f, [name]: value }));
+  };
+  const [showPassword, setShowPassword] = useState(false);
+
+
+
+ const validate = () => {
+   const e = {};
+   if (!createFormData.firstName.trim()) e.firstName = 'Required';
+   if (!createFormData.lastName.trim()) e.lastName = 'Required';
+   if (!createFormData.username.trim()) e.username = 'Required';
+   if (!createFormData.password || createFormData.password.length < 8) e.password = 'Min 8 characters';
+   if (!createFormData.email.trim()) e.email = 'Required';
+   setErrors(e);
+   return Object.keys(e).length === 0;
+ };
+
+//  const handleSubmit = async (ev) => {
+//     ev.preventDefault();
+//     if (!validate()) return;
+
+//     await createUser({
+//       firstName: form.firstName.trim(),
+//       lastName: form.lastName.trim(),
+//       email: form.email.trim() || null,
+//       role: form.role,
+//       username: form.username.trim(),
+//       password: form.password,
+//     });
+
+//     // reset
+//     setForm({
+//       firstName: '',
+//       lastName: '',
+//       email: '',
+//       role: 'Organizer',
+//       username: '',
+//       password: '',
+//     });
+//   };
+
+
+
     role: 'attendee',
     username: '',
     password: '',
@@ -143,6 +244,18 @@ const loadUsers = async () => {
     // Handle error
   }
 };
+const loadUsers = async () => {
+  try {
+    const response = await getAllUsers(0, 100);
+    const normalized = (response.content || []).map(u => ({
+      ...u,
+      role: u.role || u.attributes?.userType?.[0] || 'attendee',
+    }));
+    setUsers(normalized);
+  } catch (error) {
+    // Handle error
+  }
+};
 
   const handleDeactivateUser = async (userId) => {
     try {
@@ -152,6 +265,27 @@ const loadUsers = async () => {
       // Handle error
     }
   };
+
+const handleResetPassword = async (userId) => {
+  if (!window.confirm("Send password reset email to this user?")) return;
+  try {
+    const res = await resetUserPassword(userId);
+    const msg = [
+      "✅ Reset email sent via Keycloak.",
+      "",
+      "If the user can’t find the email, share this link so they can trigger reset from the login screen:",
+      res.forgotPasswordEntryUrl,
+      "",
+      "They can also manage their account here:",
+      res.accountUrl
+    ].join("\n");
+    // You can replace with a nice modal/toast; this is quick:
+    window.prompt("Copy this info (Ctrl+C):", msg);
+  } catch (e) {
+    alert(e.message || "Failed to send reset email");
+  }
+};
+
 
 const handleResetPassword = async (userId) => {
   if (!window.confirm("Send password reset email to this user?")) return;
@@ -229,6 +363,36 @@ const handleAssignRole = async (userId, newRole) => {
 };
 
 
+// UserManagement.js
+const handleAssignRole = async (userId, newRole) => {
+  try {
+    const backendRole = mapFrontendRoleToBackend(newRole);
+    const data = await updateUserRole(userId, backendRole); // returns {role} or full user
+
+    const confirmedRole =
+      data?.role ||
+      data?.attributes?.userType?.[0] ||
+      backendRole;
+
+    setUsers(prev =>
+      prev.map(u =>
+        u.id === userId
+          ? {
+              ...u,
+              role: confirmedRole,
+              // keep compatibility if the list reads attributes.userType
+              attributes: { ...(u.attributes || {}), userType: [confirmedRole] }
+            }
+          : u
+      )
+    );
+  } catch (error) {
+    console.error("Error updating user role:", error);
+    // optionally show a toast
+  }
+};
+
+
 
   const handleViewUserDetails = async (user) => {
     try {
@@ -256,17 +420,30 @@ const handleAssignRole = async (userId, newRole) => {
 };
 
 
+  const handleActivateUser = async (userId) => {
+  try {
+    await activateUser(userId);
+    loadUsers();
+  } catch (error) { /* show toast */ }
+};
+
+
+ const handleCreateUser = async (e) => {
  const handleCreateUser = async (e) => {
     e.preventDefault();
+    if (!validate()) return;  
     if (!validate()) return;  
     setCreateLoading(true);
     setCreateError('');
     try {
       const backendRole = mapFrontendRoleToBackend(createFormData.role);
       const payload = {
+      const payload = {
         ...createFormData,
         role: backendRole
+        role: backendRole
       };
+      const newUser = await createUser(payload);
       const newUser = await createUser(payload);
       setShowCreateForm(false);
       setCreateFormData({
@@ -276,8 +453,12 @@ const handleAssignRole = async (userId, newRole) => {
         role: 'attendee',
         username: '',
         password: ''
+        role: 'attendee',
+        username: '',
+        password: ''
       });
       loadUsers();
+      alert(`User created successfully!`);
       alert(`User created successfully!`);
     } catch (error) {
       setCreateError(error.message);
@@ -285,6 +466,28 @@ const handleAssignRole = async (userId, newRole) => {
       setCreateLoading(false);
     }
   };
+
+
+  const handleDeleteUser = async (user) => {
+  if (!window.confirm(`Are you sure you want to permanently delete ${user.email || user.username || 'this user'}?`)) {
+    return;
+  }
+
+  const notify = window.confirm("Notify the user by email about the termination?\nOK = Notify, Cancel = Don’t notify.");
+  let reason = "";
+  if (notify) {
+    reason = window.prompt("Enter the reason to include in the email (optional):", "Violation of terms of service.");
+    if (reason == null) return; // user cancelled the prompt
+  }
+
+  try {
+    await deleteUser(user.id, { notify, reason });
+    setUsers(prev => prev.filter(u => u.id !== user.id));
+  } catch (e) {
+    alert(e.message || "Failed to delete user.");
+  }
+};
+
 
 
   const handleDeleteUser = async (user) => {
@@ -480,6 +683,56 @@ const handleAssignRole = async (userId, newRole) => {
                   </small>
                 </div>
               </div>
+              {/* Username & Password */}
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem', marginBottom: '1rem' }}>
+                <div>
+                  <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: 'bold' }}>
+                    Username *
+                  </label>
+                  <input
+                    type="text"
+                    name="username"
+                    value={createFormData.username}
+                    onChange={handleCreateFormChange}
+                    className="form-control"
+                    required
+                    autoComplete="username"
+                    style={{ width: '100%', padding: '0.5rem', border: '1px solid #ccc', borderRadius: '4px' }}
+                  />
+                  {errors.username && <small style={{ color: '#c00' }}>{errors.username}</small>}
+                </div>
+
+                <div>
+                  <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: 'bold' }}>
+                    Password *
+                  </label>
+                  <div style={{ display: 'flex', gap: '0.5rem' }}>
+                    <input
+                      type={showPassword ? 'text' : 'password'}
+                      name="password"
+                      value={createFormData.password}
+                      onChange={handleCreateFormChange}
+                      className="form-control"
+                      required
+                      minLength={8}
+                      autoComplete="new-password"
+                      style={{ flex: 1, padding: '0.5rem', border: '1px solid #ccc', borderRadius: '4px' }}
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowPassword(v => !v)}
+                      className="btn btn-outline-secondary"
+                      title={showPassword ? 'Hide password' : 'Show password'}
+                    >
+                      {showPassword ? 'Hide' : 'Show'}
+                    </button>
+                  </div>
+                  {errors.password && <small style={{ color: '#c00' }}>{errors.password}</small>}
+                  <small style={{ display: 'block', color: '#6c757d', marginTop: '0.25rem' }}>
+                    Minimum 8 characters.
+                  </small>
+                </div>
+              </div>
 
               <div style={{ 
                 backgroundColor: '#d1ecf1', 
@@ -489,6 +742,7 @@ const handleAssignRole = async (userId, newRole) => {
                 marginBottom: '1.5rem',
                 fontSize: '0.9rem'
               }}>
+                <strong>Note:</strong> We now collect a real password and send it to the backend. 
                 <strong>Note:</strong> We now collect a real password and send it to the backend. 
               </div>
 
@@ -584,6 +838,15 @@ const handleAssignRole = async (userId, newRole) => {
                       </button>
 
 
+                      <button
+                        onClick={() => user.enabled !== false ? handleDeactivateUser(user.id) : handleActivateUser(user.id)}
+                        className={`btn ${user.enabled !== false ? 'btn-dark-orange' : 'btn-success'}`}
+                        style={{ padding: "6px 12px", fontSize: "0.8rem" }}
+                      >
+                        {user.enabled !== false ? 'Deactivate' : 'Activate'}
+                      </button>
+
+
                         <button
                           onClick={() => handleResetPassword(user.id)}
                           className="btn btn-secondary"
@@ -591,6 +854,14 @@ const handleAssignRole = async (userId, newRole) => {
                         >
                           Reset Password
                         </button>
+                          <button
+                            onClick={() => startDeleteFlow(user)}
+                            className="btn btn-glow-danger"
+                            style={{ padding: "6px 12px", fontSize: "0.8rem" }}
+                          >
+                            Delete
+                          </button>
+
                           <button
                             onClick={() => startDeleteFlow(user)}
                             className="btn btn-glow-danger"
@@ -608,6 +879,9 @@ const handleAssignRole = async (userId, newRole) => {
           </table>
         </div>
       </div>
+
+
+      
 
 
       
@@ -639,6 +913,7 @@ const handleAssignRole = async (userId, newRole) => {
                 </div>
               </div>
 
+              {selectedUser.role === 'attendee' && (
               {selectedUser.role === 'attendee' && (
                 <div style={{ marginBottom: '1.5rem' }}>
                   <h5 style={{ color: '#2c3e50', marginBottom: '1rem' }}>
@@ -682,6 +957,94 @@ const handleAssignRole = async (userId, newRole) => {
           </div>
         </div>
       )}
+
+            {/* Delete Flow Modal */}
+      {deleteFlow.open && (
+        <div className="modal-overlay" onClick={closeDeleteFlow}>
+          <div className="modal-content" onClick={(e) => e.stopPropagation()}>
+            {deleteFlow.step === 'confirm' && (
+              <>
+                <div className="modal-header">
+                  <h4>Delete User</h4>
+                  <button className="modal-close" onClick={closeDeleteFlow}>×</button>
+                </div>
+                <div style={{ padding: '1.5rem' }}>
+                  <p>
+                    Are you sure you want to permanently delete{' '}
+                    <strong>{deleteFlow.user?.email || deleteFlow.user?.username || 'this user'}</strong>?
+                  </p>
+                  <div className="delete-flow-actions">
+                    <button className="btn btn-secondary" onClick={closeDeleteFlow}>No</button>
+                    <button className="btn btn-glow-danger" onClick={proceedFromConfirm}>Yes, delete</button>
+                  </div>
+                </div>
+              </>
+            )}
+
+            {deleteFlow.step === 'notify' && (
+              <>
+                <div className="modal-header">
+                  <h4>Notify the user?</h4>
+                  <button className="modal-close" onClick={closeDeleteFlow}>×</button>
+                </div>
+                <div style={{ padding: '1.5rem' }}>
+                  <p>Would you like to send an email informing the user that their account was terminated?</p>
+                  <div className="delete-flow-actions">
+                    <button className="btn btn-secondary" onClick={closeDeleteFlow}>Cancel</button>
+                    <button className="btn btn-outline-secondary" onClick={() => chooseNotify(false)}>Don’t notify</button>
+                    <button className="btn btn-primary" onClick={() => chooseNotify(true)}>Notify</button>
+                  </div>
+                </div>
+              </>
+            )}
+
+            {deleteFlow.step === 'reason' && (
+              <>
+                <div className="modal-header">
+                  <h4>Reason (optional)</h4>
+                  <button className="modal-close" onClick={closeDeleteFlow}>×</button>
+                </div>
+                <div style={{ padding: '1.5rem' }}>
+                  <p style={{ marginBottom: 8 }}>
+                    Enter a reason to include in the email. A default is provided:
+                  </p>
+                  <textarea
+                    className="delete-flow-textarea"
+                    value={deleteFlow.reason}
+                    onChange={(e) => setDeleteFlow(df => ({ ...df, reason: e.target.value }))}
+                    placeholder="e.g. Violation of terms of service."
+                  />
+                  <div className="delete-flow-actions">
+                    <button className="btn btn-secondary" onClick={closeDeleteFlow}>Cancel</button>
+                    <button
+                      className="btn btn-outline-secondary"
+                      onClick={() => performDelete(true, '')}
+                    >
+                      Skip reason &amp; delete
+                    </button>
+                    <button
+                      className="btn btn-glow-danger"
+                      onClick={() => performDelete(true, deleteFlow.reason || '')}
+                    >
+                      Send &amp; delete
+                    </button>
+                  </div>
+                </div>
+              </>
+            )}
+          </div>
+        </div>
+      )}
+
+            {/* Toasts */}
+      {toast && (
+        <div className="toast-wrap">
+          <div className={`toast ${toast.type}`}>{toast.msg}</div>
+        </div>
+      )}
+
+
+
 
             {/* Delete Flow Modal */}
       {deleteFlow.open && (
