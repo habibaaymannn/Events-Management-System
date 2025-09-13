@@ -3,7 +3,16 @@ import { Routes, Route, useLocation } from "react-router-dom";
 import "./EventOrganizerDashboard.css";
 import { initializeAllDummyData } from "../../utils/initializeDummyData";
 import { createEvent, updateEvent, getAllEvents } from "../../api/eventApi";
-import { bookVenue, bookService, confirmPayment, getVenueBookingsByEventId, getServiceBookingsByEventId, cancelVenueBooking, cancelServiceBooking } from "../../api/bookingApi";
+import {
+  bookVenue,
+  bookService,
+  confirmPayment,
+  getVenueBookingsByEventId,
+  getServiceBookingsByEventId,
+  cancelVenueBooking,
+  cancelServiceBooking,
+  createServicePaymentSession
+} from "../../api/bookingApi";
 import { getAllVenues } from "../../api/venueApi";
 import { getAllAvailableServices } from "../../api/serviceApi";
 
@@ -611,7 +620,7 @@ const EventOrganizerDashboard = () => {
   // Handle service selection and booking
   const handleServiceSelection = async (service) => {
     if (!selectedEventForBooking) return;
-    
+
     try {
       const bookingData = {
         startTime: selectedEventForBooking.startTime,
@@ -624,7 +633,7 @@ const EventOrganizerDashboard = () => {
       };
 
       const result = await bookService(bookingData);
-      
+
       // Redirect to Stripe payment URL
       if (result.paymentUrl) {
         // Store the booking info for when user returns from Stripe
@@ -644,7 +653,7 @@ const EventOrganizerDashboard = () => {
           getVenueBookingsByEventId(selectedEventForBooking.id).catch(() => []),
           getServiceBookingsByEventId(selectedEventForBooking.id).catch(() => [])
         ]);
-        
+
         setEventBookings(prev => ({
           ...prev,
           [selectedEventForBooking.id]: {
@@ -715,6 +724,25 @@ const EventOrganizerDashboard = () => {
   };
 
   const isMainDashboard = location.pathname === '/organizer' || location.pathname === '/organizer/';
+
+  const handlePayNow = async (booking) => {
+    try {
+      // Call backend to create Stripe session
+      const paymentUrl = await createServicePaymentSession(booking.id);
+
+      // Store booking info for redirect back
+      localStorage.setItem('pendingServiceBooking', JSON.stringify({
+        bookingId: booking.id,
+        bookingType: 'SERVICE'
+      }));
+      // Redirect to Stripe
+      window.location.href = paymentUrl;
+
+    } catch (error) {
+      console.error("Error creating payment session:", error);
+      alert("Failed to initiate payment. Please try again.");
+    }
+  };
 
   return (
     <div style={{ width: '98vw', maxWidth: '98vw', margin: "10px auto", padding: '0 10px' }}>
@@ -1118,48 +1146,42 @@ const EventOrganizerDashboard = () => {
                 
                 <div style={{ display: 'grid', gap: '1rem', maxHeight: '400px', overflowY: 'auto' }}>
                   {selectedServiceBookings.map(booking => (
-                    <div key={booking.id} className="card" style={{ padding: '1rem', border: '1px solid #e9ecef' }}>
-                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                        <div>
-                          <h6 style={{ margin: 0, color: '#2c3e50' }}>Service ID: {booking.serviceId}</h6>
-                          <p style={{ margin: '0.25rem 0', color: '#6c757d', fontSize: '0.9rem' }}>
-                            Status: <span className={`status-badge status-${booking.status?.toLowerCase()}`}>{booking.status}</span>
-                          </p>
-                          <p style={{ margin: '0.25rem 0', color: '#6c757d', fontSize: '0.9rem' }}>
-                            Amount: ${booking.amount}
-                          </p>
-                          {booking.stripePaymentId && (
-                            <p style={{ margin: '0.25rem 0', color: '#6c757d', fontSize: '0.8rem' }}>
-                              Payment ID: {booking.stripePaymentId}
-                            </p>
-                          )}
-                        </div>
-                        <div>
-                          <button
-                            className="btn btn-danger"
-                            onClick={() => {
-                              if (window.confirm('Are you sure you want to cancel this service booking? This action cannot be undone.')) {
-                                const bid = booking?.id ?? booking?.bookingId ?? booking?.bookingID;
-                                handleCancelServiceBooking(bid);
-                              }
-                            }}
-                            disabled={booking.status === 'CANCELLED'}
-                            style={{ padding: '4px 8px', fontSize: '0.7rem' }}
-                          >
-                            Cancel
-                          </button>
+                      <div key={booking.id} className="card" style={{ padding: '1rem', border: '1px solid #e9ecef' }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                          <div>
+                            <h6>Service ID: {booking.serviceId}</h6>
+                            <p>Status: <span className={`status-badge status-${booking.status?.toLowerCase()}`}>{booking.status}</span></p>
+                            <p>Amount: ${booking.amount}</p>
+                            {booking.stripePaymentId && <p>Payment ID: {booking.stripePaymentId}</p>}
+                          </div>
+                          <div>
+                            {booking.status === "ACCEPTED" && !booking.stripePaymentId && (
+                                <button
+                                    className="btn btn-success"
+                                    onClick={() => handlePayNow(booking)}
+                                >
+                                  Pay Now
+                                </button>
+                            )}
+                            {["PENDING", "ACCEPTED", "BOOKED"].includes(booking.status) && booking.status !== "CANCELLED" && (
+                                <button
+                                    className="btn btn-danger"
+                                    onClick={() => handleCancelServiceBooking(booking.id)}
+                                >
+                                  Cancel
+                                </button>
+                            )}
+                          </div>
                         </div>
                       </div>
-                    </div>
                   ))}
                 </div>
               </div>
-              
               <div className="modal-actions">
                 <button
-                  className="event-btn secondary"
-                  onClick={() => {
-                    setShowEditServiceModal(false);
+                    className="event-btn secondary"
+                    onClick={() => {
+                      setShowEditServiceModal(false);
                     setSelectedServiceBookings([]);
                     setSelectedEventForBooking(null);
                   }}

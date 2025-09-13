@@ -1,5 +1,6 @@
 package com.example.cdr.eventsmanagementsystem.Service.Auth;
 
+import jakarta.persistence.EntityNotFoundException;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.oauth2.jwt.Jwt;
@@ -71,5 +72,14 @@ public class UserSyncService {
     }
     public List<UserRoleHandler> getHandlers() {
         return handlers;
+    }
+    public <T> T getUserById(String userId, Class<T> userClass) {
+        for (UserRoleHandler<?> handler : handlers) {
+            BaseRoleEntity user = handler.findUserById(userId);
+            if (Objects.nonNull(user) && userClass.isInstance(user)) {
+                return userClass.cast(user);
+            }
+        }
+        throw new EntityNotFoundException("User not found with ID: " + userId);
     }
 }

@@ -35,7 +35,7 @@ public class BookingEventListener {
 
     @EventListener
     public void handleServiceBookingCreated(ServiceBookingCreated event) {
-        notificationService.sendPaymentRequestEmail(event.booking(), event.booking().getStripePaymentId());
+        //notificationService.sendPaymentRequestEmail(event.booking(), event.booking().getStripePaymentId());
         notificationService.sendProviderBookingEmail(event.booking());
     }
 
