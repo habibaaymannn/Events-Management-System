@@ -69,6 +69,42 @@ const EventAttendeeDashboard = () => {
     ];
   });
 
+  // Load REAL events from the backend and replace the placeholder list
+useEffect(() => {
+  (async () => {
+    try {
+      // eventApi.getAllEvents already unwraps Spring Page -> returns an array
+      const apiEvents = await getAllEvents(0, 50);
+
+      // Normalize backend fields to what the UI expects
+      const mapped = apiEvents.map(ev => {
+        const start = ev.startTime ? new Date(ev.startTime) : null;
+        return {
+          id: ev.id,
+          name: ev.name ?? ev.title ?? "Untitled Event",
+          date: start ? start.toISOString().slice(0, 10) : "TBD",
+          time: start ? start.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }) : "",
+          location: ev.location ?? ev.venue ?? "TBD",
+          price: typeof ev.price === "number" ? ev.price : (ev.retailPrice ?? 0),
+          category: ev.type ?? ev.category ?? "General",
+          attendees: ev.attendeesCount ?? ev.registeredAttendees ?? 0,
+          maxAttendees: ev.capacity ?? ev.maxAttendees ?? 100,
+          status: ev.status ?? "Open",
+          // keep services so your existing description template won’t break
+          services: Array.isArray(ev.services)
+            ? ev.services.map(s => (typeof s === "string" ? s : (s?.name ?? ""))).filter(Boolean)
+            : [],
+        };
+      });
+
+      setEvents(mapped);
+    } catch (e) {
+      // eslint-disable-next-line no-console
+      console.error("Failed to load events", e);
+    }
+  })();
+}, []);
+
   const [myEvents, setMyEvents] = useState(() => {
     const stored = localStorage.getItem("myEvents");
     return stored ? JSON.parse(stored) : [];
