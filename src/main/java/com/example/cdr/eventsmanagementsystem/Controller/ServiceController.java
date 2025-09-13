@@ -30,7 +30,7 @@ public class ServiceController {
 
     @Operation(summary = "Get all services", description = "Retrieves a paginated list of all services")
     @GetMapping(ServiceControllerConstants.GET_ALL_SERVICES_URL)
-    @PreAuthorize("hasAnyRole('" + ORGANIZER_ROLE + "', '" + VENUE_PROVIDER_ROLE + "','" + ADMIN_ROLE  + "','"+ SERVICE_PROVIDER_ROLE + "')")
+    @PreAuthorize("hasAnyRole('" + ORGANIZER_ROLE + "', '" + VENUE_PROVIDER_ROLE + "','" + ADMIN_ROLE  + "','"+ SERVICE_PROVIDER_ROLE + "','"+ ATTENDEE_ROLE+ "')")
     public Page<ServicesDTO> getAllServices(@ParameterObject @PageableDefault() Pageable pageable) {
         return servicesService.getAllServices(pageable);
     }

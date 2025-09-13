@@ -173,7 +173,7 @@ export async function flagEvent(eventId, reason) {
  * @returns {Promise<void>} - Resolves if successful.
  */
 export async function cancelEvent(eventId) {
-  const url = buildApiUrl(`/v1/admin/events/${eventId}/cancel`);
+  const url = buildApiUrl(`/v1/admin/${eventId}/cancel`);
   const response = await fetch(url, {
     method: "POST",
     headers: getAuthHeaders(true),
