@@ -1,13 +1,9 @@
 package com.example.cdr.eventsmanagementsystem.Controller;
 
 import com.example.cdr.eventsmanagementsystem.Model.Booking.BookingType;
+import com.example.cdr.eventsmanagementsystem.Service.Booking.ServiceBookingService;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 import com.example.cdr.eventsmanagementsystem.Constants.PaymentConstants;
 import com.example.cdr.eventsmanagementsystem.DTO.Booking.Response.CheckoutSessionResponse;
@@ -27,6 +23,7 @@ import lombok.RequiredArgsConstructor;
 public class PaymentController {
 
     private final PaymentService paymentService;
+    private final ServiceBookingService serviceBookingService;
 
     @Operation(summary = "Start save-card session (Checkout setup mode)")
     @PostMapping(PaymentConstants.SETUP_SESSION)
@@ -63,6 +60,11 @@ public class PaymentController {
         PaymentConfirmationResponse response = paymentService.confirmPayment(type, sessionId, setupSessionId, canceled, setupCanceled);
         
         return ResponseEntity.ok(response);
+    }
+    @PostMapping("/{bookingId}/create-payment-session")
+    public ResponseEntity<String> createPaymentSession(@PathVariable Long bookingId) {
+            String paymentUrl = serviceBookingService.createPaymentSession(bookingId);
+            return ResponseEntity.ok(paymentUrl);
     }
 }
 
