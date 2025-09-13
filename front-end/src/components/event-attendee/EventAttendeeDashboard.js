@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from "react";
-import { getMyServices } from "../../api/serviceApi";
+//import { getMyServices } from "../../api/serviceApi";
 import { getAllEvents } from "../../api/eventApi";
+import { getBookingsByAttendeeId } from "../../api/bookingApi";
+import { keycloakSettings } from "../../config/keycloakConfig"; 
 
 
 const initialEvents = [
@@ -35,40 +37,42 @@ const initialEvents = [
 ];
 
 const EventAttendeeDashboard = () => {
-  const [services, setServices] = useState([]);
-  useEffect(() => {
-    (async () => {
-      try {
-        const svc = await getMyServices();
-        setServices(svc);
-      } catch (e) {
-        // eslint-disable-next-line no-console
-        console.error("Failed to load services", e);
-      }
-    })();
-  }, []);
+  // const [services, setServices] = useState([]);
+  // useEffect(() => {
+  //   (async () => {
+  //     try {
+  //       const svc = await getMyServices();
+  //       setServices(svc);
+  //     } catch (e) {
+  //       // eslint-disable-next-line no-console
+  //       console.error("Failed to load services", e);
+  //     }
+  //   })();
+  // }, []);
 
-  const [events, setEvents] = useState(() => {
-    const organizerEvents = localStorage.getItem("events");
-    const storedEvents = organizerEvents ? JSON.parse(organizerEvents) : [];
-    return [
-      ...initialEvents,
-      ...storedEvents.map((event) => ({
-        ...event,
-        price: event.retailPrice || 100,
-        location: event.venue || "TBD",
-        organizer: "Event Organizer",
-        description: `Event organized with ${
-          event.services.length > 0 ? event.services.join(", ") : "basic setup"
-        }`,
-        category: "General",
-        status: "Open",
-        attendees: 0,
-        maxAttendees: 100,
-      })),
-    ];
-  });
+  // const [events, setEvents] = useState(() => {
+  //   const organizerEvents = localStorage.getItem("events");
+  //   const storedEvents = organizerEvents ? JSON.parse(organizerEvents) : [];
+  //   return [
+  //     ...initialEvents,
+  //     ...storedEvents.map((event) => ({
+  //       ...event,
+  //       price: event.retailPrice || 100,
+  //       location: event.venue || "TBD",
+  //       organizer: "Event Organizer",
+  //       description: `Event organized with ${
+  //         event.services.length > 0 ? event.services.join(", ") : "basic setup"
+  //       }`,
+  //       category: "General",
+  //       status: "Open",
+  //       attendees: 0,
+  //       maxAttendees: 100,
+  //     })),
+  //   ];
+  // });
 
+
+  const [events, setEvents] = useState([]);
   // Load REAL events from the backend and replace the placeholder list
 useEffect(() => {
   (async () => {
@@ -85,7 +89,7 @@ useEffect(() => {
           date: start ? start.toISOString().slice(0, 10) : "TBD",
           time: start ? start.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }) : "",
           location: ev.location ?? ev.venue ?? "TBD",
-          price: typeof ev.price === "number" ? ev.price : (ev.retailPrice ?? 0),
+          price: typeof ev.price === "number"  ? (ev.price > 10000 ? Math.round(ev.price / 100) : ev.price): (ev.retailPrice ?? 0),
           category: ev.type ?? ev.category ?? "General",
           attendees: ev.attendeesCount ?? ev.registeredAttendees ?? 0,
           maxAttendees: ev.capacity ?? ev.maxAttendees ?? 100,
@@ -105,14 +109,51 @@ useEffect(() => {
   })();
 }, []);
 
-  const [myEvents, setMyEvents] = useState(() => {
-    const stored = localStorage.getItem("myEvents");
-    return stored ? JSON.parse(stored) : [];
-  });
+// Activities from backend (attendee’s own bookings)
+const [myActivities, setMyActivities] = useState([]);
+// Fast membership check for registered status
+const [registeredIds, setRegisteredIds] = useState(new Set());
 
-  useEffect(() => {
-    localStorage.setItem("myEvents", JSON.stringify(myEvents));
-  }, [myEvents]);
+// Load attendee bookings once
+useEffect(() => {
+  (async () => {
+    try {
+      const attendeeId = keycloakSettings?.tokenParsed?.sub;
+      if (!attendeeId) return;
+
+      const bookings = await getBookingsByAttendeeId(attendeeId);
+
+      // Event IDs you are registered for
+      const regs = new Set(
+        bookings
+          .map(b => b.eventId ?? b.event?.id)
+          .filter(Boolean)
+      );
+      setRegisteredIds(regs);
+
+      // Build activity cards (shown in "My Activities")
+      const activities = bookings
+        .map(b => {
+          const ev = b.event || {};
+          const start = ev.startTime ? new Date(ev.startTime) : null;
+          return {
+            id: b.eventId ?? ev.id,
+            name: ev.name ?? b.eventName ?? "Untitled Event",
+            date: start ? start.toISOString().slice(0, 10) : "TBD",
+            time: start ? start.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }) : "",
+            location: ev.location ?? ev.venue ?? "TBD",
+            status: b.status ?? "Registered",
+          };
+        })
+        .filter(a => a.id);
+      setMyActivities(activities);
+    } catch (e) {
+      // eslint-disable-next-line no-console
+      console.error("Failed to load attendee bookings", e);
+    }
+  })();
+}, []);
+
 
   const [selectedEvent, setSelectedEvent] = useState(null);
   const [filter, setFilter] = useState("All");
@@ -128,80 +169,99 @@ useEffect(() => {
       alert("Event is full!");
       return;
     }
-    if (myEvents.some((e) => e.id === event.id)) {
+    if (registeredIds.has(event.id))  {
       alert("You are already registered for this event!");
       return;
     }
     setShowPayment(event);
   };
 
-  const handlePayment = (event) => {
-    const success = Math.random() > 0.1;
-    if (success) {
-      const newRegistration = {
-        ...event,
-        registrationDate: new Date().toISOString(),
+const handlePayment = (event) => {
+  const success = Math.random() > 0.1;
+  if (success) {
+    // Mark as registered in-memory
+    setRegisteredIds(prev => new Set(prev).add(event.id));
+
+    // Add to My Activities
+    setMyActivities(prev => ([
+      ...prev,
+      {
+        id: event.id,
+        name: event.name,
+        date: event.date,
+        time: event.time,
+        location: event.location,
         status: "Registered",
-        paymentStatus: "Paid",
-      };
-      setMyEvents([...myEvents, newRegistration]);
-      setEvents(
-        events.map((e) =>
-          e.id === event.id ? { ...e, attendees: e.attendees + 1 } : e
-        )
-      );
-      const organizerEvents = localStorage.getItem("events");
-      if (organizerEvents) {
-        const eventsData = JSON.parse(organizerEvents);
-        const updatedEvents = eventsData.map((e) =>
-          e.id === event.id ? { ...e, attendees: (e.attendees || 0) + 1 } : e
-        );
-        localStorage.setItem("events", JSON.stringify(updatedEvents));
       }
-      alert(
-        "Payment successful! Email confirmation sent. Event reminders will be sent closer to the date."
-      );
-    } else {
-      alert("Payment failed! Please try again. Failure notification email sent.");
-    }
-    setShowPayment(null);
-  };
+    ]));
 
-  const handleCancelRegistration = (eventId) => {
-    const event = myEvents.find((e) => e.id === eventId);
-    const eventDate = new Date(event.date);
-    const today = new Date();
-    const daysDifference = Math.ceil(
-      (eventDate - today) / (1000 * 60 * 60 * 24)
-    );
-    if (daysDifference < 3) {
-      if (
-        !window.confirm(
-          "Cancelling less than 3 days before the event may result in no refund. Continue?"
-        )
-      ) {
-        return;
-      }
-    }
-    setMyEvents(myEvents.filter((e) => e.id !== eventId));
-    setEvents(
-      events.map((e) =>
-        e.id === eventId ? { ...e, attendees: Math.max(0, e.attendees - 1) } : e
+    // Bump visible attendees counter
+    setEvents(prev =>
+      prev.map((e) =>
+        e.id === event.id ? { ...e, attendees: (e.attendees || 0) + 1 } : e
       )
     );
-    alert("Registration cancelled and email confirmation sent!");
-  };
 
-  const handleRateEvent = (eventId, rating) => {
-    setMyEvents(
-      myEvents.map((e) =>
-        e.id === eventId ? { ...e, rating, ratedDate: new Date().toISOString() } : e
-      )
+    alert(
+      "Payment successful! Email confirmation sent. Event reminders will be sent closer to the date."
     );
-    setShowRating(null);
-    setRating(0);
-    alert("Thank you for rating this event!");
-  };
+  } else {
+    alert("Payment failed! Please try again. Failure notification email sent.");
+  }
+  setShowPayment(null);
+};
+
+
+const handleCancelRegistration = (eventId) => {
+  const ev = myActivities.find((e) => e.id === eventId);
+  if (!ev) return;
+
+  const eventDate = new Date(ev.date);
+  const today = new Date();
+  const daysDifference = Math.ceil(
+    (eventDate - today) / (1000 * 60 * 60 * 24)
+  );
+  if (daysDifference < 3) {
+    if (
+      !window.confirm(
+        "Cancelling less than 3 days before the event may result in no refund. Continue?"
+      )
+    ) {
+      return;
+    }
+  }
+
+  // Remove from My Activities
+  setMyActivities(prev => prev.filter((e) => e.id !== eventId));
+
+  // Drop from registered set
+  setRegisteredIds(prev => {
+    const next = new Set(prev);
+    next.delete(eventId);
+    return next;
+  });
+
+  // Decrement attendees on the browse card
+  setEvents(prev =>
+    prev.map((e) =>
+      e.id === eventId ? { ...e, attendees: Math.max(0, (e.attendees || 0) - 1) } : e
+    )
+  );
+
+  alert("Registration cancelled and email confirmation sent!");
+};
+
+
+const handleRateEvent = (eventId, rating) => {
+  setMyActivities(prev =>
+    prev.map((e) =>
+      e.id === eventId ? { ...e, rating, ratedDate: new Date().toISOString() } : e
+    )
+  );
+  setShowRating(null);
+  setRating(0);
+  alert("Thank you for rating this event!");
+};
 
   const filteredEvents = events
     .filter((event) => {
@@ -221,17 +281,18 @@ useEffect(() => {
       return 0;
     });
 
-  const filteredMyEvents = myEvents.filter((event) => {
-    const eventDate = new Date(event.date);
-    const today = new Date();
-    if (activityFilter === "Previous") return eventDate < today;
-    if (activityFilter === "Current") {
-      const daysDiff = Math.abs((eventDate - today) / (1000 * 60 * 60 * 24));
-      return daysDiff <= 1;
-    }
-    if (activityFilter === "Upcoming") return eventDate > today;
-    return true;
-  });
+const filteredMyActivities = myActivities.filter((event) => {
+  const eventDate = new Date(event.date);
+  const today = new Date();
+  if (activityFilter === "Previous") return eventDate < today;
+  if (activityFilter === "Current") {
+    const daysDiff = Math.abs((eventDate - today) / (1000 * 60 * 60 * 24));
+    return daysDiff <= 1;
+  }
+  if (activityFilter === "Upcoming") return eventDate > today;
+  return true;
+});
+
 
   return (
     <div style={{ width: "98vw", maxWidth: "98vw", margin: "10px auto", padding: "0 10px" }}>
@@ -328,39 +389,39 @@ useEffect(() => {
                   <strong>Attendees:</strong> {event.attendees}/{event.maxAttendees}
                 </p>
               </div>
-              <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
-                <button
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    setSelectedEvent(event);
-                  }}
-                  className="btn btn-primary"
-                  style={{ padding: "6px 12px", fontSize: "0.8rem", flex: 1 }}
-                >
-                  View Details
-                </button>
-                <button
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    handleJoinEvent(event);
-                  }}
-                  disabled={
-                    event.attendees >= event.maxAttendees || myEvents.some((e) => e.id === event.id)
-                  }
-                  className={`btn ${
-                    event.attendees >= event.maxAttendees || myEvents.some((e) => e.id === event.id)
-                      ? "btn-secondary"
-                      : "btn-success"
-                  }`}
-                  style={{ padding: "6px 12px", fontSize: "0.8rem", flex: 1 }}
-                >
-                  {myEvents.some((e) => e.id === event.id)
-                    ? "Registered"
-                    : event.attendees >= event.maxAttendees
-                    ? "Full"
-                    : "Join Event"}
-                </button>
-              </div>
+                <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setSelectedEvent(event);
+                    }}
+                    className="btn btn-primary"
+                    style={{ padding: "6px 12px", fontSize: "0.8rem", flex: 1 }}
+                  >
+                    View Details
+                  </button>
+
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleJoinEvent(event);
+                    }}
+                    disabled={event.attendees >= event.maxAttendees || registeredIds.has(event.id)}
+                    className={`btn ${
+                      event.attendees >= event.maxAttendees || registeredIds.has(event.id)
+                        ? "btn-secondary"
+                        : "btn-success"
+                    }`}
+                    style={{ padding: "6px 12px", fontSize: "0.8rem", flex: 1 }}
+                  >
+                    {registeredIds.has(event.id)
+                      ? "Registered"
+                      : event.attendees >= event.maxAttendees
+                      ? "Full"
+                      : "Join Event"}
+                  </button>
+                </div>
+
             </div>
           ))}
         </div>
@@ -385,7 +446,7 @@ useEffect(() => {
           </select>
         </div>
 
-        {filteredMyEvents.length === 0 ? (
+        {filteredMyActivities.length === 0 ? (
           <div style={{ textAlign: "center", padding: "3rem", color: "#6c757d" }}>
             <p style={{ fontSize: "1.1rem", margin: 0 }}>No events found for the selected filter.</p>
             <p style={{ fontSize: "0.9rem", margin: "8px 0 0 0" }}>Browse events above to join some!</p>
@@ -399,7 +460,7 @@ useEffect(() => {
               width: "100%",
             }}
           >
-            {filteredMyEvents.map((event) => {
+            {filteredMyActivities.map((event) => {
               const eventDate = new Date(event.date);
               const today = new Date();
               const isPast = eventDate < today;
