@@ -1,6 +1,10 @@
 spring:
+  application:
+    name: Events-Management-System (dev)
+
   datasource:
     url: jdbc:postgresql://localhost:5432/ems_dev
+
   jpa:
     properties:
       hibernate:
@@ -9,18 +13,23 @@ spring:
     hibernate:
       ddl-auto: create-drop
 
-
-keycloak:
-  base-url: ${KEYCLOAK_BASE_URL:http://localhost:8081}
-  realm: ${KEYCLOAK_REALM:EMS-realm}
-  admin:
-    client-id: ${KEYCLOAK_ADMIN_CLIENT_ID:admin-cli}     # if you insist on using admin-cli for ROPC
-    client-secret: ${KEYCLOAK_ADMIN_CLIENT_SECRET:}      # admin-cli has no secret by default
-    username: ${KEYCLOAK_ADMIN_USERNAME:admin1}          # <— your realm admin user
-    password: ${KEYCLOAK_ADMIN_PASSWORD:adminpass}  
-  create:
-    email-verified: false
-    password-temporary: false
+  mail:
+    host: smtp.gmail.com
+    port: 587
+    username: ${MAIL_USERNAME}
+    password: ${MAIL_PASSWORD}
+    protocol: smtp
+    properties:
+      mail:
+        smtp:
+          auth: true
+          starttls:
+            enable: true
+          connectiontimeout: 10000
+          timeout: 10000
+          writetimeout: 10000
+        debug: false
+    test-connection: false
 
 logging:
   level:
@@ -33,7 +42,40 @@ logging:
     com: debug
 
 server:
+  port: 8180
   error:
     include-message: always
     include-binding-errors: always
     include-stacktrace: never
+
+app:
+  name: Events Management System
+  mail:
+    from: ${MAIL_FROM:${spring.mail.username}}
+  supportEmail: ${SUPPORT_EMAIL:${spring.mail.username}}
+  payment:
+    return-url: http://localhost:8180/v1/payments/confirm
+    webhook-secret: ${STRIPE_WEBHOOK_SECRET:}
+  booking:
+    free-cancel-days-before-start: 1
+    penalty-percent: 0.
+
+keycloak:
+  base-url: ${KEYCLOAK_BASE_URL}         # REQUIRED (dev: http://localhost:8080, docker: http://ems-keycloak:8080)
+  realm: ${KEYCLOAK_REALM:EMS-realm}
+  # internal URL used INSIDE Docker (backend -> keycloak)
+  internalBaseUrl: ${KEYCLOAK_BASE_URL:http://keycloak:8080}
+  # public URL used by browsers / emails
+  publicBaseUrl: ${KEYCLOAK_PUBLIC_BASE_URL:http://localhost:8080}
+  # SPA client and where to land after finishing actions
+  frontendClientId: ${KEYCLOAK_FRONTEND_CLIENT_ID:ems-frontend}
+  postActionRedirectUri: ${FRONTEND_REDIRECT_URI:http://localhost:3000/password-updated}
+  admin:
+    client-id: ${KEYCLOAK_ADMIN_CLIENT_ID}               # REQUIRED
+    client-secret: ${KEYCLOAK_ADMIN_CLIENT_SECRET:}      # optional in user/password mode
+    username: ${KEYCLOAK_ADMIN_USERNAME:}                # fill if you want backend to act as admin user
+    password: ${KEYCLOAK_ADMIN_PASSWORD:}
+  create:
+    email-verified: false
+    password-temporary: false
+  

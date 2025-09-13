@@ -1,4 +1,5 @@
 import { buildApiUrl, getAuthHeaders } from '../config/apiConfig';
+import { keycloakSettings } from '../config/keycloakConfig';
 
 /**
  * Update a user's role via the admin endpoint.
@@ -6,19 +7,56 @@ import { buildApiUrl, getAuthHeaders } from '../config/apiConfig';
  * @param {string} role - The new role to assign.
  * @returns {Promise<object>} - The updated user object.
  */
+// api/adminApi.js
+// api/adminApi.js
 export async function updateUserRole(userId, role) {
-  const url = buildApiUrl(`/v1/admin/users/${userId}/role?role=${encodeURIComponent(role)}`);
-  const response = await fetch(url, {
-    method: "PUT",
+  const url = buildApiUrl(
+    `/v1/admin/users/${encodeURIComponent(userId)}/role?role=${encodeURIComponent(role)}`
+  );
+  const res = await fetch(url, {
+    method: 'PUT',
     headers: getAuthHeaders(true),
   });
-
-  if (!response.ok) {
-    throw new Error(`Failed to update user role: ${response.statusText}`);
+  if (!res.ok) {
+    const msg = await res.text();
+    throw new Error(msg || `Failed to update role: ${res.status} ${res.statusText}`);
   }
-
-  return true;
+  const ct = res.headers.get('content-type') || '';
+  if (ct.includes('application/json')) {
+    return await res.json(); // { role: "organizer" } or full user
+  }
+  // backend returned empty body → fall back so UI can still update
+  return { role };
 }
+
+
+// const onChangeRole = async (userId, uiValue) => {
+//   // map UI label to backend value if needed
+//   const role = ({
+//     'Admin': 'admin',
+//     'Event Organizer': 'organizer',
+//     'Event Attendee': 'attendee',
+//     'Service Provider': 'service_provider',
+//     'Venue Provider': 'venue_provider'
+//   })[uiValue] || uiValue;
+
+//   try {
+//     const data = await updateUserRole(userId, role); // { role: "organizer" }
+//     const confirmed = data?.role || role;
+
+//     setUsers(prev => prev.map(u =>
+//       u.id === userId
+//         ? {
+//             ...u,
+//             role: confirmed,
+//             attributes: { ...(u.attributes || {}), userType: [confirmed] } // keep list in sync
+//           }
+//         : u
+//     ));
+//   } catch (e) {
+//     // toast error if you want
+//   }
+// };
 
 /**
  * Get all users in the system (paginated).
@@ -58,23 +96,58 @@ export async function deactivateUser(userId) {
     throw new Error(`Failed to deactivate user: ${response.statusText}`);
   }
 }
+
 export async function resetUserPassword(userId) {
   const url = buildApiUrl(`/v1/admin/users/${userId}/reset-password`);
   const r = await fetch(url, { method: "POST", headers: getAuthHeaders(true) });
-  if (!r.ok) throw new Error(`Failed to reset password: ${r.statusText}`);
-}
+  if (!r.ok) throw new Error(`Failed to reset password: ${r.status} ${r.statusText}`);
 
+  // Try to parse JSON (new backend behavior)
+  const ct = r.headers.get("content-type") || "";
+  if (ct.includes("application/json")) {
+    return await r.json(); // { emailSent, forgotPasswordEntryUrl, accountUrl }
+  }
+
+  // Fallback for 204 / empty body (old behavior): build useful links client-side
+  const base = (keycloakSettings.url || "").replace(/\/$/, "");
+  const realm = keycloakSettings.realm;
+  const clientId = keycloakSettings.clientId;
+  const redirect = encodeURIComponent(`${window.location.origin}/password-updated`);
+
+  return {
+    emailSent: true,
+    forgotPasswordEntryUrl:
+      `${base}/realms/${realm}/protocol/openid-connect/auth` +
+      `?client_id=${encodeURIComponent(clientId)}` +
+      `&redirect_uri=${redirect}` +
+      `&response_type=code&scope=openid`,
+    accountUrl: `${base}/realms/${realm}/account`,
+  };
+}
 export async function activateUser(userId) {
   const url = buildApiUrl(`/v1/admin/users/${userId}/activate`);
   const r = await fetch(url, { method: "POST", headers: getAuthHeaders(true) });
   if (!r.ok) throw new Error(`Failed to activate user: ${r.statusText}`);
 }
 
-export async function deleteUser(userId) {
-  const url = buildApiUrl(`/v1/admin/users/${userId}`);
-  const r = await fetch(url, { method: "DELETE", headers: getAuthHeaders(true) });
-  if (!r.ok) throw new Error(`Failed to delete user: ${r.statusText}`);
+export async function deleteUser(userId, { notify = false, reason = "" } = {}) {
+  const qs = new URLSearchParams();
+  if (notify) qs.set("notify", "true");
+  if (notify && reason) qs.set("reason", reason);
+
+  const url = buildApiUrl(`/v1/admin/users/${encodeURIComponent(userId)}${qs.toString() ? "?" + qs.toString() : ""}`);
+  const res = await fetch(url, {
+    method: "DELETE",
+    headers: getAuthHeaders(true),
+  });
+  if (!res.ok) {
+    const msg = await res.text();
+    throw new Error(msg || `Failed to delete user: ${res.status} ${res.statusText}`);
+  }
+  const ct = res.headers.get("content-type") || "";
+  return ct.includes("application/json") ? res.json() : { deleted: true, notified: notify };
 }
+
 
 /**
  * Flag an event via the admin endpoint.
@@ -100,7 +173,7 @@ export async function flagEvent(eventId, reason) {
  * @returns {Promise<void>} - Resolves if successful.
  */
 export async function cancelEvent(eventId) {
-  const url = buildApiUrl(`/v1/admin/events/${eventId}/cancel`);
+  const url = buildApiUrl(`/v1/admin/${eventId}/cancel`);
   const response = await fetch(url, {
     method: "POST",
     headers: getAuthHeaders(true),
