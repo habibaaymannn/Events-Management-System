@@ -7,9 +7,9 @@ import com.example.cdr.eventsmanagementsystem.Util.BaseEntity;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
 import lombok.*;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Set;
+
+import java.util.*;
+import java.util.stream.Collectors;
 
 @Entity
 @Data
@@ -37,7 +37,7 @@ public class Venue extends BaseEntity {
     private Pricing pricing;
 
     @ElementCollection
-    private List<String> images;
+    private List<byte[]> images = new ArrayList<>();
 
     @ManyToOne(fetch = FetchType.EAGER)
     @JoinColumn(name = "venue_provider_id")

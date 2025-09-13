@@ -25,6 +25,38 @@ export async function addNewService(serviceData) {
 }
 
 /**
+ * Update a service by ID.
+ * PUT /v1/services/{serviceId}
+ */
+export async function updateService(serviceId, serviceData) {
+  const url = buildApiUrl(`/v1/services/${encodeURIComponent(serviceId)}`);
+  const response = await fetch(url, {
+    method: 'PUT',
+    headers: getAuthHeaders(true),
+    body: JSON.stringify(serviceData),
+  });
+  if (!response.ok) {
+    throw new Error(`Failed to update service: ${response.status} ${response.statusText}`);
+  }
+  return await response.json();
+}
+
+/**
+ * Get details of a single service by ID
+ * GET /v1/services/{serviceId}
+ */
+export async function getServiceById(serviceId) {
+  const url = buildApiUrl(`/v1/services/${encodeURIComponent(serviceId)}`);
+  const response = await fetch(url, {
+    method: 'GET',
+    headers: getAuthHeaders(true),
+  });
+  if (!response.ok) throw new Error(`Failed to fetch service details: ${response.status} ${response.statusText}`);
+  return await response.json();
+}
+
+
+/**
  * Accept or reject a booking request as a service provider.
  * POST /v1/services/bookings/{bookingId}/status
  * Body: { status: "ACCEPTED" | "REJECTED", cancellationReason?: string }
@@ -89,28 +121,23 @@ export async function updateServiceAvailability(serviceId, availabilityData) {
 }
 
 /**
- * Get all bookings for the current service provider.
- * GET /v1/services/bookings?page=&size=&status=
- * BE returns a Spring Page<>. We normalize to ARRAY for the dashboard.
- * Return shape: Array of bookings (content) — unwraps Page.content if present.
+ * Get all bookings for a venue provider.
+ * @param serviceProviderId
+ * @param {number} page - Page number (optional, default 0).
+ * @param {number} size - Page size (optional, default 20).
+ * @returns {Promise<object>} - Paginated booking data.
  */
-export async function getServiceProviderBookings(page = 0, size = 10, status = '') {
-  let url = buildApiUrl('/v1/services/bookings');
-  const params = new URLSearchParams();
-  if (page !== undefined && page !== null) params.append('page', page);
-  if (size !== undefined && size !== null) params.append('size', size);
-  if (status) params.append('status', status);
-  if (params.toString()) url += `?${params.toString()}`;
-
+export async function getServiceProviderBookings(serviceProviderId, page = 0, size = 20) {
+  const url = buildApiUrl(`/v1/bookings/services/service-provider/${encodeURIComponent(serviceProviderId)}?page=${page}&size=${size}`);
   const response = await fetch(url, {
-    method: 'GET',
-    headers: getAuthHeaders(),
-  });
-  if (!response.ok) throw new Error(`Failed to fetch bookings: ${response.status} ${response.statusText}`);
+    method: "GET", headers: getAuthHeaders(true) });
+
+  if (!response.ok) {
+    throw new Error(`Failed to fetch bookings: ${response.statusText}`);
+  }
 
   const json = await response.json();
-  // If BE returns {content:[...], ...}, give the dashboard just the array.
-  return Array.isArray(json) ? json : (json.content ?? []);
+  return json;
 }
 
 /**
@@ -125,6 +152,36 @@ export async function getMyServices() {
     headers: getAuthHeaders(),
   });
   if (!response.ok) throw new Error(`Failed to fetch services: ${response.status} ${response.statusText}`);
+
+  const json = await response.json();
+  return unwrapApiData(json);
+}
+  /**
+   * Delete a service by ID.
+   * DELETE /v1/services/{serviceId}
+   */
+export async function deleteService(serviceId) {
+    const url = buildApiUrl(`/v1/services/${encodeURIComponent(serviceId)}`);
+    const response = await fetch(url, {
+      method: 'DELETE',
+      headers: getAuthHeaders(true),
+    });
+    if (!response.ok) {
+      throw new Error(`Failed to delete service: ${response.status} ${response.statusText}`);
+    }
+    return true;
+  }
+
+/**
+ * Get all available services for booking (for event organizers).
+ */
+export async function getAllAvailableServices() {
+  const url = buildApiUrl('/v1/services/all');
+  const response = await fetch(url, {
+    method: 'GET',
+    headers: getAuthHeaders(),
+  });
+  if (!response.ok) throw new Error(`Failed to fetch available services: ${response.status} ${response.statusText}`);
 
   const json = await response.json();
   return unwrapApiData(json);

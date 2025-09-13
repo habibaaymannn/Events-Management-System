@@ -1,284 +1,238 @@
 import React, { useState, useEffect } from "react";
+import { getServiceProviderBookings } from "../../api/serviceApi";
 import {
-  getServiceProviderBookings,
-  respondToBookingRequest,
-  cancelServiceBooking,
-} from "../../api/serviceApi";
-import { getBookingById } from "../../api/bookingApi";
+    cancelServiceBooking,
+    getServiceBookingById,
+    updateServiceBookingStatus
+} from "../../api/bookingApi";
+import { useLocation } from "react-router-dom";
 
 const ServiceBookings = () => {
-  const [bookings, setBookings] = useState([]);
-  const [filter, setFilter] = useState("All");
-  const [selectedBooking, setSelectedBooking] = useState(null);
-  const [bookingDetails, setBookingDetails] = useState(null);
-  const [notifications, setNotifications] = useState([]);
+    const location = useLocation();
+    const serviceId = location.state?.serviceId;
 
-  useEffect(() => {
-    loadBookings();
-  }, []);
+    const [serviceProviderId, setServiceProviderId] = useState(null);
+    const [bookings, setBookings] = useState([]);
+    const [filter, setFilter] = useState("All");
+    const [selectedBooking, setSelectedBooking] = useState(null);
+    const [bookingDetails, setBookingDetails] = useState(null);
 
-  const loadBookings = async () => {
-    try {
-      const response = await getServiceProviderBookings(0, 100);
-      const mappedBookings = (response || []).map((booking) => ({
-        id: booking.id,
-        serviceName: "Service",
-        clientName:
-          booking.organizerBooker?.fullName ||
-          `${booking.organizerBooker?.firstName || ""} ${
-            booking.organizerBooker?.lastName || ""
-          }`.trim(),
-        clientEmail:
-          booking.organizerBooker?.email || booking.attendeeBooker?.email,
-        clientPhone: "N/A",
-        eventDate: new Date(booking.startTime).toLocaleDateString(),
-        eventTime: new Date(booking.startTime).toLocaleTimeString(),
-        eventLocation:
-          booking.organizerBooker?.events?.[0]?.venue?.location || "TBD",
-        quantity: 1,
-        unitPrice: 0,
-        totalAmount: 0,
-        status: booking.status,
-        requestDate: new Date(booking.createdAt).toLocaleDateString(),
-        eventType: booking.organizerBooker?.events?.[0]?.type || "Unknown",
-        specialRequests: booking.cancellationReason || "None",
-        notes: "Booking request",
-        organizerBooker: booking.organizerBooker,
-        attendeeBooker: booking.attendeeBooker,
-        startTime: booking.startTime,
-        endTime: booking.endTime,
-      }));
-      setBookings(mappedBookings);
-    } catch (error) {
-      console.error("Error loading bookings:", error);
-    }
-  };
+    // Initialize serviceProviderId when Keycloak is ready
+    useEffect(() => {
+        const kc = window.keycloak;
+        if (kc && kc.tokenParsed?.sub) {
+            setServiceProviderId(kc.tokenParsed.sub);
+        }
+    }, []);
 
-  const handleStatusChange = async (bookingId, newStatus) => {
-    try {
-      if (newStatus === "ACCEPTED") {
-        await respondToBookingRequest(bookingId, "ACCEPTED");
-        addNotification("Booking accepted!", "client");
-        await loadBookings();
-        return;
-      }
-      if (newStatus === "REJECTED") {
-        const reason =
-          prompt("Please provide a reason for rejection:") ||
-          "No reason provided";
-        await respondToBookingRequest(bookingId, "REJECTED", reason);
-        addNotification("Booking rejected!", "client");
-        await loadBookings();
-        return;
-      }
-      if (newStatus === "CANCELLED") {
-        const reason =
-          prompt("Please provide a reason for cancellation:") ||
-          "Cancelled by service provider";
-        await cancelServiceBooking(bookingId, reason);
-        addNotification("Booking cancelled!", "client");
-        await loadBookings();
-        return;
-      }
-    } catch (error) {
-      console.error("Error updating booking status:", error);
-    }
-  };
+    // Load bookings whenever serviceProviderId changes
+    useEffect(() => {
+        if (!serviceProviderId) return;
+        loadBookings();
+    }, [serviceProviderId]);
 
-  const addNotification = (message, client) => {
-    const notification = {
-      id: Date.now(),
-      message,
-      client,
-      timestamp: new Date().toLocaleString(),
-      read: false,
+    // Load bookings function
+    const loadBookings = async () => {
+        if (!serviceProviderId) return;
+
+        try {
+            const data = await getServiceProviderBookings(serviceProviderId);
+            const allBookings = data.content.map((booking) => ({
+                id: booking.id,
+                ...booking,
+                service: booking.serviceId,
+                eventName: `Event #${booking.eventId}`,
+                contact: booking.organizerBooker?.email,
+                date: new Date(booking.startTime).toLocaleDateString(),
+                startTime: new Date(booking.startTime).toLocaleTimeString(),
+                endTime: new Date(booking.endTime).toLocaleTimeString(),
+                revenue: booking.amount || 0,
+                // attendees: booking.attendeesCount || "N/A",
+                specialRequests: booking.cancellationReason || "None",
+            }));
+
+            setBookings(allBookings);
+        } catch (error) {
+            console.error("Error loading service bookings:", error);
+        }
     };
-    setNotifications((prev) => [notification, ...prev.slice(0, 9)]);
-  };
+    const handleAcceptBooking = async (bookingId) => {
+        try {
+            await updateServiceBookingStatus(bookingId, "ACCEPTED");
+            await loadBookings(); // refresh list
+        } catch (error) {
+            console.error("Error accepting booking:", error);
+        }
+    };
 
-  const handleViewDetails = async (booking) => {
-    try {
-      const details = await getBookingById(booking.id);
-      setBookingDetails(details);
-      setSelectedBooking(booking);
-    } catch (error) {
-      console.error("Error fetching booking details:", error);
-      setBookingDetails(booking);
-      setSelectedBooking(booking);
-    }
-  };
+    const handleRejectBooking = async (bookingId) => {
+        try {
+            await updateServiceBookingStatus(bookingId, "REJECTED");
+            await loadBookings(); // refresh list
+        } catch (error) {
+            console.error("Error rejecting booking:", error);
+        }
+    };
 
-  const filteredBookings =
-    filter === "All"
-      ? bookings
-      : bookings.filter((booking) => booking.status === filter);
+    const handleCancelBooking = async (bookingId) => {
+        try {
+            // Prompt for cancellation reason
+            const cancellationReason = prompt("Please enter cancellation reason:");
+            if (cancellationReason === null) return; // User cancelled the prompt
 
-  const stats = {
-    total: bookings.length,
-    pending: bookings.filter((b) => b.status === "PENDING").length,
-    confirmed: bookings.filter(
-      (b) => b.status === "ACCEPTED" || b.status === "CONFIRMED"
-    ).length,
-    cancelled: bookings.filter((b) => b.status === "CANCELLED").length,
-    totalRevenue: bookings
-      .filter((b) => b.status === "ACCEPTED" || b.status === "CONFIRMED")
-      .reduce((sum, b) => sum + (b.totalAmount || 0), 0),
-    pendingRevenue: bookings
-      .filter((b) => b.status === "PENDING")
-      .reduce((sum, b) => sum + (b.totalAmount || 0), 0),
-  };
+            await cancelServiceBooking(bookingId, cancellationReason);
+            await loadBookings(); // Reload the bookings list
+        } catch (error) {
+            console.error("Error cancelling booking:", error);
+        }
+    };
+
+    const handleViewDetails = async (booking) => {
+        try {
+            const details = await getServiceBookingById(booking.id);
+            setBookingDetails(details);
+            setSelectedBooking(booking);
+        } catch (error) {
+            console.error("Error fetching booking details:", error);
+            // Fallback to using booking object directly
+            setBookingDetails(booking);
+            setSelectedBooking(booking);
+        }
+    };
+
+    const filteredBookings = bookings
+        .filter(b => !serviceId || b.serviceId === serviceId)
+        .filter(b => filter === "All" || b.status === filter);
+
+    const totalRevenue = bookings.reduce((sum, booking) =>
+        booking.status === "BOOKED" ? sum + (booking.amount || 0) : sum, 0
+    );
+
+    const pendingRevenue = bookings.reduce((sum, booking) =>
+        booking.status === "PENDING" ? sum + (booking.amount || 0) : sum, 0
+    );
+
     return (
-        <div className="service-page">
-            <div className="service-page-header">
-                <h3 className="service-page-title">Service Bookings</h3>
-                <p className="service-page-subtitle">Manage your service requests and bookings</p>
-            </div>
+        <div style={{ width: '98vw', maxWidth: '98vw', margin: "10px auto", padding: '0 10px' }}>
+            <h2 style={{ textAlign: "center", marginBottom: 24, color: "#2c3e50", fontSize: "2.5rem", fontWeight: 700 }}>
+                Service Booking Management
+            </h2>
+            <p style={{ textAlign: "center", marginBottom: 32, color: "#6c757d", fontSize: "1.1rem" }}>
+                Track and manage all service bookings
+            </p>
 
             {/* Booking Stats */}
-            <div className="stats-grid">
-                <div className="stat-card">
-                    <div className="stat-icon bookings-icon">📅</div>
-                    <div className="stat-content">
-                        <h3 className="stat-number">{stats.total}</h3>
-                        <p className="stat-label">Total Bookings</p>
-                    </div>
+            <div style={{
+                display: 'grid',
+                gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))',
+                gap: '1.5rem',
+                marginBottom: '2rem'
+            }}>
+                <div className="card text-center">
+                    <h3 className="text-primary">{bookings.length}</h3>
+                    <p className="text-muted">Total Bookings</p>
                 </div>
-                <div className="stat-card">
-                    <div className="stat-icon pending-icon">⏳</div>
-                    <div className="stat-content">
-                        <h3 className="stat-number">{stats.pending}</h3>
-                        <p className="stat-label">Pending Requests</p>
-                        <span className="stat-change neutral">Needs attention</span>
-                    </div>
+                <div className="card text-center">
+                    <h3 className="text-warning">{bookings.filter(b => b.status === "PENDING").length}</h3>
+                    <p className="text-muted">PENDING</p>
                 </div>
-                <div className="stat-card">
-                    <div className="stat-icon confirmed-icon">✅</div>
-                    <div className="stat-content">
-                        <h3 className="stat-number">{stats.confirmed}</h3>
-                        <p className="stat-label">Confirmed</p>
-                        <span className="stat-change positive">Ready to deliver</span>
-                    </div>
+                <div className="card text-center">
+                    <h3 className="text-success">{bookings.filter(b => b.status === "BOOKED").length}</h3>
+                    <p className="text-muted">BOOKED</p>
                 </div>
-                <div className="stat-card">
-                    <div className="stat-icon revenue-icon">💰</div>
-                    <div className="stat-content">
-                        <h3 className="stat-number">${stats.totalRevenue.toLocaleString()}</h3>
-                        <p className="stat-label">Confirmed Revenue</p>
-                        <span className="stat-change positive">
-                            +${stats.pendingRevenue.toLocaleString()} pending
-                        </span>
-                    </div>
+                <div className="card text-center">
+                    <h3 className="text-danger">{bookings.filter(b => b.status === "CANCELLED").length}</h3>
+                    <p className="text-muted">CANCELLED</p>
+                </div>
+                <div className="card text-center">
+                    <h3 className="text-success">${totalRevenue.toLocaleString()}</h3>
+                    <p className="text-muted">Confirmed Revenue</p>
                 </div>
             </div>
 
-            {/* Notifications Panel */}
-            {notifications.length > 0 && (
-                <div className="notifications-panel">
-                    <h4>Recent Notifications</h4>
-                    <div className="notifications-list">
-                        {notifications.slice(0, 3).map(notif => (
-                            <div key={notif.id} className="notification-item">
-                                <div className="notification-content">
-                                    <p className="notification-message">{notif.message}</p>
-                                    <p className="notification-client">Client: {notif.client}</p>
-                                </div>
-                                <span className="notification-time">{notif.timestamp}</span>
-                            </div>
-                        ))}
-                    </div>
-                </div>
-            )}
-
-            <div className="service-section">
-                <div className="section-header">
-                    <h4 className="section-title">Booking Requests</h4>
+            <div className="card" style={{width: '100%', padding: '1.5rem'}}>
+                <div style={{
+                    display: 'flex',
+                    justifyContent: 'space-between',
+                    alignItems: 'center',
+                    marginBottom: '1.5rem'
+                }}>
+                    <h3 style={{margin: 0, color: "#2c3e50"}}>Booking List</h3>
                     <div className="filter-controls">
                         <select
                             value={filter}
                             onChange={(e) => setFilter(e.target.value)}
                             className="form-control"
-                            style={{ width: "150px" }}
+                            style={{width: "150px"}}
                         >
                             <option value="All">All Bookings</option>
-                            <option value="PENDING">Pending</option>
-                            <option value="ACCEPTED">Accepted</option>
-                            <option value="CANCELLED">Cancelled</option>
+                            <option value="PENDING">PENDING</option>
+                            <option value="ACCEPTED">ACCEPTED</option>
+                            <option value="REJECTED">REJECTED</option>
+                            <option value="BOOKED">BOOKED</option>
+                            <option value="CANCELLED">CANCELLED</option>
                         </select>
                     </div>
                 </div>
 
-                <div className="bookings-grid">
+                <div style={{
+                    display: 'grid',
+                    gridTemplateColumns: 'repeat(auto-fit, minmax(350px, 1fr))',
+                    gap: '1.5rem'
+                }}>
                     {filteredBookings.map((booking) => (
-                        <div key={booking.id} className="booking-card">
-                            <div className="booking-header">
-                                <div className="booking-title-section">
-                                    <h5 className="booking-title">{booking.serviceName}</h5>
-                                    <p className="booking-client">{booking.clientName}</p>
-                                </div>
+                        <div key={booking.id} className="card" style={{ padding: '1.5rem' }}>
+                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '1rem' }}>
+                                <h4 style={{ margin: 0, color: "#2c3e50", fontSize: '1.2rem' }}>{booking.eventName}</h4>
                                 <span className={`status-badge status-${booking.status.toLowerCase()}`}>
                                     {booking.status}
                                 </span>
                             </div>
 
-                            <div className="booking-details">
-                                <div className="detail-row">
-                                    <span className="detail-label">Event Type:</span>
-                                    <span className="detail-value">{booking.eventType}</span>
-                                </div>
-                                <div className="detail-row">
-                                    <span className="detail-label">Date & Time:</span>
-                                    <span className="detail-value">{booking.eventDate} at {booking.eventTime}</span>
-                                </div>
-                                <div className="detail-row">
-                                    <span className="detail-label">Location:</span>
-                                    <span className="detail-value">{booking.eventLocation}</span>
-                                </div>
-                                <div className="detail-row">
-                                    <span className="detail-label">Client Email:</span>
-                                    <span className="detail-value">{booking.clientEmail}</span>
-                                </div>
-                                <div className="detail-row">
-                                    <span className="detail-label">Requested:</span>
-                                    <span className="detail-value">{booking.requestDate}</span>
+                            <div style={{marginBottom: '1rem'}}>
+                                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.5rem', fontSize: '0.9rem' }}>
+                                    <div><strong>Service ID:</strong> {booking.service}</div>
+                                    <div><strong>Date:</strong> {booking.date}</div>
+                                    <div><strong>Time:</strong> {booking.startTime} - {booking.endTime}</div>
+                                    {/*<div><strong>Attendees:</strong> {booking.attendees}</div>*/}
+                                    <div><strong>Revenue:</strong> <span style={{ color: '#28a745', fontWeight: 'bold' }}>${booking.revenue.toLocaleString()}</span></div>
                                 </div>
                             </div>
 
-                            {booking.specialRequests && booking.specialRequests !== "None" && (
-                                <div className="special-requests">
-                                    <strong>Special Requests:</strong>
-                                    <p>{booking.specialRequests}</p>
-                                </div>
-                            )}
-
-                            <div className="booking-actions">
+                            <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
                                 <button
-                                    className="service-btn"
+                                    className="btn btn-secondary"
                                     onClick={() => handleViewDetails(booking)}
+                                    style={{ flex: 1, minWidth: '100px' }}
                                 >
                                     View Details
                                 </button>
                                 {booking.status === "PENDING" && (
                                     <>
                                         <button
-                                            className="service-btn success"
-                                            onClick={() => handleStatusChange(booking.id, "ACCEPTED")}
+                                            className="btn btn-success"
+                                            onClick={() => handleAcceptBooking(booking.id)}
+                                            style={{ flex: 1, minWidth: '100px' }}
                                         >
                                             Accept
                                         </button>
                                         <button
-                                            className="service-btn danger"
-                                            onClick={() => handleStatusChange(booking.id, "REJECTED")}
+                                            className="btn btn-danger"
+                                            onClick={() => handleRejectBooking(booking.id)}
+                                            style={{ flex: 1, minWidth: '100px' }}
                                         >
                                             Reject
                                         </button>
                                     </>
                                 )}
-                                {(booking.status === "ACCEPTED" || booking.status === "CONFIRMED") && (
+                                {/* Add cancel button for all statuses except already cancelled */}
+                                {booking.status !== "CANCELLED" && (
                                     <button
-                                        className="service-btn secondary"
-                                        onClick={() => handleStatusChange(booking.id, "CANCELLED")}
+                                        className="btn btn-warning"
+                                        onClick={() => handleCancelBooking(booking.id)}
+                                        style={{ flex: 1, minWidth: '100px' }}
                                     >
-                                        Cancel
+                                        Cancel Booking
                                     </button>
                                 )}
                             </div>
@@ -300,123 +254,60 @@ const ServiceBookings = () => {
                                 ×
                             </button>
                         </div>
-                        <div className="modal-body">
-                            <div className="detail-section">
-                                <h5>Booking Information</h5>
-                                <div className="detail-grid">
-                                    <div className="detail-item">
-                                        <strong>Booking ID:</strong> {bookingDetails.id}
-                                    </div>
-                                    <div className="detail-item">
-                                        <strong>Type:</strong> {bookingDetails.type}
-                                    </div>
-                                    <div className="detail-item">
-                                        <strong>Status:</strong> {bookingDetails.status}
-                                    </div>
-                                    <div className="detail-item">
-                                        <strong>Start Time:</strong> {new Date(bookingDetails.startTime).toLocaleString()}
-                                    </div>
-                                    <div className="detail-item">
-                                        <strong>End Time:</strong> {new Date(bookingDetails.endTime).toLocaleString()}
-                                    </div>
-                                    {bookingDetails.currency && (
-                                        <div className="detail-item">
-                                            <strong>Currency:</strong> {bookingDetails.currency}
-                                        </div>
+                        <div style={{ padding: '1rem' }}>
+                            <div style={{ marginBottom: '1.5rem' }}>
+                                <h5 style={{ color: '#2c3e50', marginBottom: '1rem' }}>Booking Information</h5>
+                                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
+                                    <div><strong>Booking ID:</strong> {bookingDetails.id}</div>
+                                    <div><strong>Status:</strong> {bookingDetails.status}</div>
+                                    <div><strong>Start Time:</strong> {new Date(bookingDetails.startTime).toLocaleString()}</div>
+                                    <div><strong>End Time:</strong> {new Date(bookingDetails.endTime).toLocaleString()}</div>
+                                    {bookingDetails.serviceId && (
+                                        <div><strong>Service ID:</strong> {bookingDetails.serviceId}</div>
                                     )}
                                 </div>
                             </div>
 
                             {bookingDetails.organizerBooker && (
-                                <div className="detail-section">
-                                    <h5>Organizer Information</h5>
-                                    <div className="detail-grid">
-                                        <div className="detail-item">
-                                            <strong>Name:</strong> {bookingDetails.organizerBooker.firstName} {bookingDetails.organizerBooker.lastName}
-                                        </div>
-                                        <div className="detail-item">
-                                            <strong>Email:</strong> {bookingDetails.organizerBooker.email}
-                                        </div>
-                                        <div className="detail-item">
-                                            <strong>Phone:</strong> {bookingDetails.organizerBooker.phoneNumber}
-                                        </div>
+                                <div style={{ marginBottom: '1.5rem' }}>
+                                    <h5 style={{ color: '#2c3e50', marginBottom: '1rem' }}>Organizer Information</h5>
+                                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
+                                        <div><strong>Name:</strong> {bookingDetails.organizerBooker.firstName} {bookingDetails.organizerBooker.lastName}</div>
+                                        <div><strong>Email:</strong> {bookingDetails.organizerBooker.email}</div>
+                                        <div><strong>Phone:</strong> {bookingDetails.organizerBooker.phoneNumber}</div>
                                     </div>
                                 </div>
                             )}
 
-                            {bookingDetails.attendeeBooker && (
-                                <div className="detail-section">
-                                    <h5>Attendee Information</h5>
-                                    <div className="detail-grid">
-                                        <div className="detail-item">
-                                            <strong>Name:</strong> {bookingDetails.attendeeBooker.firstName} {bookingDetails.attendeeBooker.lastName}
-                                        </div>
-                                        <div className="detail-item">
-                                            <strong>Email:</strong> {bookingDetails.attendeeBooker.email}
-                                        </div>
-                                        <div className="detail-item">
-                                            <strong>Phone:</strong> {bookingDetails.attendeeBooker.phoneNumber}
-                                        </div>
-                                    </div>
-                                </div>
-                            )}
-
-                            {bookingDetails.venueId && (
-                                <div className="detail-section">
-                                    <h5>Venue Information</h5>
-                                    <div className="detail-grid">
-                                        <div className="detail-item">
-                                            <strong>Venue ID:</strong> {bookingDetails.venueId}
-                                        </div>
-                                    </div>
-                                </div>
-                            )}
-
-                            {bookingDetails.serviceId && (
-                                <div className="detail-section">
-                                    <h5>Service Information</h5>
-                                    <div className="detail-grid">
-                                        <div className="detail-item">
-                                            <strong>Service ID:</strong> {bookingDetails.serviceId}
-                                        </div>
-                                    </div>
-                                </div>
-                            )}
+                            {/*{bookingDetails.attendeeBooker && (*/}
+                            {/*    <div style={{ marginBottom: '1.5rem' }}>*/}
+                            {/*        <h5 style={{ color: '#2c3e50', marginBottom: '1rem' }}>Attendee Information</h5>*/}
+                            {/*        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>*/}
+                            {/*            <div><strong>Name:</strong> {bookingDetails.attendeeBooker.firstName} {bookingDetails.attendeeBooker.lastName}</div>*/}
+                            {/*            <div><strong>Email:</strong> {bookingDetails.attendeeBooker.email}</div>*/}
+                            {/*            <div><strong>Phone:</strong> {bookingDetails.attendeeBooker.phoneNumber}</div>*/}
+                            {/*        </div>*/}
+                            {/*    </div>*/}
+                            {/*)}*/}
 
                             {(bookingDetails.createdAt || bookingDetails.updatedAt) && (
-                                <div className="detail-section">
-                                    <h5>Timestamps</h5>
-                                    <div className="detail-grid">
+                                <div style={{ marginBottom: '1.5rem' }}>
+                                    <h5 style={{ color: '#2c3e50', marginBottom: '1rem' }}>Timestamps</h5>
+                                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
                                         {bookingDetails.createdAt && (
-                                            <div className="detail-item">
-                                                <strong>Created:</strong> {new Date(bookingDetails.createdAt).toLocaleString()}
-                                            </div>
+                                            <div><strong>Created:</strong> {new Date(bookingDetails.createdAt).toLocaleString()}</div>
                                         )}
                                         {bookingDetails.updatedAt && (
-                                            <div className="detail-item">
-                                                <strong>Updated:</strong> {new Date(bookingDetails.updatedAt).toLocaleString()}
-                                            </div>
+                                            <div><strong>Updated:</strong> {new Date(bookingDetails.updatedAt).toLocaleString()}</div>
                                         )}
                                     </div>
                                 </div>
                             )}
 
-                            {(bookingDetails.cancellationReason || bookingDetails.stripePaymentId) && (
-                                <div className="detail-section">
-                                    <h5>Additional Information</h5>
-                                    <div className="detail-grid">
-                                        {bookingDetails.cancellationReason && (
-                                            <div className="detail-item full-width">
-                                                <strong>Cancellation Reason:</strong>
-                                                <p>{bookingDetails.cancellationReason}</p>
-                                            </div>
-                                        )}
-                                        {bookingDetails.stripePaymentId && (
-                                            <div className="detail-item">
-                                                <strong>Payment ID:</strong> {bookingDetails.stripePaymentId}
-                                            </div>
-                                        )}
-                                    </div>
+                            {bookingDetails.cancellationReason && (
+                                <div style={{ marginTop: '1rem' }}>
+                                    <strong>Cancellation Reason:</strong>
+                                    <p style={{ marginTop: '0.5rem', color: '#6c757d' }}>{bookingDetails.cancellationReason}</p>
                                 </div>
                             )}
                         </div>

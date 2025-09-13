@@ -8,6 +8,7 @@ import com.example.cdr.eventsmanagementsystem.Repository.ServiceRepository;
 import com.example.cdr.eventsmanagementsystem.Model.Service.Services;
 import com.example.cdr.eventsmanagementsystem.Service.Auth.UserSyncService;
 import com.example.cdr.eventsmanagementsystem.Util.AuthUtil;
+import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -43,16 +44,37 @@ public class ServicesService {
     }
 
     @Transactional
-    public ServicesDTO updateAvailability(Long serviceId, String availability) {
-        String keycloakId = AuthUtil.getCurrentUserId();
+    public ServicesDTO updateService(Long serviceId, ServicesDTO dto) {
         Services service = serviceRepository.findById(serviceId)
-                .orElseThrow(() -> new IllegalArgumentException("Service not found"));
+                .orElseThrow(() -> new EntityNotFoundException("Service not found"));
 
-        if (!service.getServiceProvider().getKeycloakId().equals(keycloakId)) {
+        String serviceProviderId = AuthUtil.getCurrentUserId();
+        if (!service.getServiceProvider().getKeycloakId().equals(serviceProviderId)) {
             throw new AccessDeniedException("You are not allowed to update this service");
         }
-        service.setAvailability(Availability.valueOf(availability.toUpperCase()));
 
-        return serviceMapper.toServiceDTO(serviceRepository.save(service));
+        serviceMapper.updateService(dto, service);
+
+        Services updatedVenue = serviceRepository.save(service);
+        return serviceMapper.toServiceDTO(updatedVenue);
+    }
+
+    public ServicesDTO getServiceById(Long serviceId) {
+        Services service = serviceRepository.findById(serviceId).orElseThrow(() -> new EntityNotFoundException("Service not found"));
+        return serviceMapper.toServiceDTO(service);
+    }
+
+    @Transactional
+    public void deleteService(Long serviceId) {
+        Services service = serviceRepository.findById(serviceId)
+                .orElseThrow(() -> new EntityNotFoundException("Service not found"));
+
+        String serviceProviderId = AuthUtil.getCurrentUserId();
+
+        if (!service.getServiceProvider().getKeycloakId().equals(serviceProviderId)) {
+            throw new AccessDeniedException("You are not allowed to delete this service");
+        }
+
+        serviceRepository.deleteById(serviceId);
     }
 }

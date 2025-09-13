@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { getBookingsByAttendeeId, getBookingById } from "../../api/bookingApi";
-import { updateBookingStatus } from "../../api/bookingApi";
+// import { updateBookingStatus } from "../../api/bookingApi";
 
 const AttendeeBookings = () => {
     const [bookings, setBookings] = useState([]);

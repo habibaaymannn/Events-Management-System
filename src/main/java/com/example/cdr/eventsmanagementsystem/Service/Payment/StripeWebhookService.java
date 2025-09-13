@@ -1,6 +1,5 @@
 package com.example.cdr.eventsmanagementsystem.Service.Payment;
 
-import com.example.cdr.eventsmanagementsystem.Service.Booking.StripeServiceInterface;
 import com.example.cdr.eventsmanagementsystem.Model.Booking.*;
 import com.example.cdr.eventsmanagementsystem.Service.Notifications.NotificationUtil;
 import com.example.cdr.eventsmanagementsystem.Util.BookingUtil;
@@ -22,7 +21,7 @@ import static com.example.cdr.eventsmanagementsystem.Constants.PaymentConstants.
 @RequiredArgsConstructor
 @Slf4j
 public class StripeWebhookService {
-    private final StripeServiceInterface stripeService;
+    private final StripeService stripeService;
     private final BookingUtil bookingUtil;
     private final NotificationUtil notificationUtil;
 

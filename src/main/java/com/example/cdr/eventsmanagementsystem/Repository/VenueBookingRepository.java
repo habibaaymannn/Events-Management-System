@@ -18,4 +18,6 @@ public interface VenueBookingRepository extends JpaRepository<VenueBooking, Long
 
     @Query("SELECT vb FROM VenueBooking vb JOIN Venue v ON v.id = vb.venueId WHERE v.venueProvider.id = :providerId")
     Page<VenueBooking> findByVenueProviderId(@Param("providerId") String providerId, Pageable pageable);
+    
+    Page<VenueBooking> findByEventId(Long eventId, Pageable pageable);
 }

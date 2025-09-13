@@ -7,6 +7,8 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.Optional;
+
 /**
  * Handler for managing VenueProvider users.
  * Provides methods to create, retrieve, save, and delete VenueProvider users
@@ -25,11 +27,6 @@ public class VenueProviderHandler implements UserRoleHandler<VenueProvider> {
     }
 
     @Override
-    public Class<VenueProvider> getRoleClass() {
-        return VenueProvider.class;
-    }
-
-    @Override
     @Transactional
     public VenueProvider findUserById(String userId) {
         return venueProviderRepository.findById(userId).orElse(null);
@@ -38,6 +35,11 @@ public class VenueProviderHandler implements UserRoleHandler<VenueProvider> {
     @Override
     @Transactional
     public VenueProvider createNewUser(String userId, String email, String firstName, String lastName) {
+        Optional<VenueProvider> existingUser = venueProviderRepository.findByEmail(email);
+
+        if (existingUser.isPresent()) {
+            return existingUser.get();
+        }
         VenueProvider venueProvider = new VenueProvider();
         venueProvider.setId(userId);
         venueProvider.setEmail(email);
@@ -53,9 +55,4 @@ public class VenueProviderHandler implements UserRoleHandler<VenueProvider> {
         return venueProviderRepository.save((VenueProvider) user);
     }
 
-    @Override
-    @Transactional
-    public void deleteUser(String userId) {
-        venueProviderRepository.deleteById(userId);
-    }
 }

@@ -2,7 +2,10 @@ package com.example.cdr.eventsmanagementsystem.Service.Booking;
 
 import java.time.LocalDateTime;
 
+import com.example.cdr.eventsmanagementsystem.Service.Payment.StripeService;
 import org.springframework.context.ApplicationEventPublisher;
+
+import com.example.cdr.eventsmanagementsystem.Model.Booking.BookingType;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.security.core.Authentication;
@@ -108,7 +111,8 @@ public class EventBookingService {
                 "Event ticket for: " + event.getName(),
                 booking.getId(),
                 SETUP_FUTURE_USAGE_ON_SESSION,
-                request.getIsCaptured() != null ? request.getIsCaptured() : false
+                request.getIsCaptured() != null ? request.getIsCaptured() : false,
+                BookingType.EVENT
         );
         booking.setStripeSessionId(session.getId());
 

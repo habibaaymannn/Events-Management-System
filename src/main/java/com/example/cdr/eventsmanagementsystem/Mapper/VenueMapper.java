@@ -7,27 +7,34 @@ import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;
 import org.mapstruct.MappingTarget;
 import org.mapstruct.Named;
-import java.util.Arrays;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Set;
+import java.util.*;
 import java.util.stream.Collectors;
 
 @Mapper(componentModel = "spring")
 public interface VenueMapper {
+    @Mapping(target = "images", ignore = true)
     @Mapping(source = "type", target = "type",  qualifiedByName = "stringToType")
     @Mapping(source = "eventTypes", target = "supportedEventTypes", qualifiedByName = "stringToEventTypes")
     Venue toVenue(VenueDTO dto);
 
+    @Mapping(target = "images", expression = "java(bytesToBase64(venue.getImages()))")
     @Mapping(source = "venueProvider.keycloakId", target = "venueProviderId")
     @Mapping(source = "type", target = "type", qualifiedByName = "typeToString")
     @Mapping(source = "supportedEventTypes", target = "eventTypes", qualifiedByName = "eventTypesToStringList")
     VenueDTO toVenueDTO(Venue venue);
 
     @Mapping(target = "id", ignore = true)
+    @Mapping(target = "images", ignore = true)
     @Mapping(source = "type", target = "type", qualifiedByName = "stringToType")
     @Mapping(source = "eventTypes", target = "supportedEventTypes", qualifiedByName = "stringToEventTypes")
     void updateVenue(VenueDTO dto,@MappingTarget Venue venue);
+
+    default List<String> bytesToBase64(List<byte[]> images) {
+        if (images == null) return Collections.emptyList();
+        return images.stream()
+                .map(img -> java.util.Base64.getEncoder().encodeToString(img))
+                .toList();
+    }
 
     @Named("stringToType")
     default Type stringToType(String type) {

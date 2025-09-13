@@ -54,6 +54,14 @@ public class VenueBookingController {
         return ResponseEntity.ok(response);
     }
 
+    @Operation(summary = "Get all venue bookings by event ID", description = "Retrieves all venue bookings for a specific event")
+    @GetMapping("/event/{eventId}")
+    @PreAuthorize("hasAnyRole('" + ORGANIZER_ROLE + "', '" + VENUE_PROVIDER_ROLE + "','" + ADMIN_ROLE + "')")
+    public ResponseEntity<Page<VenueBookingResponse>> getAllVenueBookingsByEventId(@PathVariable Long eventId, @ParameterObject @PageableDefault() Pageable pageable) {
+        Page<VenueBookingResponse> response = bookingService.getAllVenueBookingsByEventId(eventId, pageable);
+        return ResponseEntity.ok(response);
+    }
+
     @Operation(summary = "Get booking details by ID", description = "Retrieves details of a booking by its ID")
     @GetMapping(GET_BOOKING_BY_ID)
     @PreAuthorize("hasAnyRole('" + ORGANIZER_ROLE + "', '" + VENUE_PROVIDER_ROLE + "','" + ADMIN_ROLE + "')")
