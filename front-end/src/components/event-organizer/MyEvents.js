@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { getAllEvents, deleteEvent, updateEvent, createEvent } from "../../api/eventApi";
+import { getAllEvents, deleteEvent, updateEvent, createEvent, getEventsByOrganizer } from "../../api/eventApi";
 import { getBookingById, getBookingsByEventId } from "../../api/bookingApi";
 
 const MyEvents = () => {
@@ -19,7 +19,7 @@ const MyEvents = () => {
 
   const loadEvents = async () => {
     try {
-      const response = await getAllEvents(0, 100); // adjust page/size as needed
+      const response = await getEventsByOrganizer(0, 100); // adjust page/size as needed
       setEvents(response.content || []);
     } catch (error) {
       // Handle error

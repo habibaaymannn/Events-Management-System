@@ -8,6 +8,7 @@ public final class EventsControllerConstants {
     public static final String GET_ALL_EVENTS_URL = "/all";
     public static final String GET_EVENT_BY_ID_URL = "/{id}";
     public static final String GET_EVENTS_BY_TYPE_URL = "/type/{type}";
+    public static final String GET_EVENTS_BY_ORGANIZER_URL = "/organizer";
 
     private EventsControllerConstants() {}
 }

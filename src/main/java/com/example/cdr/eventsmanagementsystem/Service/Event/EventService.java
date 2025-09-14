@@ -74,4 +74,10 @@ public class EventService {
         List<Event> events = eventRepository.findByType(type);
         return events.stream().map(eventMapper::toEventResponseDTO).toList();
     }
+
+    public Page<EventResponseDTO> getEventsByOrganizer(Pageable pageable) {
+        Organizer organizer = ensureCurrentUserAsOrganizer();
+        Page<Event> eventPage = eventRepository.findByOrganizer(organizer, pageable);
+        return eventPage.map(eventMapper::toEventResponseDTO);
+    }
 }

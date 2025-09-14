@@ -78,4 +78,11 @@ public class EventController {
     public List<EventResponseDTO> getEventsByType(@PathVariable EventType type) {
         return eventService.getEventsByType(type);
     }
+
+    @Operation(summary = "Get events by organizer", description = "Retrieves all events created by the current organizer")
+    @GetMapping(EventsControllerConstants.GET_EVENTS_BY_ORGANIZER_URL)
+    @PreAuthorize("hasRole('" + RoleConstants.ORGANIZER_ROLE + "')")
+    public Page<EventResponseDTO> getEventsByOrganizer(@ParameterObject @PageableDefault() Pageable pageable) {
+        return eventService.getEventsByOrganizer(pageable);
+    }
 }

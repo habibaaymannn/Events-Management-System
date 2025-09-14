@@ -2,7 +2,7 @@ import React, { useState, useEffect } from "react";
 import { Routes, Route, useLocation } from "react-router-dom";
 import "./EventOrganizerDashboard.css";
 import { initializeAllDummyData } from "../../utils/initializeDummyData";
-import { createEvent, updateEvent, getAllEvents } from "../../api/eventApi";
+import { createEvent, updateEvent, getAllEvents, getEventsByOrganizer } from "../../api/eventApi";
 import {
   bookVenue,
   bookService,
@@ -10,8 +10,7 @@ import {
   getVenueBookingsByEventId,
   getServiceBookingsByEventId,
   cancelVenueBooking,
-  cancelServiceBooking,
-  createServicePaymentSession
+  cancelServiceBooking
 } from "../../api/bookingApi";
 import { getAllVenues } from "../../api/venueApi";
 import { getAllAvailableServices } from "../../api/serviceApi";
@@ -86,7 +85,7 @@ const EventOrganizerDashboard = () => {
   useEffect(() => {
     const loadEventsFromApi = async () => {
       try {
-        const data = await getAllEvents(0, 100);
+        const data = await getEventsByOrganizer(0, 100);
         const list = Array.isArray(data)
           ? data
           : (data?.content ?? data?.data?.content ?? []);
@@ -94,7 +93,7 @@ const EventOrganizerDashboard = () => {
           setEvents(list);
         }
       } catch (error) {
-        console.error("Error loading events:", error);
+        console.error("Error loading organizer events:", error);
       }
     };
     loadEventsFromApi();
@@ -859,25 +858,6 @@ const EventOrganizerDashboard = () => {
   };
 
   const isMainDashboard = location.pathname === '/organizer' || location.pathname === '/organizer/';
-
-  const handlePayNow = async (booking) => {
-    try {
-      // Call backend to create Stripe session
-      const paymentUrl = await createServicePaymentSession(booking.id);
-
-      // Store booking info for redirect back
-      localStorage.setItem('pendingServiceBooking', JSON.stringify({
-        bookingId: booking.id,
-        bookingType: 'SERVICE'
-      }));
-      // Redirect to Stripe
-      window.location.href = paymentUrl;
-
-    } catch (error) {
-      console.error("Error creating payment session:", error);
-      alert("Failed to initiate payment. Please try again.");
-    }
-  };
 
   return (
     <div style={{ width: '98vw', maxWidth: '98vw', margin: "10px auto", padding: '0 10px' }}>

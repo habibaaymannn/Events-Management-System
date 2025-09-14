@@ -119,3 +119,27 @@ export async function getEventsByType(type) {
 
   return await response.json();
 }
+
+/**
+ * Get events created by the current organizer (paginated).
+ * @param {number} [page=0] - Page number.
+ * @param {number} [size=10] - Page size.
+ * @returns {Promise<object>} - Paginated events response.
+ */
+export async function getEventsByOrganizer(page = 0, size = 10) {
+  const url = buildApiUrl(`/v1/events/organizer?page=${page}&size=${size}`);
+  const response = await fetch(url, {
+    method: 'GET',
+    headers: getAuthHeaders(),
+  });
+
+  if (!response.ok) {
+    throw new Error(`Failed to fetch organizer events: ${response.statusText}`);
+  }
+
+  const json = await response.json();
+  if (Array.isArray(json)) return json;
+  if (json?.data?.content) return json.data.content;
+  if (json?.content) return json.content;
+  return json?.data ?? [];
+}
