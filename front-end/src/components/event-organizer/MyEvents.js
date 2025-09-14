@@ -8,8 +8,6 @@ const MyEvents = () => {
   const [events, setEvents] = useState([]);
   const [filter, setFilter] = useState("All");
   const [selectedEvent, setSelectedEvent] = useState(null);
-  const [showCancelModal, setShowCancelModal] = useState(false);
-  const [cancelReason, setCancelReason] = useState("");
   const [selectedBookingDetails, setSelectedBookingDetails] = useState(null);
   const [eventBookings, setEventBookings] = useState({});
 
@@ -36,23 +34,18 @@ const MyEvents = () => {
     // loadEvents();
   };
 
-  const handleCancelEvent = (event) => {
-    setSelectedEvent(event);
-    setShowCancelModal(true);
-  };
-
-  const confirmCancellation = async () => {
-    if (!selectedEvent) return;
-
-    // You may want to call updateEvent or deleteEvent depending on backend logic
-    try {
-      await updateEvent(selectedEvent.id, { ...selectedEvent, status: "Cancelled", cancellationReason: cancelReason });
-      setShowCancelModal(false);
-      setSelectedEvent(null);
-      setCancelReason("");
-      loadEvents();
-    } catch (error) {
-      // Handle error
+  const handleDeleteEvent = async (event) => {
+    const confirmMessage = `Are you sure you want to delete this event? This action cannot be undone.`;
+    
+    if (window.confirm(confirmMessage)) {
+      try {
+        await deleteEvent(event.id);
+        loadEvents();
+        alert(`Event "${event.name}" deleted successfully.`);
+      } catch (error) {
+        console.error("Error deleting event:", error);
+        alert(`Failed to delete event: ${error.message || 'Please try again.'}`);
+      }
     }
   };
 
@@ -249,9 +242,9 @@ const MyEvents = () => {
                     </button>
                     <button
                       className="event-btn danger"
-                      onClick={() => handleCancelEvent(event)}
+                      onClick={() => handleDeleteEvent(event)}
                     >
-                      Cancel Event
+                      Delete Event
                     </button>
                   </>
                 )}
@@ -262,7 +255,7 @@ const MyEvents = () => {
       </div>
 
       {/* Event Details Modal */}
-      {selectedEvent && !showCancelModal && (
+      {selectedEvent && (
         <div className="modal-overlay" onClick={() => setSelectedEvent(null)}>
           <div className="modal-content" onClick={(e) => e.stopPropagation()}>
             <div className="modal-header">
@@ -463,73 +456,6 @@ const MyEvents = () => {
         </div>
       )}
 
-      {/* Cancellation Modal */}
-      {showCancelModal && selectedEvent && (
-        <div className="modal-overlay" onClick={() => setShowCancelModal(false)}>
-          <div className="modal-content cancel-modal" onClick={(e) => e.stopPropagation()}>
-            <div className="modal-header">
-              <h4>Cancel Event</h4>
-              <button
-                className="modal-close"
-                onClick={() => setShowCancelModal(false)}
-              >
-                ×
-              </button>
-            </div>
-            <div className="modal-body">
-              <div className="cancel-warning">
-                <h5>⚠️ Cancel "{selectedEvent.name}"?</h5>
-                <p>Are you sure you want to cancel this event?</p>
-
-                {isWithinFreeCancellation(selectedEvent) ? (
-                  <div className="free-cancellation">
-                    <p className="success-message">
-                      ✅ You can cancel this event without any penalty fees.
-                    </p>
-                  </div>
-                ) : (
-                  <div className="penalty-warning">
-                    <p className="warning-message">
-                      ⚠️ Cancelling after the deadline will incur a penalty fee.
-                    </p>
-                    <p className="penalty-amount">
-                      Estimated penalty: ${Math.round(selectedEvent.totalCost * 0.2)}
-                    </p>
-                  </div>
-                )}
-              </div>
-
-              <div className="form-group">
-                <label className="form-label">Reason for Cancellation</label>
-                <textarea
-                  value={cancelReason}
-                  onChange={(e) => setCancelReason(e.target.value)}
-                  className="form-control"
-                  rows="3"
-                  placeholder="Please provide a reason for cancellation"
-                  required
-                />
-              </div>
-
-              <div className="modal-actions">
-                <button
-                  className="event-btn secondary"
-                  onClick={() => setShowCancelModal(false)}
-                >
-                  Keep Event
-                </button>
-                <button
-                  className="event-btn danger"
-                  onClick={confirmCancellation}
-                  disabled={!cancelReason.trim()}
-                >
-                  Confirm Cancellation
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
     </div>
   );
 };

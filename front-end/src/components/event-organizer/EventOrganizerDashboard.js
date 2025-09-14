@@ -2,7 +2,7 @@ import React, { useState, useEffect } from "react";
 import { Routes, Route, useLocation } from "react-router-dom";
 import "./EventOrganizerDashboard.css";
 import { initializeAllDummyData } from "../../utils/initializeDummyData";
-import { createEvent, updateEvent, getAllEvents, getEventsByOrganizer } from "../../api/eventApi";
+import { createEvent, updateEvent, deleteEvent, getAllEvents, getEventsByOrganizer } from "../../api/eventApi";
 import {
   bookVenue,
   bookService,
@@ -406,37 +406,32 @@ const EventOrganizerDashboard = () => {
     setShowEdit(true);
   };
 
-  // Cancel Event with penalty logic
-  const handleCancelEvent = (event) => {
-    const now = new Date();
-    const eventStart = new Date(event.startTime);
-    const freeDeadline = new Date(eventStart);
-    freeDeadline.setDate(freeDeadline.getDate() - 7); // 7 days before is free cancellation
-    
-    const penalty = now > freeDeadline;
-    const penaltyAmount = penalty ? event.retailPrice * 0.1 : 0; // 10% penalty
-    
-    const confirmMessage = penalty 
-      ? `Are you sure you want to cancel this event? A penalty of $${penaltyAmount.toFixed(2)} (10%) will apply.`
-      : `Are you sure you want to cancel this event? No penalty will apply.`;
+  // Delete Event
+  const handleDeleteEvent = async (event) => {
+    const confirmMessage = `Are you sure you want to delete this event? This action cannot be undone.`;
     
     if (window.confirm(confirmMessage)) {
-      const updatedEvent = {
-        ...event,
-        status: "CANCELLED",
-        penaltyApplied: penalty,
-        penaltyAmount: penaltyAmount,
-        cancelledAt: new Date().toISOString()
-      };
-      
-      setEvents(events.map(ev => ev.id === event.id ? updatedEvent : ev));
-      
-      setAlerts([...alerts, {
-        id: Date.now(),
-        type: penalty ? 'warning' : 'success',
-        message: `Event "${event.name}" cancelled successfully.` + (penalty ? ` Penalty: $${penaltyAmount.toFixed(2)}` : ' No penalty applied.'),
-        timestamp: new Date().toISOString()
-      }]);
+      try {
+        await deleteEvent(event.id);
+        
+        // Remove event from local state
+        setEvents(events.filter(ev => ev.id !== event.id));
+        
+        setAlerts([...alerts, {
+          id: Date.now(),
+          type: 'success',
+          message: `Event "${event.name}" deleted successfully.`,
+          timestamp: new Date().toISOString()
+        }]);
+      } catch (error) {
+        console.error("Error deleting event:", error);
+        setAlerts([...alerts, {
+          id: Date.now(),
+          type: 'error',
+          message: `Failed to delete event: ${error.message || 'Please try again.'}`,
+          timestamp: new Date().toISOString()
+        }]);
+      }
     }
   };
 
@@ -928,7 +923,7 @@ const EventOrganizerDashboard = () => {
             filteredEvents={filteredEvents}
             EVENT_TYPE_LABELS={EVENT_TYPE_LABELS}
             onEditEvent={handleEditEvent}
-            onCancelEvent={handleCancelEvent}
+            onDeleteEvent={handleDeleteEvent}
             onBookVenue={handleBookVenue}
             onBookService={handleBookService}
             onEditVenueBooking={handleEditVenueBooking}
