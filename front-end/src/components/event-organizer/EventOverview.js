@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { getAllEvents, getEventsByType } from "../../api/eventApi";
+import { getAllEvents, getEventsByType, getEventsByOrganizer } from "../../api/eventApi";
 import { getBookingsByEventId } from "../../api/bookingApi";
 import { PieChart, Pie, Cell, ResponsiveContainer, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend } from "recharts";
 import "./EventOverview.css";
@@ -55,7 +55,7 @@ const EventOverview = () => {
 
   const loadEvents = async () => {
     try {
-      const response = await getAllEvents(0, 100);
+      const response = await getEventsByOrganizer(0, 100);
       const eventsData = response.content || [];
       setEvents(eventsData);
       

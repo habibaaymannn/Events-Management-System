@@ -13,6 +13,7 @@ import com.example.cdr.eventsmanagementsystem.DTO.projections.EventTypeCount;
 import com.example.cdr.eventsmanagementsystem.Model.Event.Event;
 import com.example.cdr.eventsmanagementsystem.Model.Event.EventStatus;
 import com.example.cdr.eventsmanagementsystem.Model.Event.EventType;
+import com.example.cdr.eventsmanagementsystem.Model.User.Organizer;
 
 @Repository
 public interface EventRepository extends JpaRepository<Event, Long> {
@@ -35,4 +36,6 @@ public interface EventRepository extends JpaRepository<Event, Long> {
 
     @Query("select e.type as type, count(e) as count from Event e group by e.type")
     List<EventTypeCount> countEventsByType();
+
+    Page<Event> findByOrganizer(Organizer organizer, Pageable pageable);
 }
