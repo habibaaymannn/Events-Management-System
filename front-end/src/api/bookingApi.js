@@ -207,7 +207,7 @@ export async function getBookingsByAttendeeId(attendeeId) {
 
 /**
  * Cancel booking
- * @param {Long} bookingId - The attendee ID.
+ * @param {Long} bookingId - The booking ID.
  * @param cancellationReason
  */
 export async function cancelVenueBooking(bookingId, cancellationReason = "") {
@@ -225,11 +225,21 @@ export async function cancelVenueBooking(bookingId, cancellationReason = "") {
     throw new Error(`Failed to cancel booking: ${response.statusText}`);
   }
 
-  return await response.json();
+  if (response.status === 204 || response.headers.get('content-length') === '0') {
+    return { success: true, message: 'Booking cancelled successfully' };
+  }
+
+  try {
+    return await response.json();
+  } catch (error) {
+    // If JSON parsing fails, log the error and return success message
+    console.warn('Failed to parse JSON response:', error);
+    return { success: true, message: 'Booking cancelled successfully' };
+  }
 }
 /**
  * Cancel booking
- * @param {Long} bookingId - The attendee ID.
+ * @param {Long} bookingId - The booking ID.
  * @param cancellationReason
  */
 export async function cancelServiceBooking(bookingId, cancellationReason = "") {
@@ -247,7 +257,17 @@ export async function cancelServiceBooking(bookingId, cancellationReason = "") {
     throw new Error(`Failed to cancel booking: ${response.statusText}`);
   }
 
-   return await response.json();
+  if (response.status === 204 || response.headers.get('content-length') === '0') {
+    return { success: true, message: 'Booking cancelled successfully' };
+  }
+
+  try {
+    return await response.json();
+  } catch (error) {
+    // If JSON parsing fails, log the error and return success message
+    console.warn('Failed to parse JSON response:', error);
+    return { success: true, message: 'Booking cancelled successfully' };
+  }
 }
 
 /**

@@ -75,6 +75,7 @@ const EventsTable = ({
                               className={`btn ${hasVenueBooking ? 'btn-info' : 'btn-primary'}`}
                               onClick={() => hasVenueBooking ? onEditVenueBooking(event, bookings.venue[0]) : onBookVenue(event)}
                               style={{ padding: "6px 12px", fontSize: "0.8rem" }}
+                              title={hasVenueBooking ? 'Edit existing venue booking' : 'Book a venue (one per event)'}
                             >
                               {hasVenueBooking ? 'EDIT VENUE' : 'BOOK VENUE'}
                             </button>

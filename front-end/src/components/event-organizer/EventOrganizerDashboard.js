@@ -327,6 +327,10 @@ const EventOrganizerDashboard = () => {
   const [selectedVenue, setSelectedVenue] = useState(null);
   const [selectedService, setSelectedService] = useState(null);
   const [eventBookings, setEventBookings] = useState({}); // Track bookings by event ID
+  const [cancellationReason, setCancellationReason] = useState("requested_by_customer");
+  const [showCancellationModal, setShowCancellationModal] = useState(false);
+  const [bookingToCancel, setBookingToCancel] = useState(null);
+  const [cancellationType, setCancellationType] = useState(null); // 'venue' or 'service'
 
  // Add or Edit Event
   const handleEventFormSubmit = async (e) => {
@@ -439,10 +443,14 @@ const EventOrganizerDashboard = () => {
 
   // Handle venue booking
   const handleBookVenue = (event) => {
-    // Check if venue is already booked
+    // Check if venue is already booked (only check for non-cancelled bookings)
     const bookings = eventBookings[event.id] || { venue: [], service: [] };
-    if (bookings.venue && bookings.venue.length > 0) {
-      alert("This event already has a venue booked. Only one venue per event is allowed.");
+    const activeVenueBookings = bookings.venue?.filter(booking => 
+      booking.status !== 'CANCELLED' && booking.status !== 'CANCELLED_BY_CUSTOMER' && booking.status !== 'CANCELLED_BY_PROVIDER'
+    ) || [];
+    
+    if (activeVenueBookings.length > 0) {
+      alert("This event already has an active venue booking. Only one active venue per event is allowed. Please cancel the existing venue booking first.");
       return;
     }
     
@@ -459,7 +467,9 @@ const EventOrganizerDashboard = () => {
   // Handle edit venue booking
   const handleEditVenueBooking = (event, venueBooking) => {
     setSelectedEventForBooking(event);
-    setSelectedVenueBooking(venueBooking);
+    // Get all venue bookings for this event
+    const allVenueBookings = eventBookings[event.id]?.venue || [];
+    setSelectedVenueBooking(allVenueBookings); 
     setShowEditVenueModal(true);
   };
 
@@ -470,8 +480,35 @@ const EventOrganizerDashboard = () => {
     setShowEditServiceModal(true);
   };
 
+  const handleCancelWithReason = (booking, type) => {
+    setBookingToCancel(booking);
+    setCancellationType(type);
+    setCancellationReason("requested_by_customer");
+    setShowCancellationModal(true);
+  };
+
+  const confirmCancellation = async () => {
+    if (!bookingToCancel || !cancellationType) return;
+
+    const bookingId = bookingToCancel.id || bookingToCancel.bookingId || bookingToCancel.bookingID;
+    
+    try {
+      if (cancellationType === 'venue') {
+        await handleCancelVenueBooking(bookingId, cancellationReason);
+      } else if (cancellationType === 'service') {
+        await handleCancelServiceBooking(bookingId, cancellationReason);
+      }
+      
+      setShowCancellationModal(false);
+      setBookingToCancel(null);
+      setCancellationType(null);
+    } catch (error) {
+      console.error("Error confirming cancellation:", error);
+    }
+  };
+
   // Handle venue booking cancellation
-  const handleCancelVenueBooking = async (bookingId, reason = "User requested cancellation") => {
+  const handleCancelVenueBooking = async (bookingId, reason = "requested_by_customer") => {
     try {
       if (!bookingId) {
         setAlerts(prev => [...prev, {
@@ -482,44 +519,93 @@ const EventOrganizerDashboard = () => {
         }]);
         return;
       }
+      
+      console.log('Cancelling venue booking with ID:', bookingId, 'Reason:', reason);
       await cancelVenueBooking(bookingId, reason);
       
-      // Reload bookings for the event
-      const [venueBookings, serviceBookings] = await Promise.all([
-        getVenueBookingsByEventId(selectedEventForBooking.id).catch(() => []),
-        getServiceBookingsByEventId(selectedEventForBooking.id).catch(() => [])
-      ]);
-      
-      setEventBookings(prev => ({
-        ...prev,
-        [selectedEventForBooking.id]: {
-          venue: venueBookings || [],
-          service: serviceBookings || []
-        }
-      }));
+      // Reload bookings from server to get updated status
+      try {
+        const [venueBookings, serviceBookings] = await Promise.all([
+          getVenueBookingsByEventId(selectedEventForBooking.id).catch(() => []),
+          getServiceBookingsByEventId(selectedEventForBooking.id).catch(() => [])
+        ]);
+        
+        setEventBookings(prev => ({
+          ...prev,
+          [selectedEventForBooking.id]: {
+            venue: venueBookings || [],
+            service: serviceBookings || []
+          }
+        }));
+
+        setSelectedVenueBooking(venueBookings || []);
+      } catch (reloadError) {
+        console.error("Error reloading bookings after cancellation:", reloadError);
+      }
 
       setAlerts(prev => [...prev, {
         id: Date.now(),
         type: 'success',
-        message: 'Venue booking cancelled successfully!',
+        message: 'Venue booking cancelled successfully! You can now book a new venue.',
         timestamp: new Date().toISOString()
       }]);
 
-      setShowEditVenueModal(false);
-      setSelectedVenueBooking(null);
     } catch (error) {
       console.error("Error cancelling venue booking:", error);
       setAlerts(prev => [...prev, {
         id: Date.now(),
         type: 'error',
-        message: 'Failed to cancel venue booking. Please try again.',
+        message: `Failed to cancel venue booking: ${error.message || 'Please try again.'}`,
         timestamp: new Date().toISOString()
       }]);
     }
   };
 
+  // Handle venue booking deletion (frontend only - hide from display)
+  const handleDeleteVenueBooking = (bookingId) => {
+    if (!bookingId) {
+      setAlerts(prev => [...prev, {
+        id: Date.now(),
+        type: 'error',
+        message: 'Cannot delete venue booking: missing booking ID.',
+        timestamp: new Date().toISOString()
+      }]);
+      return;
+    }
+    
+    console.log('Hiding venue booking with ID:', bookingId, 'from frontend display');
+    
+    // Remove the booking from the frontend state (hide from display)
+    setEventBookings(prev => ({
+      ...prev,
+      [selectedEventForBooking.id]: {
+        ...prev[selectedEventForBooking.id],
+        venue: prev[selectedEventForBooking.id]?.venue?.filter(booking => 
+          booking.id !== bookingId && booking.bookingId !== bookingId && booking.bookingID !== bookingId
+        ) || []
+      }
+    }));
+
+    // Also update the selectedVenueBooking array to remove the hidden booking
+    setSelectedVenueBooking(prev => {
+      if (Array.isArray(prev)) {
+        return prev.filter(booking => 
+          booking.id !== bookingId && booking.bookingId !== bookingId && booking.bookingID !== bookingId
+        );
+      }
+      return prev;
+    });
+
+    setAlerts(prev => [...prev, {
+      id: Date.now(),
+      type: 'success',
+      message: 'Venue booking hidden from display! You can now book a new venue.',
+      timestamp: new Date().toISOString()
+    }]);
+  };
+
   // Handle service booking cancellation
-  const handleCancelServiceBooking = async (bookingId, reason = "User requested cancellation") => {
+  const handleCancelServiceBooking = async (bookingId, reason = "requested_by_customer") => {
     try {
       if (!bookingId) {
         setAlerts(prev => [...prev, {
@@ -530,21 +616,35 @@ const EventOrganizerDashboard = () => {
         }]);
         return;
       }
+      
+      console.log('Cancelling service booking with ID:', bookingId, 'Reason:', reason);
       await cancelServiceBooking(bookingId, reason);
       
-      // Reload bookings for the event
-      const [venueBookings, serviceBookings] = await Promise.all([
-        getVenueBookingsByEventId(selectedEventForBooking.id).catch(() => []),
-        getServiceBookingsByEventId(selectedEventForBooking.id).catch(() => [])
-      ]);
-      
-      setEventBookings(prev => ({
-        ...prev,
-        [selectedEventForBooking.id]: {
-          venue: venueBookings || [],
-          service: serviceBookings || []
-        }
-      }));
+      // Reload bookings from server to get updated status
+      try {
+        const [venueBookings, serviceBookings] = await Promise.all([
+          getVenueBookingsByEventId(selectedEventForBooking.id).catch(() => []),
+          getServiceBookingsByEventId(selectedEventForBooking.id).catch(() => [])
+        ]);
+        
+        setEventBookings(prev => ({
+          ...prev,
+          [selectedEventForBooking.id]: {
+            venue: venueBookings || [],
+            service: serviceBookings || []
+          }
+        }));
+
+        // Update selected service bookings with fresh data
+        const updatedServiceBookings = serviceBookings?.filter(booking => 
+          selectedServiceBookings.some(selected => 
+            selected.id === booking.id || selected.bookingId === booking.bookingId || selected.bookingID === booking.bookingID
+          )
+        ) || [];
+        setSelectedServiceBookings(updatedServiceBookings);
+      } catch (reloadError) {
+        console.error("Error reloading bookings after cancellation:", reloadError);
+      }
 
       setAlerts(prev => [...prev, {
         id: Date.now(),
@@ -552,18 +652,53 @@ const EventOrganizerDashboard = () => {
         message: 'Service booking cancelled successfully!',
         timestamp: new Date().toISOString()
       }]);
-
-      // Update selected service bookings to remove cancelled one
-      setSelectedServiceBookings(prev => prev.filter(booking => booking.id !== bookingId));
     } catch (error) {
       console.error("Error cancelling service booking:", error);
       setAlerts(prev => [...prev, {
         id: Date.now(),
         type: 'error',
-        message: 'Failed to cancel service booking. Please try again.',
+        message: `Failed to cancel service booking: ${error.message || 'Please try again.'}`,
         timestamp: new Date().toISOString()
       }]);
     }
+  };
+
+  // Handle service booking deletion (frontend only - hide from display)
+  const handleDeleteServiceBooking = (bookingId) => {
+    if (!bookingId) {
+      setAlerts(prev => [...prev, {
+        id: Date.now(),
+        type: 'error',
+        message: 'Cannot hide service booking: missing booking ID.',
+        timestamp: new Date().toISOString()
+      }]);
+      return;
+    }
+    
+    console.log('Hiding service booking with ID:', bookingId, 'from frontend display');
+    
+    // Remove the booking from the frontend state (hide from display)
+    setEventBookings(prev => ({
+      ...prev,
+      [selectedEventForBooking.id]: {
+        ...prev[selectedEventForBooking.id],
+        service: prev[selectedEventForBooking.id]?.service?.filter(booking => 
+          booking.id !== bookingId && booking.bookingId !== bookingId && booking.bookingID !== bookingId
+        ) || []
+      }
+    }));
+
+    // Update selected service bookings to remove hidden one
+    setSelectedServiceBookings(prev => prev.filter(booking => 
+      booking.id !== bookingId && booking.bookingId !== bookingId && booking.bookingID !== bookingId
+    ));
+
+    setAlerts(prev => [...prev, {
+      id: Date.now(),
+      type: 'success',
+      message: 'Service booking hidden from display!',
+      timestamp: new Date().toISOString()
+    }]);
   };
 
   // Handle venue selection and booking
@@ -1071,39 +1206,112 @@ const EventOrganizerDashboard = () => {
       )}
 
       {/* Edit Venue Booking Modal */}
-      {showEditVenueModal && selectedEventForBooking && selectedVenueBooking && (
+      {showEditVenueModal && selectedEventForBooking && selectedVenueBooking && Array.isArray(selectedVenueBooking) && (
         <div className="modal-overlay" onClick={() => setShowEditVenueModal(false)}>
           <div className="modal-content" onClick={(e) => e.stopPropagation()}>
             <div className="modal-header">
-              <h4>Manage Venue Booking for: {selectedEventForBooking.name}</h4>
+              <h4>Manage Venue Bookings for: {selectedEventForBooking.name}</h4>
               <button className="modal-close" onClick={() => setShowEditVenueModal(false)}>×</button>
             </div>
             <div className="modal-body">
               <div style={{ marginBottom: '1.5rem' }}>
-                <h5>Booking Details</h5>
-                <p><strong>Venue ID:</strong> {selectedVenueBooking.venueId}</p>
-                <p><strong>Status:</strong> <span className={`status-badge status-${selectedVenueBooking.status?.toLowerCase()}`}>{selectedVenueBooking.status}</span></p>
-                <p><strong>Amount:</strong> ${selectedVenueBooking.amount}</p>
-                <p><strong>Start Time:</strong> {new Date(selectedVenueBooking.startTime).toLocaleString()}</p>
-                <p><strong>End Time:</strong> {new Date(selectedVenueBooking.endTime).toLocaleString()}</p>
-                {selectedVenueBooking.stripePaymentId && (
-                  <p><strong>Payment ID:</strong> {selectedVenueBooking.stripePaymentId}</p>
-                )}
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
+                  <h5>All Venue Bookings ({selectedVenueBooking.length})</h5>
+                  <button
+                    className="btn btn-success"
+                    onClick={() => {
+                      setShowEditVenueModal(false);
+                      handleBookVenue(selectedEventForBooking);
+                    }}
+                    style={{ padding: '6px 12px', fontSize: '0.8rem' }}
+                  >
+                    Add New Venue
+                  </button>
+                </div>
+                
+                <div style={{ display: 'grid', gap: '1rem', maxHeight: '400px', overflowY: 'auto' }}>
+                  {selectedVenueBooking.length === 0 ? (
+                    <div style={{ textAlign: 'center', padding: '2rem', background: '#f8f9fa', borderRadius: '8px' }}>
+                      <p style={{ color: '#6c757d', fontStyle: 'italic', marginBottom: '1rem' }}>No venue bookings found</p>
+                      <p style={{ fontSize: '0.9rem', color: '#495057' }}>
+                        Click "Add New Venue" to book a venue for this event.
+                      </p>
+                    </div>
+                  ) : (
+                    selectedVenueBooking.map((booking, index) => (
+                      <div key={booking.id || booking.bookingId || booking.bookingID || index} className="card" style={{ padding: '1rem', border: '1px solid #e9ecef' }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                          <div>
+                            <h6 style={{ margin: 0, color: '#2c3e50' }}>Venue ID: {booking.venueId}</h6>
+                            <p style={{ margin: '0.25rem 0', color: '#6c757d', fontSize: '0.9rem' }}>
+                              <strong>Booking ID:</strong> {booking.id || booking.bookingId || booking.bookingID || 'Not found'}
+                            </p>
+                            <p style={{ margin: '0.25rem 0', color: '#6c757d', fontSize: '0.9rem' }}>
+                              Status: <span className={`status-badge status-${booking.status?.toLowerCase()}`}>{booking.status}</span>
+                            </p>
+                            <p style={{ margin: '0.25rem 0', color: '#6c757d', fontSize: '0.9rem' }}>
+                              Amount: ${booking.amount}
+                            </p>
+                            <p style={{ margin: '0.25rem 0', color: '#6c757d', fontSize: '0.9rem' }}>
+                              Start: {new Date(booking.startTime).toLocaleString()}
+                            </p>
+                            <p style={{ margin: '0.25rem 0', color: '#6c757d', fontSize: '0.9rem' }}>
+                              End: {new Date(booking.endTime).toLocaleString()}
+                            </p>
+                            {booking.stripePaymentId && (
+                              <p style={{ margin: '0.25rem 0', color: '#6c757d', fontSize: '0.8rem' }}>
+                                Payment ID: {booking.stripePaymentId}
+                              </p>
+                            )}
+                          </div>
+                          <div>
+                            {(() => {
+                              const isCancelled = booking.status === 'CANCELLED' || 
+                                                booking.status === 'CANCELLED_BY_CUSTOMER' || 
+                                                booking.status === 'CANCELLED_BY_PROVIDER';
+                              
+                              if (isCancelled) {
+                                // Show Hide button for cancelled bookings
+                                return (
+                                  <button
+                                    className="btn btn-danger"
+                                    onClick={() => {
+                                      if (window.confirm('Are you sure you want to hide this cancelled venue booking from the display? This action cannot be undone.')) {
+                                        const bid = booking?.id ?? booking?.bookingId ?? booking?.bookingID;
+                                        if (bid) {
+                                          handleDeleteVenueBooking(bid);
+                                        } else {
+                                          alert('Cannot hide booking: missing booking ID');
+                                        }
+                                      }
+                                    }}
+                                    style={{ padding: '4px 8px', fontSize: '0.7rem', backgroundColor: '#dc3545', borderColor: '#dc3545' }}
+                                  >
+                                    Hide
+                                  </button>
+                                );
+                              } else {
+                                // Show Cancel button for active bookings
+                                return (
+                                  <button
+                                    className="btn btn-danger"
+                                    onClick={() => handleCancelWithReason(booking, 'venue')}
+                                    style={{ padding: '4px 8px', fontSize: '0.7rem' }}
+                                  >
+                                    Cancel
+                                  </button>
+                                );
+                              }
+                            })()}
+                          </div>
+                        </div>
+                      </div>
+                    ))
+                  )}
+                </div>
               </div>
               
               <div className="modal-actions">
-                <button
-                  className="event-btn danger"
-                  onClick={() => {
-                    if (window.confirm('Are you sure you want to cancel this venue booking? This action cannot be undone.')) {
-                      const bid = selectedVenueBooking?.id ?? selectedVenueBooking?.bookingId ?? selectedVenueBooking?.bookingID;
-                      handleCancelVenueBooking(bid);
-                    }
-                  }}
-                  disabled={selectedVenueBooking.status === 'CANCELLED'}
-                >
-                  Cancel Booking
-                </button>
                 <button
                   className="event-btn secondary"
                   onClick={() => {
@@ -1149,31 +1357,64 @@ const EventOrganizerDashboard = () => {
                       <div key={booking.id} className="card" style={{ padding: '1rem', border: '1px solid #e9ecef' }}>
                         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                           <div>
-                            <h6>Service ID: {booking.serviceId}</h6>
-                            <p>Status: <span className={`status-badge status-${booking.status?.toLowerCase()}`}>{booking.status}</span></p>
-                            <p>Amount: ${booking.amount}</p>
-                            {booking.stripePaymentId && <p>Payment ID: {booking.stripePaymentId}</p>}
-                          </div>
-                          <div>
-                            {booking.status === "ACCEPTED" && !booking.stripePaymentId && (
-                                <button
-                                    className="btn btn-success"
-                                    onClick={() => handlePayNow(booking)}
-                                >
-                                  Pay Now
-                                </button>
+                            <h6 style={{ margin: 0, color: '#2c3e50' }}>Service ID: {booking.serviceId}</h6>
+                            <p style={{ margin: '0.25rem 0', color: '#6c757d', fontSize: '0.9rem' }}>
+                              <strong>Booking ID:</strong> {booking.id || booking.bookingId || booking.bookingID || 'Not found'}
+                            </p>
+                            <p style={{ margin: '0.25rem 0', color: '#6c757d', fontSize: '0.9rem' }}>
+                              Status: <span className={`status-badge status-${booking.status?.toLowerCase()}`}>{booking.status}</span>
+                            </p>
+                            <p style={{ margin: '0.25rem 0', color: '#6c757d', fontSize: '0.9rem' }}>
+                              Amount: ${booking.amount}
+                            </p>
+                            {booking.stripePaymentId && (
+                              <p style={{ margin: '0.25rem 0', color: '#6c757d', fontSize: '0.8rem' }}>
+                                Payment ID: {booking.stripePaymentId}
+                              </p>
                             )}
-                            {["PENDING", "ACCEPTED", "BOOKED"].includes(booking.status) && booking.status !== "CANCELLED" && (
+                          </div>
+                        <div>
+                          {(() => {
+                            const isCancelled = booking.status === 'CANCELLED' || 
+                                              booking.status === 'CANCELLED_BY_CUSTOMER' || 
+                                              booking.status === 'CANCELLED_BY_PROVIDER';
+                            
+                            if (isCancelled) {
+                              // Show Hide button for cancelled bookings
+                              return (
                                 <button
-                                    className="btn btn-danger"
-                                    onClick={() => handleCancelServiceBooking(booking.id)}
+                                  className="btn btn-danger"
+                                  onClick={() => {
+                                    if (window.confirm('Are you sure you want to hide this cancelled service booking from the display? This action cannot be undone.')) {
+                                      const bid = booking?.id ?? booking?.bookingId ?? booking?.bookingID;
+                                      if (bid) {
+                                        handleDeleteServiceBooking(bid);
+                                      } else {
+                                        alert('Cannot hide booking: missing booking ID');
+                                      }
+                                    }
+                                  }}
+                                  style={{ padding: '4px 8px', fontSize: '0.7rem', backgroundColor: '#dc3545', borderColor: '#dc3545' }}
+                                >
+                                  Hide
+                                </button>
+                              );
+                            } else {
+                              // Show Cancel button for active bookings
+                              return (
+                                <button
+                                  className="btn btn-danger"
+                                  onClick={() => handleCancelWithReason(booking, 'service')}
+                                  style={{ padding: '4px 8px', fontSize: '0.7rem' }}
                                 >
                                   Cancel
                                 </button>
-                            )}
-                          </div>
+                              );
+                            }
+                          })()}
                         </div>
                       </div>
+                    </div>
                   ))}
                 </div>
               </div>
@@ -1189,6 +1430,66 @@ const EventOrganizerDashboard = () => {
                   Close
                 </button>
               </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Cancellation Reason Modal */}
+      {showCancellationModal && bookingToCancel && (
+        <div className="modal-overlay" onClick={() => setShowCancellationModal(false)}>
+          <div className="modal-content" onClick={(e) => e.stopPropagation()}>
+            <div className="modal-header">
+              <h4>Cancel {cancellationType === 'venue' ? 'Venue' : 'Service'} Booking</h4>
+              <button className="modal-close" onClick={() => setShowCancellationModal(false)}>×</button>
+            </div>
+            <div className="modal-body">
+              <div style={{ marginBottom: '1.5rem' }}>
+                <h5>Booking Details</h5>
+                <p><strong>Booking ID:</strong> {bookingToCancel.id || bookingToCancel.bookingId || bookingToCancel.bookingID || 'Not found'}</p>
+                {cancellationType === 'venue' ? (
+                  <p><strong>Venue ID:</strong> {bookingToCancel.venueId}</p>
+                ) : (
+                  <p><strong>Service ID:</strong> {bookingToCancel.serviceId}</p>
+                )}
+                <p><strong>Amount:</strong> ${bookingToCancel.amount}</p>
+              </div>
+              
+              <div className="form-group">
+                <label className="form-label">Cancellation Reason *</label>
+                <select
+                  value={cancellationReason}
+                  onChange={(e) => setCancellationReason(e.target.value)}
+                  className="form-control"
+                  required
+                >
+                  <option value="requested_by_customer">Requested by Customer</option>
+                  <option value="duplicate">Duplicate Booking</option>
+                  <option value="fraudulent">Fraudulent Booking</option>
+                </select>
+              </div>
+              
+              <div style={{ background: '#f8f9fa', padding: '1rem', borderRadius: '8px', marginTop: '1rem' }}>
+                <h6 style={{ margin: '0 0 0.5rem 0', color: '#dc3545' }}>⚠️ Warning</h6>
+                <p style={{ margin: 0, fontSize: '0.9rem', color: '#6c757d' }}>
+                  This action cannot be undone. The booking will be permanently cancelled and you will be able to book a new {cancellationType === 'venue' ? 'venue' : 'service'}.
+                </p>
+              </div>
+            </div>
+            
+            <div className="modal-actions">
+              <button
+                className="event-btn danger"
+                onClick={confirmCancellation}
+              >
+                Confirm Cancellation
+              </button>
+              <button
+                className="event-btn secondary"
+                onClick={() => setShowCancellationModal(false)}
+              >
+                Cancel
+              </button>
             </div>
           </div>
         </div>
