@@ -1,3 +1,5 @@
+// src/api/bookingApi.js
+
 import { buildApiUrl, getAuthHeaders } from '../config/apiConfig';
 
 function unwrapApiData(json) { 
@@ -176,18 +178,32 @@ export async function getBookingsByEventId(eventId) {
  * @returns {Promise<Array>} - Array of booking objects for the attendee.
  */
 export async function getBookingsByAttendeeId(attendeeId) {
-  const url = buildApiUrl(`/v1/bookings/attendee/${attendeeId}`);
+  // Backend exposes attendee event bookings under /v1/bookings/events/attendee/{id}
+  // Keeping your signature (no page/size params) — we use sensible defaults.
+  const page = 0;
+  const size = 50;
+
+  const url = buildApiUrl(
+    `/v1/bookings/events/attendee/${encodeURIComponent(attendeeId)}?page=${page}&size=${size}`
+  );
+
   const response = await fetch(url, {
     method: "GET",
     headers: getAuthHeaders(),
   });
 
   if (!response.ok) {
-    throw new Error(`Failed to get attendee bookings: ${response.statusText}`);
+    throw new Error(`Failed to get attendee bookings: ${response.status} ${response.statusText}`);
   }
 
-  return await response.json();
+  const json = await response.json();
+  // Match your existing unwrap style
+  if (Array.isArray(json)) return json;
+  if (json?.data?.content) return json.data.content;
+  if (json?.content) return json.content;
+  return json?.data ?? [];
 }
+
 
 /**
  * Cancel booking
@@ -230,6 +246,8 @@ export async function cancelServiceBooking(bookingId, cancellationReason = "") {
   if (!response.ok) {
     throw new Error(`Failed to cancel booking: ${response.statusText}`);
   }
+
+   return await response.json();
 }
 
 /**

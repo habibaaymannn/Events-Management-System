@@ -1,0 +1,139 @@
+package com.example.cdr.eventsmanagementsystem.Controller.AdminController;
+
+import com.example.cdr.eventsmanagementsystem.Keycloak.*;
+import lombok.RequiredArgsConstructor;
+import org.keycloak.representations.idm.UserRepresentation;
+import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.web.bind.annotation.*;
+
+import com.example.cdr.eventsmanagementsystem.DTO.Admin.PasswordResetResponse;
+import com.example.cdr.eventsmanagementsystem.Email.TerminationEmailService;
+
+
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+
+@RestController
+@RequestMapping("/v1/admin")
+@RequiredArgsConstructor
+@PreAuthorize("hasRole('admin')")
+public class AdminUserController {
+
+  private final KeycloakAdminService keycloakService;
+  private final TerminationEmailService terminationEmailService;
+  /** Request body for creating a user — includes username & password to match your UI */
+  public record CreateUserRequest(
+      String firstName,
+      String lastName,
+      String email,
+      String role,
+      String username,
+      String password
+  ) {}
+
+  /** Create user */
+  @PostMapping("/users")
+  public ResponseEntity<?> create(@RequestBody CreateUserRequest req) {
+    if (req.username() == null || req.username().isBlank()) {
+      return ResponseEntity.badRequest().body("username is required");
+    }
+    if (req.password() == null || req.password().length() < 8) {
+      return ResponseEntity.badRequest().body("password must be at least 8 chars");
+    }
+    if (req.email() == null || req.email().isBlank()) {
+      return ResponseEntity.badRequest().body("email is required");
+    }
+
+    String id = keycloakService.createUser(
+        req.username().trim(),
+        req.email().trim(),
+        req.firstName(),
+        req.lastName(),
+        req.password(),
+        req.role() // e.g. admin | organizer | attendee | service_provider | venue_provider
+    );
+
+    Map<String, Object> body = new HashMap<>();
+    body.put("id", id);
+    return ResponseEntity.ok(body);
+  }
+
+  /** List users (make the shape `{ content: [...] }` to match your frontend’s `response.content || []`) */
+  @GetMapping("/users")
+  public ResponseEntity<Map<String, Object>> list(@RequestParam(defaultValue = "0") int page,
+                                                  @RequestParam(defaultValue = "50") int size) {
+    int first = Math.max(0, page) * Math.max(1, size);
+    int max = Math.max(1, size);
+    List<UserRepresentation> users = keycloakService.listUsers(first, max);
+    Map<String, Object> body = new HashMap<>();
+    body.put("content", users);
+    body.put("page", page);
+    body.put("size", size);
+    return ResponseEntity.ok(body);
+  }
+
+  /** Update a user’s role (query param) */
+@PutMapping("/users/{id}/role")
+public ResponseEntity<Map<String, String>> updateRole(@PathVariable String id,
+                                                      @RequestParam String role) {
+    keycloakService.updateUserRole(id, role);  // this updates KC (and your userType attr if you added that)
+    return ResponseEntity.ok(java.util.Map.of("role", role));
+}
+
+  /** Deactivate / Activate */
+  @PostMapping("/users/{id}/deactivate")
+  public ResponseEntity<Void> deactivate(@PathVariable String id) {
+    keycloakService.setEnabled(id, false);
+    return ResponseEntity.ok().build();
+  }
+
+  @PostMapping("/users/{id}/activate")
+  public ResponseEntity<Void> activate(@PathVariable String id) {
+    keycloakService.setEnabled(id, true);
+    return ResponseEntity.ok().build();
+  }
+
+  /** Send reset password email */
+  @PostMapping("/users/{id}/reset-password")
+  public ResponseEntity<PasswordResetResponse> reset(@PathVariable String id) {
+      PasswordResetResponse res = keycloakService.sendResetPasswordAndOptions(id);
+      return ResponseEntity.ok(res);
+  }
+
+
+  /** Delete */
+@DeleteMapping("/users/{id}")
+public ResponseEntity<Map<String, Object>> delete(@PathVariable String id,
+                                                  @RequestParam(defaultValue = "false") boolean notify,
+                                                  @RequestParam(required = false) String reason) {
+  // Fetch user first so we can email them
+  var userOpt = keycloakService.findById(id);
+  boolean notified = false;
+
+  if (notify && userOpt.isPresent()) {
+    var u = userOpt.get();
+    String email = u.getEmail();
+    String username = (u.getUsername() != null && !u.getUsername().isBlank())
+            ? u.getUsername()
+            : (u.getEmail() != null ? u.getEmail() : "user");
+    if (email != null && !email.isBlank()) {
+      // send mail
+      terminationEmailService.sendAccountTerminationEmail(email, username, reason);
+      notified = true;
+    }
+  }
+
+  // Delete from Keycloak
+  keycloakService.deleteUser(id);
+
+  return ResponseEntity.ok(
+      java.util.Map.of(
+          "deleted", true,
+          "notified", notified
+      )
+  );
+}
+
+}
