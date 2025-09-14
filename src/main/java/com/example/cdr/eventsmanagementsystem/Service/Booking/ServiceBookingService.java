@@ -2,10 +2,13 @@ package com.example.cdr.eventsmanagementsystem.Service.Booking;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import java.util.Objects;
 
 import com.example.cdr.eventsmanagementsystem.Model.Booking.BookingType;
 
+import com.example.cdr.eventsmanagementsystem.NotificationEvent.BookingUpdates.ServiceBookingUpdate;
 import com.example.cdr.eventsmanagementsystem.Service.Payment.StripeService;
+import com.example.cdr.eventsmanagementsystem.Util.BookingUtil;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -53,6 +56,7 @@ public class ServiceBookingService {
     private final StripeService stripeService;
     private final ServiceBookingMapper bookingMapper;
     private final ApplicationEventPublisher eventPublisher;
+    private final BookingUtil bookingUtil;
 
     public Page<ServiceBookingResponse> getAllServiceBookings(Pageable pageable) {
         Page<ServiceBooking> bookings = bookingRepository.findAll(pageable);
@@ -92,40 +96,22 @@ public class ServiceBookingService {
 
     @Transactional
     public ServiceBookingResponse createBooking(ServiceBookingRequest request) {
-        Services service = serviceRepository.findById(request.getServiceId()).orElseThrow(() -> new EntityNotFoundException(SERVICE_NOT_FOUND));
-
         Organizer organizer = userSyncService.ensureUserExists(Organizer.class);
         if (organizer.getStripeCustomerId() == null) {
             Customer createdCustomer = stripeService.createCustomer(organizer.getEmail(), organizer.getFullName(), null);
             organizer.setStripeCustomerId(createdCustomer.getId());
             userSyncService.getHandlerForRole(userSyncService.getCurrentUserRole(SecurityContextHolder.getContext().getAuthentication())).saveUser(organizer);
         }
-
         ServiceBooking booking = bookingMapper.toServiceBooking(request);
-        var session = stripeService.createCheckoutSession(
-                organizer.getStripeCustomerId(),
-                BigDecimal.valueOf(service.getPrice()),
-                request.getCurrency(),
-                "Service booking for: " + service.getName(),
-                booking.getId(),
-                SETUP_FUTURE_USAGE_ON_SESSION,
-                request.getIsCaptured() != null ? request.getIsCaptured() : false,
-                BookingType.SERVICE
-        );
-        booking.setStripeSessionId(session.getId());
-
+        booking.setStatus(BookingStatus.PENDING);
         bookingRepository.save(booking);
         eventPublisher.publishEvent(new ServiceBookingCreated(booking));
-
-        ServiceBookingResponse response = bookingMapper.toServiceBookingResponse(booking);
-        response.setPaymentUrl(session.getUrl());
-        return response;
+        return bookingMapper.toServiceBookingResponse(booking);
     }
 
     @Transactional
     public ServiceBookingResponse updateBookingStatus(Long bookingId, BookingStatus status) {
         ServiceBooking booking = bookingRepository.findById(bookingId).orElseThrow(() -> new EntityNotFoundException(BOOKING_NOT_FOUND));
-
         String currentUserId = AuthUtil.getCurrentUserId();
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
         String userRole = userSyncService.getCurrentUserRole(authentication);
@@ -133,19 +119,62 @@ public class ServiceBookingService {
         boolean isOrganizer = currentUserId != null && currentUserId.equals(booking.getCreatedBy());
         boolean isProvider = currentUserId != null && currentUserId.equals(providerId);
         boolean isAdmin = ADMIN_ROLE.equals(userRole);
+
         if (!(isOrganizer || isProvider || isAdmin)) {
             throw new RuntimeException(YOU_CAN_ONLY_UPDATE_YOUR_OWN_BOOKINGS);
         }
-
         BookingStatus oldStatus = booking.getStatus();
-        booking.setStatus(status);
-
-        if (oldStatus == BookingStatus.PENDING && status == BookingStatus.BOOKED) {
-            eventPublisher.publishEvent(new ServiceBookingConfirmed(booking));
+        if (oldStatus == BookingStatus.PENDING && status == BookingStatus.ACCEPTED) {
+            booking.setStatus(BookingStatus.ACCEPTED);
+            bookingRepository.save(booking);
+            eventPublisher.publishEvent(new ServiceBookingUpdate(booking)); // Notify organizer
+            return bookingMapper.toServiceBookingResponse(booking);
+            // NO Stripe session created here! Only when organizer clicks "Pay Now"
         }
+        // Provider REJECTS → change to REJECTED (no payment allowed)
+        if (oldStatus == BookingStatus.PENDING && status == BookingStatus.REJECTED) {
+            booking.setStatus(BookingStatus.REJECTED);
+            bookingRepository.save(booking);
+            eventPublisher.publishEvent(new ServiceBookingUpdate(booking)); // Notify organizer
+            return bookingMapper.toServiceBookingResponse(booking);
+        }
+        // Stripe webhook will move ACCEPTED → BOOKED once paid
+        if (oldStatus == BookingStatus.ACCEPTED && status == BookingStatus.BOOKED) {
+            booking.setStatus(BookingStatus.BOOKED);
+            bookingRepository.save(booking);
+            eventPublisher.publishEvent(new ServiceBookingConfirmed(booking));
+            return bookingMapper.toServiceBookingResponse(booking);
+        }
+        throw new IllegalStateException("Invalid booking status transition: " + oldStatus + " → " + status);
+    }
+    @Transactional
+    public String createPaymentSession(Long bookingId) {
+        ServiceBooking booking = bookingRepository.findById(bookingId).orElseThrow(() -> new EntityNotFoundException(BOOKING_NOT_FOUND));
+        // Only allow payment for ACCEPTED bookings
+        if (booking.getStatus() != BookingStatus.ACCEPTED) {
+            throw new IllegalStateException("Cannot create payment session for booking status: " + booking.getStatus());
+        }
+        Services service = serviceRepository.findById(booking.getServiceId()).orElseThrow(() -> new EntityNotFoundException(SERVICE_NOT_FOUND));
+        Organizer organizer = userSyncService.getUserById(booking.getCreatedBy(), Organizer.class);
 
+        if (Objects.isNull(organizer.getStripeCustomerId())) {
+            Customer createdCustomer = stripeService.createCustomer(organizer.getEmail(), organizer.getFullName(), null);
+            organizer.setStripeCustomerId(createdCustomer.getId());
+            userSyncService.getHandlerForRole(userSyncService.getCurrentUserRole(SecurityContextHolder.getContext().getAuthentication())).saveUser(organizer);
+        }
+        var session = stripeService.createCheckoutSession(
+                organizer.getStripeCustomerId(),
+                BigDecimal.valueOf(service.getPrice()),
+                booking.getCurrency(),
+                "Service booking for: " + service.getName(),
+                booking.getId(),
+                SETUP_FUTURE_USAGE_ON_SESSION,
+                false,
+                BookingType.SERVICE
+        );
+        booking.setStripeSessionId(session.getId());
         bookingRepository.save(booking);
-        return bookingMapper.toServiceBookingResponse(booking);
+        return session.getUrl(); // Return just the payment URL
     }
 
     @Transactional
@@ -164,7 +193,8 @@ public class ServiceBookingService {
         }
 
         if (booking.getStripePaymentId() != null && booking.getStatus() == BookingStatus.BOOKED) {
-            stripeService.createRefund(booking.getStripePaymentId(), null, "Customer requested cancellation");
+            String stripeReason = bookingUtil.mapToStripeRefundReason(request.getReason());
+            stripeService.createRefund(booking.getStripePaymentId(), null, stripeReason);
             booking.setRefundProcessedAt(LocalDateTime.now());
         }
 

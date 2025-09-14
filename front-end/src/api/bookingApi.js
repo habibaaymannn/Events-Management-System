@@ -82,7 +82,21 @@ export async function bookService(bookingData) {
   if (!response.ok) throw new Error(`Failed to book service: ${response.status} ${response.statusText}`);
   return await response.json();
 }
-
+/**
+ * Create a payment session for a booking.
+ * @param {string} bookingId - ID of the booking to create a payment session for.
+ * @returns {Promise<string>} - Payment URL returned by the backend.
+ * @throws {Error} - If the request fails or response is not OK.
+ */
+export async function createServicePaymentSession(bookingId) {
+  const url = buildApiUrl(`/v1/payments/${bookingId}/create-payment-session`);
+  const response = await fetch(url, {
+    method: "POST",
+    headers: getAuthHeaders(true),
+  });
+  if (!response.ok) throw new Error(`Failed to create payment session: ${response.statusText}`);
+  return await response.text(); // Returns the payment URL as string
+}
 
 /**
  * Get booking details by ID.
@@ -203,7 +217,7 @@ export async function cancelVenueBooking(bookingId, cancellationReason = "") {
     headers: getAuthHeaders(true),
     body: JSON.stringify({
       bookingId: bookingId,
-      cancellationReason: cancellationReason
+      reason: cancellationReason
     }),
   });
 
@@ -225,7 +239,7 @@ export async function cancelServiceBooking(bookingId, cancellationReason = "") {
     headers: getAuthHeaders(true),
     body: JSON.stringify({
       bookingId: bookingId,
-      cancellationReason: cancellationReason
+      reason: cancellationReason
     }),
   });
 
