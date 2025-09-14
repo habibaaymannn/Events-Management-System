@@ -36,6 +36,7 @@ build/
 HELP.md
 node_modules/
 target/
+*.zip
 
 ### VS Code ###
 .vscode/

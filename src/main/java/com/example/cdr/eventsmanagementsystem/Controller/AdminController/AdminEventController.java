@@ -14,12 +14,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.web.PageableDefault;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
-
-/**
- * REST controller for admin event management.
- * Provides endpoints to retrieve all events, filter events by status,
- * and cancel events.
- */
+import org.springframework.http.ResponseEntity;
 
 @RestController
 @RequiredArgsConstructor
@@ -27,6 +22,7 @@ import org.springframework.web.bind.annotation.*;
 @PreAuthorize("hasRole('" + RoleConstants.ADMIN_ROLE + "')")
 @Tag(name = "Admin - Events", description = "Admin event management APIs")
 public class AdminEventController {
+
     private final AdminService adminService;
 
     @Operation(summary = "Get all events", description = "Retrieves all events with pagination")
@@ -37,7 +33,8 @@ public class AdminEventController {
 
     @Operation(summary = "Get events by status", description = "Retrieves events by their status with pagination")
     @GetMapping(AdminControllerConstants.ADMIN_EVENTS_BY_STATUS_URL)
-    public Page<EventDetailsDto> getEventsByStatus(@RequestParam EventStatus status, @ParameterObject @PageableDefault() Pageable pageable) {
+    public Page<EventDetailsDto> getEventsByStatus(@RequestParam EventStatus status,
+                                                   @ParameterObject @PageableDefault() Pageable pageable) {
         return adminService.getEventsByStatus(status, pageable);
     }
 
@@ -47,11 +44,7 @@ public class AdminEventController {
         adminService.cancelEvent(eventId);
     }
 
-     // CHANGE: Added flag endpoints because your frontend calls:
-    // POST /v1/admin/events/{eventId}/flag?reason=...
-    // GET  /v1/admin/events/flagged
-    // We expose them here and delegate to AdminService.
-    @Operation(summary = "Flag an event", description = "Flags an event for admin review")
+    @Operation(summary = "Flag an event", description = "Flags an event for admin review (reversible)")
     @PostMapping(AdminControllerConstants.ADMIN_EVENT_FLAG_URL)
     public void flagEvent(@PathVariable Long eventId, @RequestParam String reason) {
         adminService.flagEvent(eventId, reason);
@@ -59,8 +52,7 @@ public class AdminEventController {
 
     @Operation(summary = "Get flagged events", description = "Retrieves all flagged events with pagination")
     @GetMapping(AdminControllerConstants.ADMIN_EVENTS_FLAGGED_URL)
-    public Page<EventDetailsDto> getFlaggedEvents(
-            @ParameterObject @PageableDefault Pageable pageable) {
+    public Page<EventDetailsDto> getFlaggedEvents(@ParameterObject @PageableDefault Pageable pageable) {
         return adminService.getFlaggedEvents(pageable);
     }
 }
