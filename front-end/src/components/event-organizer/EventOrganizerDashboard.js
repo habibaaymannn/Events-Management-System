@@ -413,10 +413,10 @@ const EventOrganizerDashboard = () => {
     if (window.confirm(confirmMessage)) {
       try {
         await deleteEvent(event.id);
-        
+
         // Remove event from local state
         setEvents(events.filter(ev => ev.id !== event.id));
-        
+
         setAlerts([...alerts, {
           id: Date.now(),
           type: 'success',
@@ -439,10 +439,10 @@ const EventOrganizerDashboard = () => {
   const handleBookVenue = (event) => {
     // Check if venue is already booked (only check for non-cancelled bookings)
     const bookings = eventBookings[event.id] || { venue: [], service: [] };
-    const activeVenueBookings = bookings.venue?.filter(booking => 
+    const activeVenueBookings = bookings.venue?.filter(booking =>
       booking.status !== 'CANCELLED' && booking.status !== 'CANCELLED_BY_CUSTOMER' && booking.status !== 'CANCELLED_BY_PROVIDER'
     ) || [];
-    
+
     if (activeVenueBookings.length > 0) {
       alert("This event already has an active venue booking. Only one active venue per event is allowed. Please cancel the existing venue booking first.");
       return;
@@ -463,7 +463,7 @@ const EventOrganizerDashboard = () => {
     setSelectedEventForBooking(event);
     // Get all venue bookings for this event
     const allVenueBookings = eventBookings[event.id]?.venue || [];
-    setSelectedVenueBooking(allVenueBookings); 
+    setSelectedVenueBooking(allVenueBookings);
     setShowEditVenueModal(true);
   };
 
@@ -485,14 +485,14 @@ const EventOrganizerDashboard = () => {
     if (!bookingToCancel || !cancellationType) return;
 
     const bookingId = bookingToCancel.id || bookingToCancel.bookingId || bookingToCancel.bookingID;
-    
+
     try {
       if (cancellationType === 'venue') {
         await handleCancelVenueBooking(bookingId, cancellationReason);
       } else if (cancellationType === 'service') {
         await handleCancelServiceBooking(bookingId, cancellationReason);
       }
-      
+
       setShowCancellationModal(false);
       setBookingToCancel(null);
       setCancellationType(null);
@@ -513,7 +513,7 @@ const EventOrganizerDashboard = () => {
         }]);
         return;
       }
-      
+
       console.log('Cancelling venue booking with ID:', bookingId, 'Reason:', reason);
       await cancelVenueBooking(bookingId, reason);
       
@@ -523,7 +523,7 @@ const EventOrganizerDashboard = () => {
           getVenueBookingsByEventId(selectedEventForBooking.id).catch(() => []),
           getServiceBookingsByEventId(selectedEventForBooking.id).catch(() => [])
         ]);
-        
+
         setEventBookings(prev => ({
           ...prev,
           [selectedEventForBooking.id]: {
@@ -566,15 +566,15 @@ const EventOrganizerDashboard = () => {
       }]);
       return;
     }
-    
+
     console.log('Hiding venue booking with ID:', bookingId, 'from frontend display');
-    
+
     // Remove the booking from the frontend state (hide from display)
     setEventBookings(prev => ({
       ...prev,
       [selectedEventForBooking.id]: {
         ...prev[selectedEventForBooking.id],
-        venue: prev[selectedEventForBooking.id]?.venue?.filter(booking => 
+        venue: prev[selectedEventForBooking.id]?.venue?.filter(booking =>
           booking.id !== bookingId && booking.bookingId !== bookingId && booking.bookingID !== bookingId
         ) || []
       }
@@ -583,7 +583,7 @@ const EventOrganizerDashboard = () => {
     // Also update the selectedVenueBooking array to remove the hidden booking
     setSelectedVenueBooking(prev => {
       if (Array.isArray(prev)) {
-        return prev.filter(booking => 
+        return prev.filter(booking =>
           booking.id !== bookingId && booking.bookingId !== bookingId && booking.bookingID !== bookingId
         );
       }
@@ -610,7 +610,7 @@ const EventOrganizerDashboard = () => {
         }]);
         return;
       }
-      
+
       console.log('Cancelling service booking with ID:', bookingId, 'Reason:', reason);
       await cancelServiceBooking(bookingId, reason);
       
@@ -620,7 +620,7 @@ const EventOrganizerDashboard = () => {
           getVenueBookingsByEventId(selectedEventForBooking.id).catch(() => []),
           getServiceBookingsByEventId(selectedEventForBooking.id).catch(() => [])
         ]);
-        
+
         setEventBookings(prev => ({
           ...prev,
           [selectedEventForBooking.id]: {
@@ -630,8 +630,8 @@ const EventOrganizerDashboard = () => {
         }));
 
         // Update selected service bookings with fresh data
-        const updatedServiceBookings = serviceBookings?.filter(booking => 
-          selectedServiceBookings.some(selected => 
+        const updatedServiceBookings = serviceBookings?.filter(booking =>
+          selectedServiceBookings.some(selected =>
             selected.id === booking.id || selected.bookingId === booking.bookingId || selected.bookingID === booking.bookingID
           )
         ) || [];
@@ -668,22 +668,22 @@ const EventOrganizerDashboard = () => {
       }]);
       return;
     }
-    
+
     console.log('Hiding service booking with ID:', bookingId, 'from frontend display');
-    
+
     // Remove the booking from the frontend state (hide from display)
     setEventBookings(prev => ({
       ...prev,
       [selectedEventForBooking.id]: {
         ...prev[selectedEventForBooking.id],
-        service: prev[selectedEventForBooking.id]?.service?.filter(booking => 
+        service: prev[selectedEventForBooking.id]?.service?.filter(booking =>
           booking.id !== bookingId && booking.bookingId !== bookingId && booking.bookingID !== bookingId
         ) || []
       }
     }));
 
     // Update selected service bookings to remove hidden one
-    setSelectedServiceBookings(prev => prev.filter(booking => 
+    setSelectedServiceBookings(prev => prev.filter(booking =>
       booking.id !== bookingId && booking.bookingId !== bookingId && booking.bookingID !== bookingId
     ));
 
@@ -1203,7 +1203,7 @@ const EventOrganizerDashboard = () => {
                     Add New Venue
                   </button>
                 </div>
-                
+
                 <div style={{ display: 'grid', gap: '1rem', maxHeight: '400px', overflowY: 'auto' }}>
                   {selectedVenueBooking.length === 0 ? (
                     <div style={{ textAlign: 'center', padding: '2rem', background: '#f8f9fa', borderRadius: '8px' }}>
@@ -1241,10 +1241,10 @@ const EventOrganizerDashboard = () => {
                           </div>
                           <div>
                             {(() => {
-                              const isCancelled = booking.status === 'CANCELLED' || 
-                                                booking.status === 'CANCELLED_BY_CUSTOMER' || 
+                              const isCancelled = booking.status === 'CANCELLED' ||
+                                                booking.status === 'CANCELLED_BY_CUSTOMER' ||
                                                 booking.status === 'CANCELLED_BY_PROVIDER';
-                              
+
                               if (isCancelled) {
                                 // Show Hide button for cancelled bookings
                                 return (
@@ -1285,7 +1285,7 @@ const EventOrganizerDashboard = () => {
                   )}
                 </div>
               </div>
-              
+
               <div className="modal-actions">
                 <button
                   className="event-btn secondary"
@@ -1350,10 +1350,10 @@ const EventOrganizerDashboard = () => {
                           </div>
                         <div>
                           {(() => {
-                            const isCancelled = booking.status === 'CANCELLED' || 
-                                              booking.status === 'CANCELLED_BY_CUSTOMER' || 
+                            const isCancelled = booking.status === 'CANCELLED' ||
+                                              booking.status === 'CANCELLED_BY_CUSTOMER' ||
                                               booking.status === 'CANCELLED_BY_PROVIDER';
-                            
+
                             if (isCancelled) {
                               // Show Hide button for cancelled bookings
                               return (
@@ -1393,11 +1393,12 @@ const EventOrganizerDashboard = () => {
                   ))}
                 </div>
               </div>
+
               <div className="modal-actions">
                 <button
-                    className="event-btn secondary"
-                    onClick={() => {
-                      setShowEditServiceModal(false);
+                  className="event-btn secondary"
+                  onClick={() => {
+                    setShowEditServiceModal(false);
                     setSelectedServiceBookings([]);
                     setSelectedEventForBooking(null);
                   }}
@@ -1429,7 +1430,7 @@ const EventOrganizerDashboard = () => {
                 )}
                 <p><strong>Amount:</strong> ${bookingToCancel.amount}</p>
               </div>
-              
+
               <div className="form-group">
                 <label className="form-label">Cancellation Reason *</label>
                 <select
@@ -1443,7 +1444,7 @@ const EventOrganizerDashboard = () => {
                   <option value="fraudulent">Fraudulent Booking</option>
                 </select>
               </div>
-              
+
               <div style={{ background: '#f8f9fa', padding: '1rem', borderRadius: '8px', marginTop: '1rem' }}>
                 <h6 style={{ margin: '0 0 0.5rem 0', color: '#dc3545' }}>⚠️ Warning</h6>
                 <p style={{ margin: 0, fontSize: '0.9rem', color: '#6c757d' }}>
@@ -1451,7 +1452,7 @@ const EventOrganizerDashboard = () => {
                 </p>
               </div>
             </div>
-            
+
             <div className="modal-actions">
               <button
                 className="event-btn danger"
