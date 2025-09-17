@@ -9,6 +9,7 @@ import com.example.cdr.eventsmanagementsystem.Model.Booking.EventBooking;
 import com.example.cdr.eventsmanagementsystem.Model.Event.Event;
 import com.example.cdr.eventsmanagementsystem.Model.Event.EventStatus;
 import com.example.cdr.eventsmanagementsystem.Repository.EventBookingRepository;
+import com.example.cdr.eventsmanagementsystem.Repository.ServiceBookingRepository;
 import com.example.cdr.eventsmanagementsystem.Repository.EventRepository;
 import com.example.cdr.eventsmanagementsystem.Repository.UsersRepository.*;
 import com.example.cdr.eventsmanagementsystem.Repository.VenueBookingRepository;
@@ -45,6 +46,7 @@ public class StatisticsManagement {
     private final StripeService stripeService;
     private final VenueBookingRepository venueBookingRepository;
     private final EventBookingRepository eventBookingRepository;
+    private final ServiceBookingRepository serviceBookingRepository;
 
     public DashboardStatisticsDto getDashboardStatistics() {
         DashboardStatisticsDto dto = new DashboardStatisticsDto();
@@ -65,6 +67,25 @@ public class StatisticsManagement {
         return dto;
     }
 
+
+private static Map<LocalDate, Long> initDateRange(LocalDate start, LocalDate end) {
+    Map<LocalDate, Long> map = new LinkedHashMap<>();
+    for (LocalDate d = start; !d.isAfter(end); d = d.plusDays(1)) {
+        map.put(d, 0L);
+    }
+    return map;
+}
+
+private static void mergeCounts(Map<LocalDate, Long> base, List<LocalDateCount> rows) {
+    for (LocalDateCount row : rows) {
+        LocalDate d = row.getDate();
+        if (d != null && base.containsKey(d)) {
+            base.put(d, base.get(d) + row.getCount());
+        }
+    }
+}
+
+
     public Map<String, Long> getEventTypeDistribution() {
         return eventRepository.countEventsByType().stream()
                 .collect(Collectors.toMap(
@@ -73,15 +94,34 @@ public class StatisticsManagement {
                 ));
     }
 
-    public Map<LocalDate, Long> getDailyBookingCount(LocalDate startDate, LocalDate endDate) {
-        return eventBookingRepository.countDailyBookingsBetween(startDate, endDate).stream()
-                .collect(Collectors.toMap(LocalDateCount::getDate, LocalDateCount::getCount));
-    }
+public Map<LocalDate, Long> getDailyBookingCount(LocalDate startDate, LocalDate endDate) {
+    LocalDateTime startTs = startDate.atStartOfDay();
+    LocalDateTime endTs = endDate.plusDays(1).atStartOfDay().minusNanos(1); // inclusive end-of-day
 
-    public Map<LocalDate, Long> getDailyCancellationCount(LocalDate startDate, LocalDate endDate) {
-        return eventBookingRepository.countDailyCancellationsBetween(startDate, endDate).stream()
-                .collect(Collectors.toMap(LocalDateCount::getDate, LocalDateCount::getCount));
-    }
+    Map<LocalDate, Long> result = initDateRange(startDate, endDate);
+
+    mergeCounts(result, eventBookingRepository.countDailyBookingsBetween(startTs, endTs));
+    mergeCounts(result, venueBookingRepository.countDailyBookingsBetween(startTs, endTs));
+    // If you don’t have service bookings yet, comment this next line:
+    mergeCounts(result, serviceBookingRepository.countDailyBookingsBetween(startTs, endTs));
+
+    return result;
+}
+
+public Map<LocalDate, Long> getDailyCancellationCount(LocalDate startDate, LocalDate endDate) {
+    LocalDateTime startTs = startDate.atStartOfDay();
+    LocalDateTime endTs = endDate.plusDays(1).atStartOfDay().minusNanos(1);
+
+    Map<LocalDate, Long> result = initDateRange(startDate, endDate);
+
+    mergeCounts(result, eventBookingRepository.countDailyCancellationsBetween(startTs, endTs));
+    mergeCounts(result, venueBookingRepository.countDailyCancellationsBetween(startTs, endTs));
+    // Likewise, comment if ServiceBooking isn’t in yet:
+    mergeCounts(result, serviceBookingRepository.countDailyCancellationsBetween(startTs, endTs));
+
+    return result;
+}
+
 
     public Page<OrganizerRevenueDto> getRevenuePerOrganizer(LocalDate startDate, LocalDate endDate, Pageable pageable) {
         Map<String, BigDecimal> totalsByOrganizer = new HashMap<>();

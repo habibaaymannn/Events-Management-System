@@ -51,12 +51,13 @@ const AdminDashboard = () => {
       setLoading(true);
       setError(null);
       // CHANGE: fetch all required datasets in parallel
-      const today = new Date().toISOString().slice(0, 10);
+      // use the user's local day:  YYYY-MM-DD
+      const todayLocalISO = new Date().toLocaleDateString('en-CA'); // e.g. "2025-09-15"
       const [dash, types, dailyB, dailyC] = await Promise.all([
         getAdminDashboard(),               // totals + utilization
         getEventTypeDistribution(),        // map<string, number>
-        getDailyBookings(today, today),    // map<YYYY-MM-DD, number>
-        getDailyCancellations(today, today)
+        getDailyBookings(todayLocalISO, todayLocalISO),    // map<YYYY-MM-DD, number>
+        getDailyCancellations(todayLocalISO, todayLocalISO)
       ]);
 
       // Sum the (start..end) window (today => single key)
@@ -99,13 +100,13 @@ const AdminDashboard = () => {
 
   // CHANGE: prefer server-provided utilization (if available), otherwise fall back to array-based calc
   const venueUtilization = typeof dashboardData.venueUtilizationRate === 'number'
-    ? Math.round(dashboardData.venueUtilizationRate)
+    ? Math.round(dashboardData.venueUtilizationRate * 100)
     : (dashboardData.venues && dashboardData.venues.length > 0
         ? Math.round((dashboardData.venues.filter(v => v.bookings && v.bookings.length > 0).length / dashboardData.venues.length) * 100)
         : 0);
 
   const serviceUtilization = typeof dashboardData.serviceProviderUtilizationRate === 'number'
-    ? Math.round(dashboardData.serviceProviderUtilizationRate)
+    ? Math.round(dashboardData.serviceProviderUtilizationRate*100)
     : (dashboardData.services && dashboardData.services.length > 0
         ? Math.round((dashboardData.services.filter(s => s.bookings && s.bookings.length > 0).length / dashboardData.services.length) * 100)
         : 0);

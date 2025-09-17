@@ -107,12 +107,12 @@ const Analytics = () => {
         // Utilization (%)
         setVenueUtilization(
           typeof dash?.venueUtilizationRate === "number"
-            ? Math.round(dash.venueUtilizationRate)
+            ? Math.round(dash.venueUtilizationRate*100)
             : 0
         );
         setServiceUtilization(
           typeof dash?.serviceProviderUtilizationRate === "number"
-            ? Math.round(dash.serviceProviderUtilizationRate)
+            ? Math.round(dash.serviceProviderUtilizationRate*100)
             : 0
         );
 
