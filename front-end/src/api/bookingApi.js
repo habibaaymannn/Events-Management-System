@@ -158,6 +158,23 @@ export async function getBookingsByEventId(eventId) {
   return await response.json();
 }
 
+
+
+export async function getAdminBookingsByEventId(eventId) {
+  const page = 0;
+  const size = 50; // or whatever you expect to display in the modal
+  const url = buildApiUrl(`/v1/bookings/events/event/${eventId}?page=${page}&size=${size}`);
+  const response = await fetch(url, {
+    method: "GET",
+    headers: getAuthHeaders(),
+  });
+  if (!response.ok) {
+    throw new Error(`Failed to get event bookings: ${response.status} ${response.statusText}`);
+  }
+  const json = await response.json();
+  return unwrapApiData(json); // will read json.content / json.data.content / []
+}
+
 /**
  * Get all bookings for a specific attendee.
  * @param {string} attendeeId - The attendee ID.

@@ -287,18 +287,11 @@ export async function getAdminDashboard() {
  * @param {string} end - End date (YYYY-MM-DD).
  * @returns {Promise<object>} - Daily cancellations response.
  */
-export async function getDailyCancellations(start, end) {
-  const url = buildApiUrl(`/v1/admin/daily-cancellations?start=${encodeURIComponent(start)}&end=${encodeURIComponent(end)}`);
-  const response = await fetch(url, {
-    method: "GET",
-    headers: getAuthHeaders(),
-  });
-
-  if (!response.ok) {
-    throw new Error(`Failed to fetch daily cancellations: ${response.statusText}`);
-  }
-
-  return await response.json();
+export async function getDailyCancellations(startISO, endISO) {
+  const url = buildApiUrl(`/v1/admin/daily-cancellations?start=${encodeURIComponent(startISO)}&end=${encodeURIComponent(endISO)}`);
+  const res = await fetch(url, { headers: getAuthHeaders() });
+  if (!res.ok) throw new Error(`daily cancellations failed: ${res.status} ${res.statusText}`);
+  return await res.json();
 }
 
 /**
@@ -307,19 +300,14 @@ export async function getDailyCancellations(start, end) {
  * @param {string} end - End date (YYYY-MM-DD).
  * @returns {Promise<object>} - Daily bookings response.
  */
-export async function getDailyBookings(start, end) {
-  const url = buildApiUrl(`/v1/admin/daily-bookings?start=${encodeURIComponent(start)}&end=${encodeURIComponent(end)}`);
-  const response = await fetch(url, {
-    method: "GET",
-    headers: getAuthHeaders(),
-  });
-
-  if (!response.ok) {
-    throw new Error(`Failed to fetch daily bookings: ${response.statusText}`);
-  }
-
-  return await response.json();
+export async function getDailyBookings(startISO, endISO) {
+  const url = buildApiUrl(`/v1/admin/daily-bookings?start=${encodeURIComponent(startISO)}&end=${encodeURIComponent(endISO)}`);
+  const res = await fetch(url, { headers: getAuthHeaders() });
+  if (!res.ok) throw new Error(`daily bookings failed: ${res.status} ${res.statusText}`);
+  // Backend returns: { "2025-09-13": 3, "2025-09-14": 1, ... }
+  return await res.json();
 }
+
 
 /**
  * Create a new user via the admin endpoint.
