@@ -3,11 +3,8 @@ package com.example.cdr.eventsmanagementsystem.Constants.ControllerConstants;
 public final class AdminControllerConstants {
 
     // Base
-    // Base
     public static final String ADMIN_BASE_URL = "/v1/admin";
 
-    // ---------- Users ----------
-    public static final String ADMIN_USERS_URL = "/users";
     // ---------- Users ----------
     public static final String ADMIN_USERS_URL = "/users";
     public static final String USER_ID = "/{userId}";
@@ -19,7 +16,6 @@ public final class AdminControllerConstants {
     public static final String USER_RESET_PASSWORD        = ADMIN_USERS_URL + USER_ID + "/reset-password";
 
     // ---------- Events ----------
-    // ---------- Events ----------
     public static final String ADMIN_EVENTS_URL = "/events";
     public static final String ADMIN_EVENTS_BY_STATUS_URL = "/by-status";
 
@@ -29,9 +25,6 @@ public final class AdminControllerConstants {
     // These two already include /events
     public static final String ADMIN_EVENT_FLAG_URL = "/events/{eventId}/flag";
     public static final String ADMIN_EVENTS_FLAGGED_URL = "/events/flagged";
-
-    // ---------- Dashboard / Analytics ----------
-    public static final String ADMIN_DASHBOARD_URL = "/dashboard";
 
     // ---------- Dashboard / Analytics ----------
     public static final String ADMIN_DASHBOARD_URL = "/dashboard";
