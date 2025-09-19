@@ -56,25 +56,25 @@ public interface EventBookingRepository extends JpaRepository<EventBooking, Long
     Page<EventBooking> findByCreatedBy(String createdBy, Pageable pageable);
 
     @Query("""
-  SELECT function('date', b.createdAt) AS date, COUNT(b) AS count
-  FROM EventBooking b
-  WHERE b.createdAt BETWEEN :start AND :end
-  GROUP BY function('date', b.createdAt)
-  ORDER BY function('date', b.createdAt)
-""")
-List<LocalDateCount> countDailyBookingsBetween(@Param("start") LocalDateTime start,
-                                               @Param("end") LocalDateTime end);
+        SELECT function('date', b.createdAt) AS date, COUNT(b) AS count
+        FROM EventBooking b
+        WHERE b.createdAt BETWEEN :start AND :end
+        GROUP BY function('date', b.createdAt)
+        ORDER BY function('date', b.createdAt)
+        """)
+        List<LocalDateCount> countDailyBookingsBetween(@Param("start") LocalDateTime start,
+                                                @Param("end") LocalDateTime end);
 
-@Query("""
-  SELECT function('date', COALESCE(b.cancelledAt, b.updatedAt)) AS date, COUNT(b) AS count
-  FROM EventBooking b
-  WHERE (b.status = com.example.cdr.eventsmanagementsystem.Model.Booking.BookingStatus.CANCELLED
-         OR b.cancelledAt IS NOT NULL)
-    AND COALESCE(b.cancelledAt, b.updatedAt) BETWEEN :start AND :end
-  GROUP BY function('date', COALESCE(b.cancelledAt, b.updatedAt))
-  ORDER BY function('date', COALESCE(b.cancelledAt, b.updatedAt))
-""")
-List<LocalDateCount> countDailyCancellationsBetween(@Param("start") LocalDateTime start,
-                                                    @Param("end") LocalDateTime end);
+        @Query("""
+        SELECT function('date', COALESCE(b.cancelledAt, b.updatedAt)) AS date, COUNT(b) AS count
+        FROM EventBooking b
+        WHERE (b.status = com.example.cdr.eventsmanagementsystem.Model.Booking.BookingStatus.CANCELLED
+                OR b.cancelledAt IS NOT NULL)
+        AND COALESCE(b.cancelledAt, b.updatedAt) BETWEEN :start AND :end
+        GROUP BY function('date', COALESCE(b.cancelledAt, b.updatedAt))
+        ORDER BY function('date', COALESCE(b.cancelledAt, b.updatedAt))
+        """)
+        List<LocalDateCount> countDailyCancellationsBetween(@Param("start") LocalDateTime start,
+                                                        @Param("end") LocalDateTime end);
 
 }
