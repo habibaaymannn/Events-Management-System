@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { getAllEvents, flagEvent, cancelEvent } from "../../api/adminApi";
-import { getBookingsByEventId } from "../../api/bookingApi";
+import { getAdminBookingsByEventId,  getVenueBookingsByEventId,  getServiceBookingsByEventId} from "../../api/bookingApi";
+
 
 const EventMonitoring = () => {
   const navigate = useNavigate();
@@ -16,7 +17,10 @@ const EventMonitoring = () => {
   const loadEvents = async () => {
     try {
       const response = await getAllEvents(0, 100); // adjust page/size as needed
-      setEvents(response.content || []);
+      const list = Array.isArray(response)
+    ? response
+     : (response?.data?.content || response?.content || []);
+   setEvents(list);
     } catch (error) {
       // Handle error
     }
@@ -45,17 +49,29 @@ const EventMonitoring = () => {
     }
   };
 
-  const handleViewEventDetails = async (event) => {
-    try {
-      const bookings = await getBookingsByEventId(event.id);
-      setEventBookings(bookings);
-      setSelectedEvent(event);
-    } catch (error) {
-      console.error("Error fetching event bookings:", error);
-      setEventBookings([]);
-      setSelectedEvent(event);
-    }
-  };
+ const handleViewEventDetails = async (event) => {
+   try {
+     const [eventBs, venueBs, serviceBs] = await Promise.all([
+       getAdminBookingsByEventId(event.id),     // EventBooking
+       getVenueBookingsByEventId(event.id),     // VenueBooking
+       getServiceBookingsByEventId(event.id),   // ServiceBooking
+     ]);
+
+     // Normalize so the UI can render one list with a 'type'
+     const withType = [
+       ...eventBs.map(b => ({ ...b, type: b.type || 'EVENT' })),
+       ...venueBs.map(b => ({ ...b, type: 'VENUE' })),
+       ...serviceBs.map(b => ({ ...b, type: 'SERVICE' })),
+     ];
+
+     setEventBookings(withType);
+     setSelectedEvent(event);
+   } catch (error) {
+     console.error("Error fetching event bookings:", error);
+     setEventBookings([]);
+     setSelectedEvent(event);
+   }
+};
 
   const getApprovalStatus = (event) => {
     // You may need to fetch booking requests via an endpoint if available
@@ -106,10 +122,10 @@ const EventMonitoring = () => {
                 </tr>
               ) : (
                 events.map(event => (
-                  <tr key={`${event.id}-${event.source}`}>
+                  <tr key={`${event.id}`}>
                     <td style={{ fontWeight: 600 }}>{event.name}</td>
-                    <td>{event.organizer || 'Event Organizer'}</td>
-                    <td>{event.venue || event.location || 'TBD'}</td>
+                    <td>{event.organizerName || 'Event Organizer'}</td>
+                    <td>{event.venueName || event.location || 'TBD'}</td>
                     <td>
                       <div>
                         <div>{event.startTime ? new Date(event.startTime).toLocaleDateString() : event.date}</div>
@@ -199,7 +215,7 @@ const EventMonitoring = () => {
                   <div><strong>Name:</strong> {selectedEvent.name}</div>
                   <div><strong>Type:</strong> {selectedEvent.type}</div>
                   <div><strong>Status:</strong> {selectedEvent.status}</div>
-                  <div><strong>Organizer:</strong> {selectedEvent.organizer || 'N/A'}</div>
+                  <div><strong>Organizer:</strong> {selectedEvent.organizerName || 'N/A'}</div>
                   <div><strong>Start Time:</strong> {selectedEvent.startTime ? new Date(selectedEvent.startTime).toLocaleString() : 'N/A'}</div>
                   <div><strong>End Time:</strong> {selectedEvent.endTime ? new Date(selectedEvent.endTime).toLocaleString() : 'N/A'}</div>
                 </div>
@@ -229,7 +245,7 @@ const EventMonitoring = () => {
                           <span style={{ fontWeight: 'bold' }}>
                             {booking.type === 'VENUE' ? '🏢 Venue Booking' : '🛠️ Service Booking'}
                           </span>
-                          <span className={`status-badge status-${booking.status.toLowerCase()}`}>
+                          <span className={`status-badge status-${(booking.status || 'UNKNOWN').toString().toLowerCase()}`}>
                             {booking.status}
                           </span>
                         </div>

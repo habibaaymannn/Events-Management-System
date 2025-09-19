@@ -6,6 +6,10 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
+import java.time.LocalDateTime;
+import java.util.List;
+import com.example.cdr.eventsmanagementsystem.DTO.projections.LocalDateCount;
+
 
 import com.example.cdr.eventsmanagementsystem.Model.Booking.ServiceBooking;
 
@@ -20,4 +24,27 @@ public interface ServiceBookingRepository extends JpaRepository<ServiceBooking, 
     Page<ServiceBooking> findByServiceProviderId(@Param("providerId") String providerId, Pageable pageable);
     
     Page<ServiceBooking> findByEventId(Long eventId, Pageable pageable);
+
+    @Query("""
+  SELECT function('date', b.createdAt) AS date, COUNT(b) AS count
+  FROM ServiceBooking b
+  WHERE b.createdAt BETWEEN :start AND :end
+  GROUP BY function('date', b.createdAt)
+  ORDER BY function('date', b.createdAt)
+""")
+List<LocalDateCount> countDailyBookingsBetween(@Param("start") LocalDateTime start,
+                                               @Param("end") LocalDateTime end);
+
+@Query("""
+  SELECT function('date', COALESCE(b.cancelledAt, b.updatedAt)) AS date, COUNT(b) AS count
+  FROM ServiceBooking b
+  WHERE (b.status = com.example.cdr.eventsmanagementsystem.Model.Booking.BookingStatus.CANCELLED
+         OR b.cancelledAt IS NOT NULL)
+    AND COALESCE(b.cancelledAt, b.updatedAt) BETWEEN :start AND :end
+  GROUP BY function('date', COALESCE(b.cancelledAt, b.updatedAt))
+  ORDER BY function('date', COALESCE(b.cancelledAt, b.updatedAt))
+""")
+List<LocalDateCount> countDailyCancellationsBetween(@Param("start") LocalDateTime start,
+                                                    @Param("end") LocalDateTime end);
+
 }
