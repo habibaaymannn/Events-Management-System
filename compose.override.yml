@@ -1,0 +1,22 @@
+services:
+  frontend:
+    build: null
+    image: node:20-alpine
+    working_dir: /app
+    command: sh -c "npm ci && npm start"
+    ports:
+      - "3000:3000"
+    environment:
+      - HOST=0.0.0.0
+      - CHOKIDAR_USEPOLLING=true
+      - WATCHPACK_POLLING=true
+      - REACT_APP_KEYCLOAK_BASE_URL=http://localhost:8080
+      - REACT_APP_KEYCLOAK_REALM=EMS-realm
+      - REACT_APP_KEYCLOAK_CLIENT_ID=ems-frontend
+      - REACT_APP_API_BASE=http://localhost:8180
+    volumes:
+      - ./front-end:/app
+      - /app/node_modules
+    depends_on:
+      - keycloak
+      - backend
