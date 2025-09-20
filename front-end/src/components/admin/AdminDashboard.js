@@ -123,6 +123,41 @@ const AdminDashboard = () => {
     count
   }));
 
+    // === Event Type % helpers ===
+  const eventTypeTotal = eventTypeData.reduce((sum, d) => sum + (d.count || 0), 0);
+  const eventTypePieData = eventTypeData.map(d => ({
+    name: d.name,
+    value: d.count,
+    pct: eventTypeTotal ? (d.count / eventTypeTotal) * 100 : 0
+  }));
+
+  // App-friendly palette (keeps your current aesthetic)
+  const PALETTE = ['#3b82f6', '#28a745', '#ffc107', '#dc3545', '#6f42c1', '#17a2b8', '#ec4899', '#6c757d'];
+
+  // Smaller, positioned % labels to avoid legend overlap
+const RADIAN = Math.PI / 180;
+const renderPctLabel = ({ cx, cy, midAngle, innerRadius, outerRadius, percent }) => {
+  const radius = innerRadius + (outerRadius - innerRadius) * 0.5;
+  const x = cx + radius * Math.cos(-midAngle * RADIAN);
+  const y = cy + radius * Math.sin(-midAngle * RADIAN);
+
+  return (
+    <text
+      x={x}
+      y={y}
+      fill="#fff"
+      textAnchor="middle"
+      dominantBaseline="central"
+      fontSize={12}      // smaller %
+      style={{ pointerEvents: 'none' }}
+    >
+      {`${Math.round(percent * 100)}%`}
+    </text>
+  );
+};
+
+
+
   
   const isMainDashboard = location.pathname === '/' || location.pathname === '/admin' || location.pathname === '';
 
@@ -281,15 +316,45 @@ const AdminDashboard = () => {
               <small>
                 ({dashboardData.services ? dashboardData.services.filter(s => s.bookings && s.bookings.length > 0).length : 0} of {dashboardData.services ? dashboardData.services.length : 0} services booked)
               </small>
+           </div>
+          <div className="card" style={{ display: 'grid', gap: '0.5rem' }}>
+          <h4 className="mb-1" style={{ marginBottom: 0 }}>Event Type Distribution</h4>
+          {eventTypeTotal > 0 ? (
+            <div style={{ height: 260 }}>
+              <ResponsiveContainer width="100%" height="100%">
+                <PieChart>
+                  <Pie
+                    data={eventTypePieData}
+                    dataKey="value"
+                    nameKey="name"
+                    innerRadius={60}
+                    outerRadius={100}
+                    label={renderPctLabel}
+                    labelLine={false}
+                  >
+                    {eventTypePieData.map((entry, i) => (
+                      <Cell key={`slice-${i}`} fill={PALETTE[i % PALETTE.length]} />
+                    ))}
+                  </Pie>
+                  <Tooltip
+                    formatter={(value, name) =>
+                      [`${((value / eventTypeTotal) * 100).toFixed(1)}% (${value})`, name]
+                    }
+                  />
+                  <Legend verticalAlign="bottom" iconType="circle" />
+                </PieChart>
+              </ResponsiveContainer>
             </div>
-            {/* Event Type Distribution Statistic */}
-            <div className="card text-center">
-              <h3 className="text-primary">{eventTypeData.reduce((a, b) => a + (b.count || 0), 0)}</h3>
-              <p className="text-muted">Event Type Distribution</p>
-              <small>
-                {eventTypeData.map(et => `${et.name}: ${et.count}`).join(', ') || 'No event types'}
-              </small>
-            </div>
+          ) : (
+            <p className="text-muted" style={{ margin: '0.5rem 0 0.75rem' }}>
+              No event types yet.
+            </p>
+          )}
+          <small className="text-muted">
+            Showing percentage share (hover for exact counts).
+          </small>
+        </div>
+
             {/* Revenue per Organizer Statistic */}
             <div className="card text-center">
               <h3 className="text-success">
