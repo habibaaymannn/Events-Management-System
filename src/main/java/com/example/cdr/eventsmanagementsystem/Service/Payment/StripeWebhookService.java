@@ -1,21 +1,29 @@
 package com.example.cdr.eventsmanagementsystem.Service.Payment;
 
-import com.example.cdr.eventsmanagementsystem.Model.Booking.*;
-import com.example.cdr.eventsmanagementsystem.Service.Notifications.NotificationUtil;
-import com.example.cdr.eventsmanagementsystem.Util.BookingUtil;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
+
+import static com.example.cdr.eventsmanagementsystem.Constants.StripeWebhookConstants.CHECKOUT_SESSION_COMPLETED;
+import static com.example.cdr.eventsmanagementsystem.Constants.StripeWebhookConstants.CHECKOUT_SESSION_EXPIRED;
+import static com.example.cdr.eventsmanagementsystem.Constants.StripeWebhookConstants.PAYMENT_INTENT_CANCELED;
+import static com.example.cdr.eventsmanagementsystem.Constants.StripeWebhookConstants.PAYMENT_INTENT_PAYMENT_FAILED;
+import static com.example.cdr.eventsmanagementsystem.Constants.StripeWebhookConstants.PAYMENT_INTENT_REQUIRES_ACTION;
+import static com.example.cdr.eventsmanagementsystem.Constants.StripeWebhookConstants.PAYMENT_INTENT_SUCCEEDED;
+import com.example.cdr.eventsmanagementsystem.Model.Booking.Booking;
+import com.example.cdr.eventsmanagementsystem.Model.Booking.BookingStatus;
+import com.example.cdr.eventsmanagementsystem.Model.Booking.BookingType;
+import com.example.cdr.eventsmanagementsystem.Model.Booking.PaymentStatus;
+import com.example.cdr.eventsmanagementsystem.Service.Notifications.NotificationUtil;
+import com.example.cdr.eventsmanagementsystem.Util.BookingUtil;
 import com.stripe.exception.SignatureVerificationException;
 import com.stripe.model.Event;
 import com.stripe.model.PaymentIntent;
 import com.stripe.model.checkout.Session;
 import com.stripe.net.ApiResource;
 import com.stripe.net.Webhook;
+
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-
-import static com.example.cdr.eventsmanagementsystem.Constants.PaymentConstants.CHECKOUT_SESSION_COMPLETED;
-import static com.example.cdr.eventsmanagementsystem.Constants.PaymentConstants.PAYMENT_INTENT_SUCCEEDED;
 
 @Service
 @RequiredArgsConstructor
@@ -42,14 +50,13 @@ public class StripeWebhookService {
 
     public void processEvent(Event event, BookingType type) {
         switch (event.getType()) {
-            case CHECKOUT_SESSION_COMPLETED:
-                handleCheckoutSessionCompleted(event, type);
-                break;
-            case PAYMENT_INTENT_SUCCEEDED:
-                handlePaymentIntentSucceeded(event, type);
-                break;
-            default:
-                break;
+            case CHECKOUT_SESSION_COMPLETED -> handleCheckoutSessionCompleted(event, type);
+            case CHECKOUT_SESSION_EXPIRED -> handleCheckoutSessionExpired(event, type);
+            case PAYMENT_INTENT_SUCCEEDED -> handlePaymentIntentSucceeded(event, type);
+            case PAYMENT_INTENT_PAYMENT_FAILED -> handlePaymentIntentPaymentFailed(event, type);
+            case PAYMENT_INTENT_CANCELED -> handlePaymentIntentCanceled(event, type);
+            case PAYMENT_INTENT_REQUIRES_ACTION -> handlePaymentIntentRequiresAction(event, type);
+            default -> log.warn("Unhandled event type: " + event.getType());
         }
     }
 
@@ -115,5 +122,68 @@ public class StripeWebhookService {
         } else {
             log.info("Booking already has BOOKED status for booking ID: " + booking.getId());
         }
+    }
+
+    private void handleCheckoutSessionExpired(Event event, BookingType type) {
+        var obj = event.getDataObjectDeserializer().getObject().orElse(null);
+        if (!(obj instanceof Session session)) return;
+
+        Booking booking = bookingUtil.findBookingByStripeSessionIdAndType(session.getId(), type);
+        if (booking == null) return;
+
+        log.info("Checkout session expired for booking ID: " + booking.getId() + ", Session ID: " + session.getId());
+        
+        booking.setStatus(BookingStatus.CANCELLED);
+        booking.setPaymentStatus(PaymentStatus.FAILED);
+        bookingUtil.saveBooking(booking);
+        
+        notificationUtil.publishEvent(booking);
+    }
+
+    private void handlePaymentIntentPaymentFailed(Event event, BookingType type) {
+       var obj = event.getDataObjectDeserializer().getObject().orElse(null);
+        if (!(obj instanceof PaymentIntent paymentIntent)) return;
+
+        Booking booking = bookingUtil.findBookingByStripePaymentIdAndType(paymentIntent.getId(), type);
+        if (booking == null) return;
+
+        log.info("Payment failed for booking ID: " + booking.getId() + ", Payment Intent ID: " + paymentIntent.getId());
+        
+        booking.setStatus(BookingStatus.REJECTED);
+        booking.setPaymentStatus(PaymentStatus.FAILED);
+        bookingUtil.saveBooking(booking);
+        
+        notificationUtil.publishEvent(booking);
+    }
+
+    private void handlePaymentIntentCanceled(Event event, BookingType type) {
+        var obj = event.getDataObjectDeserializer().getObject().orElse(null);
+        if (!(obj instanceof PaymentIntent paymentIntent)) return;
+
+        Booking booking = bookingUtil.findBookingByStripePaymentIdAndType(paymentIntent.getId(), type);
+        if (booking == null) return;
+
+        log.info("Payment canceled for booking ID: " + booking.getId() + ", Payment Intent ID: " + paymentIntent.getId());
+        
+        booking.setStatus(BookingStatus.CANCELLED);
+        booking.setPaymentStatus(PaymentStatus.VOIDED);
+        bookingUtil.saveBooking(booking);
+        
+        notificationUtil.publishEvent(booking);
+    }
+
+    private void handlePaymentIntentRequiresAction(Event event, BookingType type) {
+        var obj = event.getDataObjectDeserializer().getObject().orElse(null);
+        if (!(obj instanceof PaymentIntent paymentIntent)) return;
+
+        Booking booking = bookingUtil.findBookingByStripePaymentIdAndType(paymentIntent.getId(), type);
+        if (booking == null) return;
+
+        log.info("Payment requires action for booking ID: " + booking.getId() + ", Payment Intent ID: " + paymentIntent.getId());
+        
+        booking.setPaymentStatus(PaymentStatus.AUTHORIZED);
+        bookingUtil.saveBooking(booking);
+        
+        notificationUtil.publishEvent(booking);
     }
 }

@@ -9,7 +9,7 @@ import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
-import com.example.cdr.eventsmanagementsystem.Constants.PaymentConstants;
+import static com.example.cdr.eventsmanagementsystem.Constants.StripeWebhookConstants.STRIPE_WEBHOOK_URL;
 import com.example.cdr.eventsmanagementsystem.Model.Booking.BookingType;
 import com.example.cdr.eventsmanagementsystem.Service.Payment.StripeWebhookService;
 import com.stripe.model.Event;
@@ -26,7 +26,7 @@ public class StripeWebhookController {
     private final StripeWebhookService webhookService;
 
     @Operation(summary = "Handle Stripe webhook events", description = "Process incoming Stripe webhook events")
-    @PostMapping(PaymentConstants.STRIPE_WEBHOOK_URL)
+    @PostMapping(STRIPE_WEBHOOK_URL)
     @Transactional
     public ResponseEntity<String> handle(
             @RequestParam BookingType type,
@@ -34,7 +34,7 @@ public class StripeWebhookController {
             @RequestHeader(name = "Stripe-Signature", required = false) String sigHeader
     ) {
         try {
-            log.info("Received Stripe webhook: endpoint={}", PaymentConstants.STRIPE_WEBHOOK_URL);
+            log.info("Received Stripe webhook: endpoint={}", STRIPE_WEBHOOK_URL);
             Event event = webhookService.constructEvent(payload, sigHeader);
             log.info("Processing Stripe event: type={}, id={}", event.getType(), event.getId());
             webhookService.processEvent(event, type);
