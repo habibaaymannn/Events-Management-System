@@ -35,6 +35,17 @@ public class VenueService {
     private final UserSyncService userSyncService;
     private final ImageUtil imageUtil;
 
+    public VenueDTO getVenueById(Long venueId) {
+        Venue venue = venueRepository.getVenueById(venueId);
+        return venueMapper.toVenueDTO(venue);
+    }
+
+    public Page<VenueDTO> getVenuesByVenueProvider(Pageable pageable) {
+        VenueProvider venueProvider = ensureCurrentUserAsVenueProvider();
+        Page<Venue> venues = venueRepository.findByVenueProvider(venueProvider,pageable);
+        return venues.map(venueMapper::toVenueDTO);
+    }
+
     public Page<VenueDTO> getAllVenues(Pageable pageable) {
         Page<Venue> venues = venueRepository.findAll(pageable);
         return venues.map(venueMapper::toVenueDTO);
@@ -44,8 +55,7 @@ public class VenueService {
     public VenueDTO addVenue(VenueDTO dto, List<MultipartFile> files) throws IOException {
         Venue newVenue = venueMapper.toVenue(dto);
         newVenue.setImages(imageUtil.extractImageData(files));
-
-        VenueProvider venueProvider = userSyncService.ensureUserExists(VenueProvider.class);
+        VenueProvider venueProvider = ensureCurrentUserAsVenueProvider();
         newVenue.setVenueProvider(venueProvider);
         Venue savedVenue = venueRepository.save(newVenue);
         return venueMapper.toVenueDTO(savedVenue);
@@ -53,35 +63,30 @@ public class VenueService {
 
     @Transactional
     public VenueDTO updateVenue(Long venueId, VenueDTO dto,  List<MultipartFile> newImages) throws IOException {
-        Venue venue = verifyAccess(venueId);
+        Venue venue = venueRepository.getVenueById(venueId);
+        verifyAccess(venueId);
         venueMapper.updateVenue(dto, venue);
         venue.setImages(imageUtil.mergeImages(venue.getImages(), newImages));
         Venue updatedVenue = venueRepository.save(venue);
         return venueMapper.toVenueDTO(updatedVenue);
     }
 
-    public VenueDTO getVenueById(Long venueId) {
-        Venue venue = verifyAccess(venueId);
-        return venueMapper.toVenueDTO(venue);
-    }
-
     @Transactional
     public void deleteVenue(Long venueId) {
         verifyAccess(venueId);
-
         venueRepository.deleteById(venueId);
     }
 
-    private Venue verifyAccess(Long venueId) throws AccessDeniedException {
-        Venue venue = venueRepository.findById(venueId)
-                .orElseThrow(() -> new EntityNotFoundException("Venue not found"));
-
+    private void verifyAccess(Long venueId) throws AccessDeniedException {
+        Venue venue = venueRepository.findById(venueId).orElseThrow(() -> new EntityNotFoundException("Venue not found"));
         String venueProviderId = AuthUtil.getCurrentUserId();
 
-        if (Objects.isNull(venue.getVenueProvider())||
-                !venue.getVenueProvider().getKeycloakId().equals(venueProviderId)) {
+        if (Objects.isNull(venue.getVenueProvider())|| !venue.getVenueProvider().getKeycloakId().equals(venueProviderId)) {
             throw new AccessDeniedException("You are not allowed to access this venue");
         }
-        return venue;
+    }
+
+    private VenueProvider ensureCurrentUserAsVenueProvider() {
+        return userSyncService.ensureUserExists(VenueProvider.class);
     }
 }
