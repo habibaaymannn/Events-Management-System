@@ -133,15 +133,15 @@ public class StripeWebhookService {
 
         log.info("Checkout session expired for booking ID: " + booking.getId() + ", Session ID: " + session.getId());
         
-        booking.setStatus(BookingStatus.CANCELLED);
-        booking.setPaymentStatus(PaymentStatus.FAILED);
+        booking.setStatus(BookingStatus.FAILED);          
+        booking.setPaymentStatus(PaymentStatus.EXPIRED);  
         bookingUtil.saveBooking(booking);
         
         notificationUtil.publishEvent(booking);
     }
 
     private void handlePaymentIntentPaymentFailed(Event event, BookingType type) {
-       var obj = event.getDataObjectDeserializer().getObject().orElse(null);
+        var obj = event.getDataObjectDeserializer().getObject().orElse(null);
         if (!(obj instanceof PaymentIntent paymentIntent)) return;
 
         Booking booking = bookingUtil.findBookingByStripePaymentIdAndType(paymentIntent.getId(), type);
@@ -149,8 +149,8 @@ public class StripeWebhookService {
 
         log.info("Payment failed for booking ID: " + booking.getId() + ", Payment Intent ID: " + paymentIntent.getId());
         
-        booking.setStatus(BookingStatus.REJECTED);
-        booking.setPaymentStatus(PaymentStatus.FAILED);
+        booking.setStatus(BookingStatus.FAILED);          
+        booking.setPaymentStatus(PaymentStatus.FAILED);   
         bookingUtil.saveBooking(booking);
         
         notificationUtil.publishEvent(booking);
@@ -181,7 +181,8 @@ public class StripeWebhookService {
 
         log.info("Payment requires action for booking ID: " + booking.getId() + ", Payment Intent ID: " + paymentIntent.getId());
         
-        booking.setPaymentStatus(PaymentStatus.AUTHORIZED);
+        booking.setPaymentStatus(PaymentStatus.REQUIRES_ACTION); 
+        booking.setStatus(BookingStatus.PENDING);
         bookingUtil.saveBooking(booking);
         
         notificationUtil.publishEvent(booking);
