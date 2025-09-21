@@ -1,19 +1,20 @@
 package com.example.cdr.eventsmanagementsystem.Model.Venue;
 
-import com.example.cdr.eventsmanagementsystem.Model.Booking.VenueBooking;
 import com.example.cdr.eventsmanagementsystem.Model.Event.EventType;
 import com.example.cdr.eventsmanagementsystem.Model.User.VenueProvider;
 import com.example.cdr.eventsmanagementsystem.Util.BaseEntity;
-import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
 import lombok.*;
+import org.hibernate.annotations.SQLDelete;
+import org.hibernate.annotations.Where;
 
 import java.util.*;
-import java.util.stream.Collectors;
 
 @Entity
 @Data
 @EqualsAndHashCode(callSuper = true)
+@SQLDelete(sql = "UPDATE venue SET deleted = true WHERE id = ?")
+@Where(clause = "deleted = false")
 @Table(name = "venue")
 public class Venue extends BaseEntity {
     @Column(nullable = false)
@@ -52,4 +53,7 @@ public class Venue extends BaseEntity {
     )
     @Enumerated(EnumType.STRING)
     private Set<EventType> supportedEventTypes = new HashSet<>();
+
+    @Column(nullable = false)
+    private boolean deleted = false;
 }
