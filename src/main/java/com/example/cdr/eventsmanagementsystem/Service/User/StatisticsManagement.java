@@ -25,6 +25,9 @@ import org.springframework.stereotype.Service;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.time.ZoneId;
+import java.time.ZoneOffset;
+import java.time.ZonedDateTime;
 import java.util.*;
 import java.util.stream.Collectors;
 import java.time.*;
@@ -161,36 +164,47 @@ public class StatisticsManagement {
         return result;
     }
 
-
     public Map<String, Long> dailyBookingsBreakdown(LocalDate day) {
-        LocalDateTime start = day.atStartOfDay();
-        LocalDateTime end = day.plusDays(1).atStartOfDay();
+        var cairo = java.time.ZoneId.of("Africa/Cairo");
+        var utc   = java.time.ZoneOffset.UTC;
 
-        long events   = eventBookingRepository
-            .countByStatusAndCreatedAtBetween(BookingStatus.BOOKED, start, end);
-        long services = serviceBookingRepository
-            .countByStatusAndCreatedAtBetween(BookingStatus.BOOKED, start, end);
-        long venue    = venueBookingRepository
-            .countByStatusAndCreatedAtBetween(BookingStatus.BOOKED, start, end);
-        long total    = events + services + venue;
+        var cairoStart = day.atStartOfDay(cairo);
+        var cairoEnd   = day.plusDays(1).atStartOfDay(cairo);
 
-        return Map.of("venue", venue, "services", services, "events", events, "total", total);
+        var startUtc = cairoStart.withZoneSameInstant(utc).toLocalDateTime();
+        var endUtc   = cairoEnd  .withZoneSameInstant(utc).toLocalDateTime();
+
+        var ok = java.util.EnumSet.of(
+            com.example.cdr.eventsmanagementsystem.Model.Booking.BookingStatus.BOOKED,
+            com.example.cdr.eventsmanagementsystem.Model.Booking.BookingStatus.ACCEPTED
+        );
+
+        long events   = eventBookingRepository   .countCreatedBetweenForStatuses(startUtc, endUtc, ok);
+        long services = serviceBookingRepository .countCreatedBetweenForStatuses(startUtc, endUtc, ok);
+        long venue    = venueBookingRepository   .countCreatedBetweenForStatuses(startUtc, endUtc, ok);
+
+        long total = events + services + venue;
+        return java.util.Map.of("venue", venue, "services", services, "events", events, "total", total);
     }
+
 
     public Map<String, Long> dailyCancellationsBreakdown(LocalDate day) {
-        LocalDateTime start = day.atStartOfDay();
-        LocalDateTime end = day.plusDays(1).atStartOfDay();
+        ZoneId cairo = ZoneId.of("Africa/Cairo");
+        ZoneId utc   = ZoneOffset.UTC;
 
-        long events   = eventBookingRepository
-            .countByStatusAndCreatedAtBetween(BookingStatus.CANCELLED, start, end);
-        long services = serviceBookingRepository
-            .countByStatusAndCreatedAtBetween(BookingStatus.CANCELLED, start, end);
-        long venue    = venueBookingRepository
-            .countByStatusAndCreatedAtBetween(BookingStatus.CANCELLED, start, end);
-        long total    = events + services + venue;
+        ZonedDateTime cairoStart = day.atStartOfDay(cairo);
+        ZonedDateTime cairoEnd   = day.plusDays(1).atStartOfDay(cairo);
 
-        return Map.of("venue", venue, "services", services, "events", events, "total", total);
+        LocalDateTime startUtc = cairoStart.withZoneSameInstant(utc).toLocalDateTime();
+        LocalDateTime endUtc   = cairoEnd  .withZoneSameInstant(utc).toLocalDateTime();
+
+        long events   = eventBookingRepository   .countCancelledBetween(BookingStatus.CANCELLED, startUtc, endUtc);
+        long services = serviceBookingRepository .countCancelledBetween(BookingStatus.CANCELLED, startUtc, endUtc);
+        long venue    = venueBookingRepository   .countCancelledBetween(BookingStatus.CANCELLED, startUtc, endUtc);
+
+        return Map.of("venue", venue, "services", services, "events", events, "total", venue + services + events);
     }
+
 
 
     public Page<OrganizerRevenueDto> getRevenuePerOrganizer(LocalDate startDate, LocalDate endDate, Pageable pageable) {

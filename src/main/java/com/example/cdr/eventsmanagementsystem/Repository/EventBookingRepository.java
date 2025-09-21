@@ -18,6 +18,9 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import com.example.cdr.eventsmanagementsystem.Model.Booking.BookingStatus;
 import com.example.cdr.eventsmanagementsystem.Model.Booking.EventBooking;
+import java.time.ZoneId;
+import java.time.ZoneOffset;
+import java.time.ZonedDateTime;
 
 @Repository
 public interface EventBookingRepository extends JpaRepository<EventBooking, Long> {
@@ -31,6 +34,18 @@ public interface EventBookingRepository extends JpaRepository<EventBooking, Long
             "group by function('date', b.cancelledAt) order by function('date', b.cancelledAt)")
     List<LocalDateCount> countDailyCancellationsBetween(@Param("start") LocalDate start, @Param("end") LocalDate end);
 
+    @Query("""
+        select count(b) from EventBooking b
+        where b.status = :status
+        and b.cancelledAt is not null
+        and b.cancelledAt >= :start
+        and b.cancelledAt <  :end
+        """)
+        long countCancelledBetween(@Param("status") BookingStatus status,
+                                @Param("start") LocalDateTime start,
+                                @Param("end") LocalDateTime end);
+
+
     List <EventBooking> findByStatusAndStartTimeBetween(
             BookingStatus status,
             LocalDateTime start,
@@ -43,6 +58,19 @@ public interface EventBookingRepository extends JpaRepository<EventBooking, Long
             LocalDateTime end,
             Pageable pageable
     );
+
+        @Query("""
+        select count(b) from EventBooking b
+        where b.createdAt >= :start
+        and b.createdAt <  :end
+        and b.status in :statuses
+        """)
+        long countCreatedBetweenForStatuses(
+        @Param("start") java.time.LocalDateTime start,
+        @Param("end")   java.time.LocalDateTime end,
+        @Param("statuses") java.util.Collection<com.example.cdr.eventsmanagementsystem.Model.Booking.BookingStatus> statuses
+        );
+
 
     EventBooking findByStripeSessionId(String sessionId);
 

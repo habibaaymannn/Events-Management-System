@@ -42,6 +42,9 @@ import com.stripe.model.Customer;
 import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import java.time.ZoneId;
+import java.time.ZoneOffset;
+import java.time.ZonedDateTime;
 
 @Slf4j
 @Service
@@ -175,12 +178,15 @@ public class EventBookingService {
             booking.setRefundProcessedAt(LocalDateTime.now());
         }
 
+        ZoneId utc = ZoneOffset.UTC;
         booking.setStatus(BookingStatus.CANCELLED);
         booking.setCancellationReason(request.getReason());
-        booking.setCancelledAt(LocalDateTime.now());
+        booking.setCancelledAt(LocalDateTime.now(utc));
         booking.setCancelledBy(currentUserId);
 
         bookingRepository.save(booking);
         eventPublisher.publishEvent(new EventBookingCancelled(booking, request.getReason()));
     }
+
+
 }
