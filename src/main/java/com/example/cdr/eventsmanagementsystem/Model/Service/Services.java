@@ -5,12 +5,16 @@ import com.example.cdr.eventsmanagementsystem.Util.BaseEntity;
 import jakarta.persistence.*;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
+import org.hibernate.annotations.SQLDelete;
+import org.hibernate.annotations.Where;
 import java.util.ArrayList;
 import java.util.List;
 
 @Entity
 @Data
 @EqualsAndHashCode(callSuper = true)
+@SQLDelete(sql = "UPDATE services SET deleted = true WHERE id = ?")
+@Where(clause = "deleted = false")
 @Table(name = "services")
 public class Services extends BaseEntity {
     @Column(nullable = false)
@@ -38,4 +42,7 @@ public class Services extends BaseEntity {
     @ManyToOne
     @JoinColumn(name = "service_provider_id", nullable = false)
     private ServiceProvider serviceProvider;
+
+    @Column(nullable = false)
+    private boolean deleted = false;
 }
