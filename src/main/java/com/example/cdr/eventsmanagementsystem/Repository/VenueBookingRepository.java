@@ -12,6 +12,7 @@ import java.time.LocalDateTime;
 import java.util.List;
 import com.example.cdr.eventsmanagementsystem.DTO.projections.LocalDateCount;
 
+
 @Repository
 public interface VenueBookingRepository extends JpaRepository<VenueBooking, Long> {
     VenueBooking findByStripeSessionId(String sessionId);
@@ -47,6 +48,14 @@ public interface VenueBookingRepository extends JpaRepository<VenueBooking, Long
     """)
     List<LocalDateCount> countDailyCancellationsBetween(@Param("start") LocalDateTime start,
                                                         @Param("end") LocalDateTime end);
+
+    @Query("""
+      select count(b) from VenueBooking b
+      where b.createdAt >= :start and b.createdAt < :end and b.status = :status
+    """)
+    long countByStatusAndCreatedAtBetween(@Param("status") BookingStatus status,
+                                          @Param("start") java.time.LocalDateTime start,
+                                          @Param("end") java.time.LocalDateTime end);
 
     @Query("""
       select count(distinct vb.venueId)

@@ -11,9 +11,104 @@ import "./AdminDashboard.css";
 import {
   getAdminDashboard,
   getEventTypeDistribution,
-  getDailyBookings,
-  getDailyCancellations,
+  getDailyBookingsBreakdown,
+  getDailyCancellationsBreakdown,
 } from "../../api/adminApi";
+
+
+/** ---- Daily counts parser: accepts many shapes and returns {venue, services, events, total} ---- */
+const parseDailyCounts = (data) => {
+  const normKey = (k) => (k || "").toString().toLowerCase();
+
+  let venue = 0, services = 0, events = 0;
+
+  if (!data) {
+    return { venue, services, events, total: 0 };
+  }
+
+  // If it's an array of {type,count} or {category,count}
+  if (Array.isArray(data)) {
+    for (const item of data) {
+      const k = normKey(item?.type ?? item?.category ?? item?.name);
+      const v = Number(item?.count ?? item?.value ?? item?.total ?? 0) || 0;
+      if (k.includes("venue")) venue += v;
+      else if (k.includes("service")) services += v;
+      else if (k.includes("event")) events += v;
+      else {
+        // ignore unknown bucket
+      }
+    }
+  } else if (typeof data === "object") {
+    // If it's a map of keys -> counts (possibly nested)
+    const flat = {};
+    const flatten = (o, prefix = "") => {
+      Object.entries(o).forEach(([k, v]) => {
+        const key = prefix ? `${prefix}.${k}` : k;
+        if (v && typeof v === "object" && !Array.isArray(v)) flatten(v, key);
+        else flat[key] = v;
+      });
+    };
+    flatten(data);
+
+    for (const [k, raw] of Object.entries(flat)) {
+      const kk = normKey(k);
+      const v = Number(raw) || 0;
+      if (kk.includes("venue")) venue += v;
+      else if (kk.includes("service")) services += v;
+      else if (kk.includes("event")) events += v;
+    }
+
+    // If nothing matched and values are just dates → fall back to sum as "events"
+    if (venue + services + events === 0) {
+      const vals = Object.values(flat).map((n) => Number(n) || 0);
+      const totalGuess = vals.reduce((a, b) => a + b, 0);
+      events = totalGuess; // better than zero
+    }
+  }
+
+  const total = venue + services + events;
+  return { venue, services, events, total };
+};
+
+/** ---- UI row with dotted spacers ---- */
+const BreakdownRow = ({ data, color = "#10b981" /* green by default */ }) => {
+  const fmt = (n) => (Number(n) || 0).toLocaleString();
+  const Dot = () => (
+    <span
+      style={{
+        flex: "0 0 auto",
+        width: 6,
+        height: 6,
+        borderRadius: 999,
+        background: "#cbd5e1",
+        margin: "0 6px",
+        alignSelf: "center",
+      }}
+    />
+  );
+
+  return (
+    <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 8 }}>
+      <span style={{ minWidth: 28, textAlign: "left", color }}>{fmt(data.venue)}</span>
+      <Dot />
+      <span style={{ minWidth: 28, textAlign: "center", color }}>{fmt(data.services)}</span>
+      <Dot />
+      <span style={{ minWidth: 28, textAlign: "center", color }}>{fmt(data.events)}</span>
+      <Dot />
+      <span style={{ minWidth: 34, textAlign: "right", fontWeight: 700, color }}>{fmt(data.total)}</span>
+    </div>
+  );
+};
+
+/** ---- tiny caption row ---- */
+const BreakdownLabels = () => (
+  <div style={{ display: "flex", justifyContent: "space-between", fontSize: 12, color: "#64748b", marginTop: 6 }}>
+    <span style={{ minWidth: 28, textAlign: "left" }}>venue</span>
+    <span style={{ minWidth: 28, textAlign: "center" }}>services</span>
+    <span style={{ minWidth: 28, textAlign: "center" }}>event</span>
+    <span style={{ minWidth: 34, textAlign: "right" }}>total</span>
+  </div>
+);
 
 /** ---------- Shared chart card wrapper (keeps all charts same height) ---------- */
 const ChartCard = ({ title, children, footer, pad = "1rem" }) => (
@@ -155,7 +250,12 @@ const AdminDashboard = () => {
     venues: [],
     services: [],
     eventTypes: {},
-    dailyStats: { bookings: 0, cancellations: 0 },
+    dailyStats: {
+      bookings: 0,
+      cancellations: 0,
+      bookingsBreakdown: { venue: 0, services: 0, events: 0, total: 0 },
+      cancellationsBreakdown: { venue: 0, services: 0, events: 0, total: 0 },
+    },
     revenueByOrganizer: [],
     venueUtilizationRate: null,
     serviceProviderUtilizationRate: null,
@@ -170,16 +270,31 @@ const AdminDashboard = () => {
       setLoading(true);
       setError(null);
       const todayLocalISO = new Date().toLocaleDateString('en-CA');
+
       const [dash, types, dailyB, dailyC] = await Promise.all([
         getAdminDashboard(),
         getEventTypeDistribution(),
-        getDailyBookings(todayLocalISO, todayLocalISO),
-        getDailyCancellations(todayLocalISO, todayLocalISO)
+        getDailyBookingsBreakdown(todayLocalISO),
+        getDailyCancellationsBreakdown(todayLocalISO),
       ]);
 
-      const num = v => Number(v) || 0;
-      const bookings = dailyB ? Object.values(dailyB).map(num).reduce((a, b) => a + b, 0) : 0;
-      const cancellations = dailyC ? Object.values(dailyC).map(num).reduce((a, b) => a + b, 0) : 0;
+      // Now these are already { venue, services, events, total } objects:
+      const bookingsBreakdown = {
+        venue: Number(dailyB?.venue || 0),
+        services: Number(dailyB?.services || 0),
+        events: Number(dailyB?.events || 0),
+        total: Number(dailyB?.total || 0),
+      };
+      const cancellationsBreakdown = {
+        venue: Number(dailyC?.venue || 0),
+        services: Number(dailyC?.services || 0),
+        events: Number(dailyC?.events || 0),
+        total: Number(dailyC?.total || 0),
+      };
+
+      const bookings = bookingsBreakdown.total;
+      const cancellations = cancellationsBreakdown.total;
+
 
       setDashboardData({
         users: {
@@ -198,7 +313,11 @@ const AdminDashboard = () => {
         venues: [],
         services: [],
         eventTypes: types || {},
-        dailyStats: { bookings, cancellations },
+        dailyStats: {   bookings,
+                cancellations,
+                bookingsBreakdown,
+                cancellationsBreakdown
+              },
         revenueByOrganizer: Array.isArray(dash?.revenueByOrganizer) ? dash.revenueByOrganizer : [],
         venueUtilizationRate: dash?.venueUtilizationRate != null ? Number(dash.venueUtilizationRate) : null,
         serviceProviderUtilizationRate: dash?.serviceProviderUtilizationRate != null ? Number(dash.serviceProviderUtilizationRate) : null,
@@ -512,14 +631,32 @@ const AdminDashboard = () => {
             gap: '1.5rem',
             marginBottom: '2rem'
           }}>
-            <div className="card text-center">
-              <h4 className="text-success">{dashboardData.dailyStats.bookings}</h4>
-              <p className="text-muted">Daily Booking Count</p>
-            </div>
-            <div className="card text-center">
-              <h4 className="text-danger">{dashboardData.dailyStats.cancellations}</h4>
-              <p className="text-muted">Daily Cancellation Count</p>
-            </div>
+          <div className="card">
+            <h4 className="text-success" style={{ marginBottom: 8 }}>
+              {dashboardData.dailyStats.bookings}
+            </h4>
+            <p className="text-muted" style={{ marginTop: 0, marginBottom: 12 }}>Daily Booking Count</p>
+
+            <BreakdownRow
+              data={dashboardData.dailyStats.bookingsBreakdown || { venue: 0, services: 0, events: 0, total: dashboardData.dailyStats.bookings }}
+              color="#22c55e"  // green
+            />
+            <BreakdownLabels />
+          </div>
+
+          <div className="card">
+            <h4 className="text-danger" style={{ marginBottom: 8 }}>
+              {dashboardData.dailyStats.cancellations}
+            </h4>
+            <p className="text-muted" style={{ marginTop: 0, marginBottom: 12 }}>Daily Cancellation Count</p>
+
+            <BreakdownRow
+              data={dashboardData.dailyStats.cancellationsBreakdown || { venue: 0, services: 0, events: 0, total: dashboardData.dailyStats.cancellations }}
+              color="#ef4444"  // red
+            />
+            <BreakdownLabels />
+          </div>
+
           </div>
         </>
       )}

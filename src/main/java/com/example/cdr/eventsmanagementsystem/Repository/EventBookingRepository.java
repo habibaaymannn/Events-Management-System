@@ -77,12 +77,24 @@ public interface EventBookingRepository extends JpaRepository<EventBooking, Long
         List<LocalDateCount> countDailyCancellationsBetween(@Param("start") LocalDateTime start,
                                                         @Param("end") LocalDateTime end);
 
+
+
+        @Query("""
+        select count(b) from EventBooking b
+        where b.createdAt >= :start and b.createdAt < :end and b.status = :status
+        """)
+        long countByStatusAndCreatedAtBetween(@Param("status") BookingStatus status,
+                                        @Param("start") java.time.LocalDateTime start,
+                                        @Param("end") java.time.LocalDateTime end);
+
         interface OrganizerRevenueRow {
                 Long getOrganizerId();
                 String getFirstName();
                 String getLastName();
                 java.math.BigDecimal getRevenue();
         }
+
+
 
         @Query("""
                 select e.organizer.id as organizerId,

@@ -330,3 +330,19 @@ export async function getDailyBookings(startISO, endISO) {
    }
    return await response.json();
  }
+
+
+export async function getDailyBookingsBreakdown(dateISO /* YYYY-MM-DD */) {
+  const url = buildApiUrl(`/v1/admin/daily-bookings-breakdown?date=${encodeURIComponent(dateISO)}`);
+  const res = await fetch(url, { headers: getAuthHeaders() });
+  if (!res.ok) throw new Error(`Failed to load bookings breakdown: ${res.status} ${res.statusText}`);
+  return res.json(); // { venue, services, events, total }
+}
+
+export async function getDailyCancellationsBreakdown(dateISO) {
+  const url = buildApiUrl(`/v1/admin/daily-cancellations-breakdown?date=${encodeURIComponent(dateISO)}`);
+  const res = await fetch(url, { headers: getAuthHeaders() });
+  if (!res.ok) throw new Error(`Failed to load cancellations breakdown: ${res.status} ${res.statusText}`);
+  return res.json(); // { venue, services, events, total }
+}
+

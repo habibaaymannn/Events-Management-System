@@ -12,6 +12,7 @@ import com.example.cdr.eventsmanagementsystem.DTO.projections.LocalDateCount;
 
 
 import com.example.cdr.eventsmanagementsystem.Model.Booking.ServiceBooking;
+import com.example.cdr.eventsmanagementsystem.Model.Booking.BookingStatus;
 
 @Repository
 public interface ServiceBookingRepository extends JpaRepository<ServiceBooking, Long> {
@@ -46,6 +47,15 @@ public interface ServiceBookingRepository extends JpaRepository<ServiceBooking, 
     """)
     List<LocalDateCount> countDailyCancellationsBetween(@Param("start") LocalDateTime start,
                                                         @Param("end") LocalDateTime end);
+
+    @Query("""
+    select count(b) from ServiceBooking b
+    where b.createdAt >= :start and b.createdAt < :end and b.status = :status
+    """)
+    long countByStatusAndCreatedAtBetween(@Param("status") BookingStatus status,
+                                        @Param("start") java.time.LocalDateTime start,
+                                      @Param("end") java.time.LocalDateTime end);
+
     @Query("""
       select count(distinct s.serviceProvider.id)
       from ServiceBooking sb

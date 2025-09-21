@@ -19,6 +19,9 @@ import org.springframework.web.bind.annotation.RestController;
 import java.time.LocalDate;
 import java.util.Map;
 
+import org.springframework.format.annotation.DateTimeFormat;
+import java.time.LocalDate;
+
 @RestController
 @RequiredArgsConstructor
 @RequestMapping(AdminControllerConstants.ADMIN_BASE_URL)
@@ -66,4 +69,17 @@ public class AdminDashboardController {
                                                       @RequestParam LocalDate end) {
         return adminService.getDailyCancellationCount(start, end);
     }
+
+    @GetMapping("/daily-bookings-breakdown")
+    public ResponseEntity<Map<String, Long>> dailyBookingsBreakdown(
+            @RequestParam("date") @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate date) {
+        return ResponseEntity.ok(statistics.dailyBookingsBreakdown(date));
+    }
+
+    @GetMapping("/daily-cancellations-breakdown")
+    public ResponseEntity<Map<String, Long>> dailyCancellationsBreakdown(
+            @RequestParam("date") @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate date) {
+        return ResponseEntity.ok(statistics.dailyCancellationsBreakdown(date));
+    }
+
 }
