@@ -1,5 +1,6 @@
 package com.example.cdr.eventsmanagementsystem.Util;
 
+import java.util.Objects;
 import java.util.function.BiConsumer;
 
 import org.springframework.stereotype.Component;
@@ -39,7 +40,7 @@ public class WebhookHandlerUtil {
         if (!(obj instanceof PaymentIntent paymentIntent)) return;
 
         Booking booking = bookingUtil.findBookingByStripePaymentIdAndType(paymentIntent.getId(), type);
-        if (booking == null) {
+        if (Objects.isNull(booking)) {
             log.warn("No booking found for PaymentIntent: " + paymentIntent.getId());
             return;
         }
@@ -73,7 +74,7 @@ public class WebhookHandlerUtil {
         if (!(obj instanceof Session session)) return;
 
         Booking booking = bookingUtil.findBookingByStripeSessionIdAndType(session.getId(), type);
-        if (booking == null) {
+        if (Objects.isNull(booking)) {
             log.warn("No booking found for Session: " + session.getId());
             return;
         }

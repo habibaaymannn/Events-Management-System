@@ -1,5 +1,7 @@
 package com.example.cdr.eventsmanagementsystem.Service.Payment;
 
+import java.util.Objects;
+
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
@@ -35,7 +37,7 @@ public class StripeWebhookService {
     private String webhookSecret;
 
     public Event constructEvent(String payload, String sigHeader) {
-        if (webhookSecret == null || webhookSecret.isBlank()) {
+        if (Objects.isNull(webhookSecret) || webhookSecret.isBlank()) {
             throw new IllegalStateException("webhook secret missing");
         }
 
@@ -61,7 +63,7 @@ public class StripeWebhookService {
     private void handleCheckoutSessionCompleted(Event event, BookingType type) {
         webhookHandlerUtil.handleSessionEvent(event, type, (booking, session) -> {
             String paymentIntentId = session.getPaymentIntent();
-            if (paymentIntentId != null) {
+            if (Objects.nonNull(paymentIntentId)) {
                 processBookingWithPaymentIntent(booking, paymentIntentId, session);
             } else {
                 processBookingWithoutPaymentIntent(booking, session);
@@ -86,6 +88,7 @@ public class StripeWebhookService {
             booking.setStatus(BookingStatus.BOOKED);
         } else if ("requires_action".equals(pi.getStatus())) {
             booking.setPaymentStatus(PaymentStatus.REQUIRES_ACTION);
+            booking.setStatus(BookingStatus.PAYMENT_PENDING);
         }
     }
 
@@ -129,7 +132,7 @@ public class StripeWebhookService {
     private void handlePaymentIntentRequiresAction(Event event, BookingType type) {
         webhookHandlerUtil.handlePaymentIntentEvent(event, type, (booking, paymentIntent) -> {
             booking.setPaymentStatus(PaymentStatus.REQUIRES_ACTION);
-            booking.setStatus(BookingStatus.PENDING);
+            booking.setStatus(BookingStatus.PAYMENT_PENDING);
         });
     }
 }
