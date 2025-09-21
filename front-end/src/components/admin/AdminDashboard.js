@@ -88,6 +88,10 @@ const AdminDashboard = () => {
         revenueByOrganizer: Array.isArray(dash?.revenueByOrganizer) ? dash.revenueByOrganizer : [],
         venueUtilizationRate: dash?.venueUtilizationRate != null ? Number(dash.venueUtilizationRate) : null,
         serviceProviderUtilizationRate: dash?.serviceProviderUtilizationRate != null ? Number(dash.serviceProviderUtilizationRate) : null,
+        venueActiveNow: dash?.venueActiveNow ?? 0,
+        venueTotal: dash?.venueTotal ?? 0,
+        serviceActiveNow: dash?.serviceProvidersActiveNow ?? 0,
+        serviceTotal: dash?.serviceProvidersTotal ?? 0,
       });
     } catch (error) {
       console.error("Error loading dashboard data:", error);
@@ -303,20 +307,22 @@ const renderPctLabel = ({ cx, cy, midAngle, innerRadius, outerRadius, percent })
             gap: '1.5rem',
             marginBottom: '2rem'
           }}>
-            <div className="card text-center">
-              <h3 className="text-warning">{venueUtilization}%</h3>
-              <p className="text-muted">Venue Utilization Rate</p>
-              <small>
-                ({dashboardData.venues ? dashboardData.venues.filter(v => v.bookings && v.bookings.length > 0).length : 0} of {dashboardData.venues ? dashboardData.venues.length : 0} venues booked)
-              </small>
-            </div>
-            <div className="card text-center">
-              <h3 className="text-danger">{serviceUtilization}%</h3>
-              <p className="text-muted">Service Providers Utilization Rate</p>
-              <small>
-                ({dashboardData.services ? dashboardData.services.filter(s => s.bookings && s.bookings.length > 0).length : 0} of {dashboardData.services ? dashboardData.services.length : 0} services booked)
-              </small>
-           </div>
+          <div className="card text-center">
+            <h3 className="text-warning">{venueUtilization}%</h3>
+            <p className="text-muted">Venue Utilization Rate</p>
+            <small>
+              ({dashboardData.venueActiveNow} of {dashboardData.venueTotal} venues booked)
+            </small>
+          </div>
+
+          <div className="card text-center">
+            <h3 className="text-danger">{serviceUtilization}%</h3>
+            <p className="text-muted">Service Providers Utilization Rate</p>
+            <small>
+              ({dashboardData.serviceActiveNow} of {dashboardData.serviceTotal} providers active)
+            </small>
+          </div>
+
           <div className="card" style={{ display: 'grid', gap: '0.5rem' }}>
           <h4 className="mb-1" style={{ marginBottom: 0 }}>Event Type Distribution</h4>
           {eventTypeTotal > 0 ? (

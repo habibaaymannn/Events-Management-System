@@ -46,5 +46,18 @@ public interface ServiceBookingRepository extends JpaRepository<ServiceBooking, 
     """)
     List<LocalDateCount> countDailyCancellationsBetween(@Param("start") LocalDateTime start,
                                                         @Param("end") LocalDateTime end);
+    @Query("""
+      select count(distinct s.serviceProvider.id)
+      from ServiceBooking sb
+      join Services s on s.id = sb.serviceId
+      where sb.status in (
+        com.example.cdr.eventsmanagementsystem.Model.Booking.BookingStatus.BOOKED,
+        com.example.cdr.eventsmanagementsystem.Model.Booking.BookingStatus.ACCEPTED
+      )
+      and sb.startTime <= :now and sb.endTime >= :now
+    """)
+    long countDistinctActiveServiceProvidersAt(@Param("now") java.time.LocalDateTime now);
+
+
 
 }

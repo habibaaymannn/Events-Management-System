@@ -48,4 +48,21 @@ public interface VenueBookingRepository extends JpaRepository<VenueBooking, Long
     List<LocalDateCount> countDailyCancellationsBetween(@Param("start") LocalDateTime start,
                                                         @Param("end") LocalDateTime end);
 
+    @Query("""
+      select count(distinct vb.venueId)
+      from VenueBooking vb
+      where (vb.paymentStatus in (
+              com.example.cdr.eventsmanagementsystem.Model.Booking.PaymentStatus.CAPTURED,
+              com.example.cdr.eventsmanagementsystem.Model.Booking.PaymentStatus.PARTIALLY_REFUNDED,
+              com.example.cdr.eventsmanagementsystem.Model.Booking.PaymentStatus.AUTHORIZED
+            )
+            or vb.status in (
+              com.example.cdr.eventsmanagementsystem.Model.Booking.BookingStatus.BOOKED,
+              com.example.cdr.eventsmanagementsystem.Model.Booking.BookingStatus.ACCEPTED
+            ))
+        and vb.status <> com.example.cdr.eventsmanagementsystem.Model.Booking.BookingStatus.CANCELLED
+        and vb.startTime <= :now and vb.endTime >= :now
+    """)
+    long countDistinctActiveVenueIdsAt(@Param("now") LocalDateTime now);
+
 }

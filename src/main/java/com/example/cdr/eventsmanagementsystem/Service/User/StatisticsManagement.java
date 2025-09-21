@@ -62,28 +62,67 @@ public class StatisticsManagement {
         dto.setNumServiceProviders(serviceProviderRepository.count());
         dto.setNumVenueProviders(venueProviderRepository.count());
 
-        dto.setVenueUtilizationRate(getVenueUtilizationRate());
-        dto.setServiceProviderUtilizationRate(getServiceProviderUtilizationRate());
+        // dto.setVenueUtilizationRate(getVenueUtilizationRate());
+        // dto.setServiceProviderUtilizationRate(getServiceProviderUtilizationRate());
+        // dto.setRevenueByOrganizer(buildUiRevenue());
+        
+        // Venue counts + rate
+        long venueTotal = venueRepository.count();
+        long venueActiveNow = venueBookingRepository.countDistinctActiveVenueIdsAt(now);
+        dto.setVenueTotal(venueTotal);
+        dto.setVenueActiveNow(venueActiveNow);
+        dto.setVenueUtilizationRate(venueTotal == 0 ? 0.0 : (double) venueActiveNow / venueTotal);
+
+        // Service-provider counts + rate
+        long svcTotal = serviceProviderRepository.count();
+        long svcActiveNow = serviceBookingRepository.countDistinctActiveServiceProvidersAt(now);
+        dto.setServiceProvidersTotal(svcTotal);
+        dto.setServiceProvidersActiveNow(svcActiveNow);
+        dto.setServiceProviderUtilizationRate(svcTotal == 0 ? 0.0 : (double) svcActiveNow / svcTotal);
+
+        // Revenue
+        dto.setRevenueByOrganizer(buildUiRevenue());
         return dto;
     }
 
 
-private static Map<LocalDate, Long> initDateRange(LocalDate start, LocalDate end) {
-    Map<LocalDate, Long> map = new LinkedHashMap<>();
-    for (LocalDate d = start; !d.isAfter(end); d = d.plusDays(1)) {
-        map.put(d, 0L);
-    }
-    return map;
-}
+    private java.util.List<com.example.cdr.eventsmanagementsystem.DTO.Admin.UiRevenue> buildUiRevenue() {
+        var rows = eventBookingRepository.sumRevenueByOrganizer();
 
-private static void mergeCounts(Map<LocalDate, Long> base, List<LocalDateCount> rows) {
-    for (LocalDateCount row : rows) {
-        LocalDate d = row.getDate();
-        if (d != null && base.containsKey(d)) {
-            base.put(d, base.get(d) + row.getCount());
+        var out = new java.util.ArrayList<com.example.cdr.eventsmanagementsystem.DTO.Admin.UiRevenue>(rows.size());
+        for (var r : rows) {
+            String first = r.getFirstName();
+            String last  = r.getLastName();
+            String displayName;
+
+            if ((first == null || first.isBlank()) && (last == null || last.isBlank())) {
+                displayName = "Organizer " + r.getOrganizerId();
+            } else {
+                displayName = ((first == null ? "" : first) + (last == null || last.isBlank() ? "" : " " + last)).trim();
+            }
+
+            out.add(new com.example.cdr.eventsmanagementsystem.DTO.Admin.UiRevenue(displayName, r.getRevenue()));
+        }
+        return out;
+    }
+
+
+    private static Map<LocalDate, Long> initDateRange(LocalDate start, LocalDate end) {
+        Map<LocalDate, Long> map = new LinkedHashMap<>();
+        for (LocalDate d = start; !d.isAfter(end); d = d.plusDays(1)) {
+            map.put(d, 0L);
+        }
+        return map;
+    }
+
+    private static void mergeCounts(Map<LocalDate, Long> base, List<LocalDateCount> rows) {
+        for (LocalDateCount row : rows) {
+            LocalDate d = row.getDate();
+            if (d != null && base.containsKey(d)) {
+                base.put(d, base.get(d) + row.getCount());
+            }
         }
     }
-}
 
 
     public Map<String, Long> getEventTypeDistribution() {
@@ -94,103 +133,96 @@ private static void mergeCounts(Map<LocalDate, Long> base, List<LocalDateCount> 
                 ));
     }
 
-public Map<LocalDate, Long> getDailyBookingCount(LocalDate startDate, LocalDate endDate) {
-    LocalDateTime startTs = startDate.atStartOfDay();
-    LocalDateTime endTs = endDate.plusDays(1).atStartOfDay().minusNanos(1); // inclusive end-of-day
+    public Map<LocalDate, Long> getDailyBookingCount(LocalDate startDate, LocalDate endDate) {
+        LocalDateTime startTs = startDate.atStartOfDay();
+        LocalDateTime endTs = endDate.plusDays(1).atStartOfDay().minusNanos(1); // inclusive end-of-day
 
-    Map<LocalDate, Long> result = initDateRange(startDate, endDate);
+        Map<LocalDate, Long> result = initDateRange(startDate, endDate);
 
-    mergeCounts(result, eventBookingRepository.countDailyBookingsBetween(startTs, endTs));
-    mergeCounts(result, venueBookingRepository.countDailyBookingsBetween(startTs, endTs));
-    // If you don’t have service bookings yet, comment this next line:
-    mergeCounts(result, serviceBookingRepository.countDailyBookingsBetween(startTs, endTs));
+        mergeCounts(result, eventBookingRepository.countDailyBookingsBetween(startTs, endTs));
+        mergeCounts(result, venueBookingRepository.countDailyBookingsBetween(startTs, endTs));
+        // If you don’t have service bookings yet, comment this next line:
+        mergeCounts(result, serviceBookingRepository.countDailyBookingsBetween(startTs, endTs));
 
-    return result;
-}
+        return result;
+    }
 
-public Map<LocalDate, Long> getDailyCancellationCount(LocalDate startDate, LocalDate endDate) {
-    LocalDateTime startTs = startDate.atStartOfDay();
-    LocalDateTime endTs = endDate.plusDays(1).atStartOfDay().minusNanos(1);
+    public Map<LocalDate, Long> getDailyCancellationCount(LocalDate startDate, LocalDate endDate) {
+        LocalDateTime startTs = startDate.atStartOfDay();
+        LocalDateTime endTs = endDate.plusDays(1).atStartOfDay().minusNanos(1);
 
-    Map<LocalDate, Long> result = initDateRange(startDate, endDate);
+        Map<LocalDate, Long> result = initDateRange(startDate, endDate);
 
-    mergeCounts(result, eventBookingRepository.countDailyCancellationsBetween(startTs, endTs));
-    mergeCounts(result, venueBookingRepository.countDailyCancellationsBetween(startTs, endTs));
-    // Likewise, comment if ServiceBooking isn’t in yet:
-    mergeCounts(result, serviceBookingRepository.countDailyCancellationsBetween(startTs, endTs));
+        mergeCounts(result, eventBookingRepository.countDailyCancellationsBetween(startTs, endTs));
+        mergeCounts(result, venueBookingRepository.countDailyCancellationsBetween(startTs, endTs));
+        // Likewise, comment if ServiceBooking isn’t in yet:
+        mergeCounts(result, serviceBookingRepository.countDailyCancellationsBetween(startTs, endTs));
 
-    return result;
-}
-
+        return result;
+    }
 
     public Page<OrganizerRevenueDto> getRevenuePerOrganizer(LocalDate startDate, LocalDate endDate, Pageable pageable) {
-        Map<String, BigDecimal> totalsByOrganizer = new HashMap<>();
-        Map<String, BigDecimal> paymentAmountCache = new HashMap<>();
+        var rows = eventBookingRepository.sumRevenueByOrganizer(); // projection: organizerId, revenue
 
-        LocalDateTime startTs = startDate.atStartOfDay();
-        LocalDateTime endTs = endDate.atTime(java.time.LocalTime.MAX);
+        var items = rows.stream().map(r -> {
+            var dto = new OrganizerRevenueDto();
 
-        PageRequest scanPage = PageRequest.of(0, 500);
-        Page<EventBooking> page;
-        do {
-            page = eventBookingRepository.findByStatusAndUpdatedAtBetween(BookingStatus.BOOKED, startTs, endTs, scanPage);
+            String organizerIdStr = String.valueOf(r.getOrganizerId());
+            dto.setOrganizerId(organizerIdStr);
 
-            Set<String> uniquePaymentIds = page.getContent().stream()
-                    .map(EventBooking::getStripePaymentId)
-                    .filter(id -> id != null && !id.isBlank())
-                    .collect(Collectors.toCollection(HashSet::new));
+            String displayName = organizerRepository.findById(organizerIdStr)
+                    .map(org -> org.getFullName())
+                    .filter(name -> name != null && !name.isBlank())
+                    .orElse("Organizer " + organizerIdStr);
+            dto.setOrganizerName(displayName);
 
-            for (String paymentId : uniquePaymentIds) {
-                if (!paymentAmountCache.containsKey(paymentId)) {
-                    try {
-                        var intent = stripeService.retrievePaymentIntent(paymentId);
-                        BigDecimal amount = BigDecimal.valueOf(intent.getAmount())
-                                .divide(BigDecimal.valueOf(100));
-                        paymentAmountCache.put(paymentId, amount);
-                    } catch (Exception e) {
-                        paymentAmountCache.put(paymentId, BigDecimal.ZERO);
-                    }
-                }
-            }
-
-            for (EventBooking b : page.getContent()) {
-                Event event = eventRepository.findById(b.getEventId()).orElseThrow(() -> new EntityNotFoundException("Event not found"));
-                String organizerId = event.getCreatedBy();
-                String paymentId = b.getStripePaymentId();
-                if (paymentId == null || paymentId.isBlank()) continue;
-                BigDecimal amount = paymentAmountCache.getOrDefault(paymentId, BigDecimal.ZERO);
-                totalsByOrganizer.merge(organizerId, amount, BigDecimal::add);
-            }
-
-            scanPage = scanPage.next();
-        } while (page.hasNext());
-
-        List<OrganizerRevenueDto> items = totalsByOrganizer.entrySet().stream()
-                .map(e -> {
-                    OrganizerRevenueDto dto = new OrganizerRevenueDto();
-                    dto.setOrganizerId(e.getKey());
-                    organizerRepository.findById(e.getKey()).ifPresent(org -> dto.setOrganizerName(org.getFullName()));
-                    dto.setTotalRevenue(e.getValue());
-                    return dto;
-                })
-                .sorted(Comparator.comparing(OrganizerRevenueDto::getTotalRevenue).reversed())
-                .toList();
+            dto.setTotalRevenue(r.getRevenue() == null ? java.math.BigDecimal.ZERO : r.getRevenue());
+            return dto;
+        })
+        .sorted(Comparator.comparing(OrganizerRevenueDto::getTotalRevenue).reversed())
+        .toList();
 
         int start = (int) pageable.getOffset();
         int end = Math.min(start + pageable.getPageSize(), items.size());
-        List<OrganizerRevenueDto> content = start > end ? List.of() : items.subList(start, end);
+        var content = start >= items.size() ? java.util.List.<OrganizerRevenueDto>of() : items.subList(start, end);
         return new PageImpl<>(content, pageable, items.size());
     }
 
+
+
+
+    // public double getVenueUtilizationRate() {
+    //     long totalVenues = venueRepository.count();
+    //     if (totalVenues == 0) return 0.0;
+    //     LocalDateTime now = LocalDateTime.now();
+    //     long activeDistinctVenues = venueBookingRepository.countDistinctActiveVenueIdsAt(now);
+    //     return (double) activeDistinctVenues / (double) totalVenues; // 0..1
+    // }
+
+
     public double getVenueUtilizationRate() {
-        long venues = Math.max(1, venueRepository.count());
-        long booked = venueBookingRepository.countByStatus(BookingStatus.BOOKED);
-        return (double) booked / venues;
-    }
+    long totalVenues = venueRepository.count();
+    if (totalVenues == 0) return 0.0;
+
+    var zone = java.time.ZoneId.of("Africa/Cairo"); // or from config
+    LocalDateTime now = java.time.ZonedDateTime.now(zone).toLocalDateTime();
+
+    // For strict “right now”:
+    long active = venueBookingRepository.countDistinctActiveVenueIdsAt(now);
+
+    // If you prefer “now..end of day”:
+    // LocalDateTime eod = now.toLocalDate().atTime(23, 59, 59, 999_000_000);
+    // long active = venueBookingRepository.countDistinctVenueIdsInWindow(now, eod);
+
+    return (double) active / (double) totalVenues;
+}
 
     public double getServiceProviderUtilizationRate() {
-        long providers = Math.max(1, serviceProviderRepository.count());
-        long bookedProviders = serviceProviderRepository.countDistinctBookedProviders();
-        return (double) bookedProviders / providers;
+        long totalProviders = serviceProviderRepository.count();
+        if (totalProviders == 0) return 0.0;
+        LocalDateTime now = LocalDateTime.now();
+        long activeDistinctProviders = serviceBookingRepository.countDistinctActiveServiceProvidersAt(now);
+        return (double) activeDistinctProviders / (double) totalProviders; // 0..1
     }
+
 }

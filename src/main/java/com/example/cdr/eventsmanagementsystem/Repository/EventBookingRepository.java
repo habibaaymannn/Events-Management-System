@@ -77,4 +77,35 @@ public interface EventBookingRepository extends JpaRepository<EventBooking, Long
         List<LocalDateCount> countDailyCancellationsBetween(@Param("start") LocalDateTime start,
                                                         @Param("end") LocalDateTime end);
 
+        interface OrganizerRevenueRow {
+                Long getOrganizerId();
+                String getFirstName();
+                String getLastName();
+                java.math.BigDecimal getRevenue();
+        }
+
+        @Query("""
+                select e.organizer.id as organizerId,
+                e.organizer.firstName as firstName,
+                e.organizer.lastName  as lastName,
+                coalesce(sum(
+                        case
+                        when b.paymentStatus = com.example.cdr.eventsmanagementsystem.Model.Booking.PaymentStatus.CAPTURED
+                        then b.amount
+                        when b.paymentStatus = com.example.cdr.eventsmanagementsystem.Model.Booking.PaymentStatus.PARTIALLY_REFUNDED
+                        then (b.amount - coalesce(b.refundAmount, 0))
+                        when b.paymentStatus = com.example.cdr.eventsmanagementsystem.Model.Booking.PaymentStatus.REFUNDED
+                        then 0
+                        else 0
+                        end
+                ), 0) as revenue
+                from EventBooking b
+                join Event e on e.id = b.eventId
+                group by e.organizer.id, e.organizer.firstName, e.organizer.lastName
+                order by revenue desc
+        """)
+        java.util.List<OrganizerRevenueRow> sumRevenueByOrganizer();
 }
+
+
+
