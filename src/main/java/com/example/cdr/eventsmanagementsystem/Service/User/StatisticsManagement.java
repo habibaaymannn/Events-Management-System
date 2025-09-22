@@ -35,6 +35,7 @@ import com.example.cdr.eventsmanagementsystem.Repository.VenueRepository;
 import com.example.cdr.eventsmanagementsystem.Service.Payment.StripeService;
 import com.example.cdr.eventsmanagementsystem.DTO.Admin.UiRevenue;
 import lombok.AllArgsConstructor;
+import lombok.RequiredArgsConstructor;
 import java.time.ZoneOffset;
 import java.time.ZonedDateTime;
 import java.util.*;
