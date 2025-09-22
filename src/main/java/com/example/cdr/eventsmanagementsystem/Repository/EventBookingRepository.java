@@ -12,8 +12,6 @@ import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
 import com.example.cdr.eventsmanagementsystem.DTO.projections.LocalDateCount;
-
-import com.example.cdr.eventsmanagementsystem.DTO.projections.LocalDateCount;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import com.example.cdr.eventsmanagementsystem.Model.Booking.BookingStatus;
@@ -24,14 +22,15 @@ import java.time.ZonedDateTime;
 
 @Repository
 public interface EventBookingRepository extends JpaRepository<EventBooking, Long> {
-    @Query("select function('date', b.createdAt) as date, count(b) as count from EventBooking b "+
-            "where function('date', b.createdAt) >= :start and function('date', b.createdAt) <= :end "+
-            "group by function('date', b.createdAt) order by function('date', b.createdAt)")
+
+    @Query("select function('date', b.createdAt) as date, count(b) as count from EventBooking b "
+            + "where function('date', b.createdAt) >= :start and function('date', b.createdAt) <= :end "
+            + "group by function('date', b.createdAt) order by function('date', b.createdAt)")
     List<LocalDateCount> countDailyBookingsBetween(@Param("start") LocalDate start, @Param("end") LocalDate end);
 
-    @Query("select function('date', b.cancelledAt) as date, count(b) as count from EventBooking b "+
-            "where b.cancelledAt is not null and function('date', b.cancelledAt) >= :start and function('date', b.cancelledAt) <= :end "+
-            "group by function('date', b.cancelledAt) order by function('date', b.cancelledAt)")
+    @Query("select function('date', b.cancelledAt) as date, count(b) as count from EventBooking b "
+            + "where b.cancelledAt is not null and function('date', b.cancelledAt) >= :start and function('date', b.cancelledAt) <= :end "
+            + "group by function('date', b.cancelledAt) order by function('date', b.cancelledAt)")
     List<LocalDateCount> countDailyCancellationsBetween(@Param("start") LocalDate start, @Param("end") LocalDate end);
 
     @Query("""
@@ -41,12 +40,11 @@ public interface EventBookingRepository extends JpaRepository<EventBooking, Long
         and b.cancelledAt >= :start
         and b.cancelledAt <  :end
         """)
-        long countCancelledBetween(@Param("status") BookingStatus status,
-                                @Param("start") LocalDateTime start,
-                                @Param("end") LocalDateTime end);
+    long countCancelledBetween(@Param("status") BookingStatus status,
+            @Param("start") LocalDateTime start,
+            @Param("end") LocalDateTime end);
 
-
-    List <EventBooking> findByStatusAndStartTimeBetween(
+    List<EventBooking> findByStatusAndStartTimeBetween(
             BookingStatus status,
             LocalDateTime start,
             LocalDateTime end
@@ -59,18 +57,17 @@ public interface EventBookingRepository extends JpaRepository<EventBooking, Long
             Pageable pageable
     );
 
-        @Query("""
+    @Query("""
         select count(b) from EventBooking b
         where b.createdAt >= :start
         and b.createdAt <  :end
         and b.status in :statuses
         """)
-        long countCreatedBetweenForStatuses(
-        @Param("start") java.time.LocalDateTime start,
-        @Param("end")   java.time.LocalDateTime end,
-        @Param("statuses") java.util.Collection<com.example.cdr.eventsmanagementsystem.Model.Booking.BookingStatus> statuses
-        );
-
+    long countCreatedBetweenForStatuses(
+            @Param("start") java.time.LocalDateTime start,
+            @Param("end") java.time.LocalDateTime end,
+            @Param("statuses") java.util.Collection<com.example.cdr.eventsmanagementsystem.Model.Booking.BookingStatus> statuses
+    );
 
     EventBooking findByStripeSessionId(String sessionId);
 
@@ -80,7 +77,7 @@ public interface EventBookingRepository extends JpaRepository<EventBooking, Long
 
     @Query("select eb from EventBooking eb where eb.eventId = :eventId order by eb.createdAt desc")
     Page<EventBooking> findByEventIdOrderByCreatedAtDesc(Long eventId, Pageable pageable);
-    
+
     Page<EventBooking> findByCreatedBy(String createdBy, Pageable pageable);
 
     @Query("""
@@ -90,10 +87,10 @@ public interface EventBookingRepository extends JpaRepository<EventBooking, Long
         GROUP BY function('date', b.createdAt)
         ORDER BY function('date', b.createdAt)
         """)
-        List<LocalDateCount> countDailyBookingsBetween(@Param("start") LocalDateTime start,
-                                                @Param("end") LocalDateTime end);
+    List<LocalDateCount> countDailyBookingsBetween(@Param("start") LocalDateTime start,
+            @Param("end") LocalDateTime end);
 
-        @Query("""
+    @Query("""
         SELECT function('date', COALESCE(b.cancelledAt, b.updatedAt)) AS date, COUNT(b) AS count
         FROM EventBooking b
         WHERE (b.status = com.example.cdr.eventsmanagementsystem.Model.Booking.BookingStatus.CANCELLED
@@ -102,29 +99,29 @@ public interface EventBookingRepository extends JpaRepository<EventBooking, Long
         GROUP BY function('date', COALESCE(b.cancelledAt, b.updatedAt))
         ORDER BY function('date', COALESCE(b.cancelledAt, b.updatedAt))
         """)
-        List<LocalDateCount> countDailyCancellationsBetween(@Param("start") LocalDateTime start,
-                                                        @Param("end") LocalDateTime end);
+    List<LocalDateCount> countDailyCancellationsBetween(@Param("start") LocalDateTime start,
+            @Param("end") LocalDateTime end);
 
-
-
-        @Query("""
+    @Query("""
         select count(b) from EventBooking b
         where b.createdAt >= :start and b.createdAt < :end and b.status = :status
         """)
-        long countByStatusAndCreatedAtBetween(@Param("status") BookingStatus status,
-                                        @Param("start") java.time.LocalDateTime start,
-                                        @Param("end") java.time.LocalDateTime end);
+    long countByStatusAndCreatedAtBetween(@Param("status") BookingStatus status,
+            @Param("start") java.time.LocalDateTime start,
+            @Param("end") java.time.LocalDateTime end);
 
-        interface OrganizerRevenueRow {
-                Long getOrganizerId();
-                String getFirstName();
-                String getLastName();
-                java.math.BigDecimal getRevenue();
-        }
+    interface OrganizerRevenueRow {
 
+        Long getOrganizerId();
 
+        String getFirstName();
 
-        @Query("""
+        String getLastName();
+
+        java.math.BigDecimal getRevenue();
+    }
+
+    @Query("""
                 select e.organizer.id as organizerId,
                 e.organizer.firstName as firstName,
                 e.organizer.lastName  as lastName,
@@ -144,8 +141,5 @@ public interface EventBookingRepository extends JpaRepository<EventBooking, Long
                 group by e.organizer.id, e.organizer.firstName, e.organizer.lastName
                 order by revenue desc
         """)
-        java.util.List<OrganizerRevenueRow> sumRevenueByOrganizer();
+    java.util.List<OrganizerRevenueRow> sumRevenueByOrganizer();
 }
-
-
-

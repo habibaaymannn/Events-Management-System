@@ -1,44 +1,55 @@
 package com.example.cdr.eventsmanagementsystem.Service.User;
 
-import com.example.cdr.eventsmanagementsystem.DTO.Admin.DashboardStatisticsDto;
-import com.example.cdr.eventsmanagementsystem.DTO.Admin.OrganizerRevenueDto;
-import com.example.cdr.eventsmanagementsystem.DTO.projections.EventTypeCount;
-import com.example.cdr.eventsmanagementsystem.DTO.projections.LocalDateCount;
-import com.example.cdr.eventsmanagementsystem.Model.Booking.BookingStatus;
-import com.example.cdr.eventsmanagementsystem.Model.Booking.EventBooking;
-import com.example.cdr.eventsmanagementsystem.Model.Event.Event;
-import com.example.cdr.eventsmanagementsystem.Model.Event.EventStatus;
-import com.example.cdr.eventsmanagementsystem.Repository.EventBookingRepository;
-import com.example.cdr.eventsmanagementsystem.Repository.ServiceBookingRepository;
-import com.example.cdr.eventsmanagementsystem.Repository.EventRepository;
-import com.example.cdr.eventsmanagementsystem.Repository.UsersRepository.*;
-import com.example.cdr.eventsmanagementsystem.Repository.VenueBookingRepository;
-import com.example.cdr.eventsmanagementsystem.Repository.VenueRepository;
-import com.example.cdr.eventsmanagementsystem.Service.Payment.StripeService;
-import jakarta.persistence.EntityNotFoundException;
-import lombok.RequiredArgsConstructor;
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.PageImpl;
-import org.springframework.data.domain.PageRequest;
-import org.springframework.data.domain.Pageable;
-import org.springframework.stereotype.Service;
-import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.time.ZoneOffset;
 import java.time.ZonedDateTime;
+import java.util.Comparator;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
+
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.Pageable;
+import org.springframework.stereotype.Service;
+
+import com.example.cdr.eventsmanagementsystem.DTO.Admin.DashboardStatisticsDto;
+import com.example.cdr.eventsmanagementsystem.DTO.Admin.OrganizerRevenueDto;
+import com.example.cdr.eventsmanagementsystem.DTO.projections.EventTypeCount;
+import com.example.cdr.eventsmanagementsystem.DTO.projections.LocalDateCount;
+import com.example.cdr.eventsmanagementsystem.Model.Booking.BookingStatus;
+import com.example.cdr.eventsmanagementsystem.Model.Event.EventStatus;
+import com.example.cdr.eventsmanagementsystem.Repository.EventBookingRepository;
+import com.example.cdr.eventsmanagementsystem.Repository.EventRepository;
+import com.example.cdr.eventsmanagementsystem.Repository.ServiceBookingRepository;
+import com.example.cdr.eventsmanagementsystem.Repository.UsersRepository.AdminRepository;
+import com.example.cdr.eventsmanagementsystem.Repository.UsersRepository.AttendeeRepository;
+import com.example.cdr.eventsmanagementsystem.Repository.UsersRepository.OrganizerRepository;
+import com.example.cdr.eventsmanagementsystem.Repository.UsersRepository.ServiceProviderRepository;
+import com.example.cdr.eventsmanagementsystem.Repository.UsersRepository.VenueProviderRepository;
+import com.example.cdr.eventsmanagementsystem.Repository.VenueBookingRepository;
+import com.example.cdr.eventsmanagementsystem.Repository.VenueRepository;
+import com.example.cdr.eventsmanagementsystem.Service.Payment.StripeService;
+import com.example.cdr.eventsmanagementsystem.DTO.Admin.UiRevenue;
+
+import java.time.ZoneOffset;
+import java.time.ZonedDateTime;
 import java.util.*;
 import java.util.stream.Collectors;
 import java.time.*;
+
 /**
- * Service class for administrative operations related statistics.
- * Handles reporting statistics.
+ * Service class for administrative operations related statistics. Handles
+ * reporting statistics.
  */
 
 @Service
 @RequiredArgsConstructor
 public class StatisticsManagement {
+
     private final AdminRepository adminRepository;
     private final OrganizerRepository organizerRepository;
     private final AttendeeRepository attendeeRepository;
@@ -68,7 +79,6 @@ public class StatisticsManagement {
         // dto.setVenueUtilizationRate(getVenueUtilizationRate());
         // dto.setServiceProviderUtilizationRate(getServiceProviderUtilizationRate());
         // dto.setRevenueByOrganizer(buildUiRevenue());
-        
         // Venue counts + rate
         long venueTotal = venueRepository.count();
         long venueActiveNow = venueBookingRepository.countDistinctActiveVenueIdsAt(now);
@@ -88,14 +98,13 @@ public class StatisticsManagement {
         return dto;
     }
 
-
-    private java.util.List<com.example.cdr.eventsmanagementsystem.DTO.Admin.UiRevenue> buildUiRevenue() {
+    private java.util.List<UiRevenue> buildUiRevenue() {
         var rows = eventBookingRepository.sumRevenueByOrganizer();
 
-        var out = new java.util.ArrayList<com.example.cdr.eventsmanagementsystem.DTO.Admin.UiRevenue>(rows.size());
+        var out = new java.util.ArrayList<UiRevenue>(rows.size());
         for (var r : rows) {
             String first = r.getFirstName();
-            String last  = r.getLastName();
+            String last = r.getLastName();
             String displayName;
 
             if ((first == null || first.isBlank()) && (last == null || last.isBlank())) {
@@ -104,11 +113,10 @@ public class StatisticsManagement {
                 displayName = ((first == null ? "" : first) + (last == null || last.isBlank() ? "" : " " + last)).trim();
             }
 
-            out.add(new com.example.cdr.eventsmanagementsystem.DTO.Admin.UiRevenue(displayName, r.getRevenue()));
+            out.add(new UiRevenue(displayName, r.getRevenue()));
         }
         return out;
     }
-
 
     private static Map<LocalDate, Long> initDateRange(LocalDate start, LocalDate end) {
         Map<LocalDate, Long> map = new LinkedHashMap<>();
@@ -126,7 +134,6 @@ public class StatisticsManagement {
             }
         }
     }
-
 
     public Map<String, Long> getEventTypeDistribution() {
         return eventRepository.countEventsByType().stream()
@@ -166,46 +173,43 @@ public class StatisticsManagement {
 
     public Map<String, Long> dailyBookingsBreakdown(LocalDate day) {
         var cairo = java.time.ZoneId.of("Africa/Cairo");
-        var utc   = java.time.ZoneOffset.UTC;
+        var utc = java.time.ZoneOffset.UTC;
 
         var cairoStart = day.atStartOfDay(cairo);
-        var cairoEnd   = day.plusDays(1).atStartOfDay(cairo);
+        var cairoEnd = day.plusDays(1).atStartOfDay(cairo);
 
         var startUtc = cairoStart.withZoneSameInstant(utc).toLocalDateTime();
-        var endUtc   = cairoEnd  .withZoneSameInstant(utc).toLocalDateTime();
+        var endUtc = cairoEnd.withZoneSameInstant(utc).toLocalDateTime();
 
         var ok = java.util.EnumSet.of(
-            com.example.cdr.eventsmanagementsystem.Model.Booking.BookingStatus.BOOKED,
-            com.example.cdr.eventsmanagementsystem.Model.Booking.BookingStatus.ACCEPTED
+                com.example.cdr.eventsmanagementsystem.Model.Booking.BookingStatus.BOOKED,
+                com.example.cdr.eventsmanagementsystem.Model.Booking.BookingStatus.ACCEPTED
         );
 
-        long events   = eventBookingRepository   .countCreatedBetweenForStatuses(startUtc, endUtc, ok);
-        long services = serviceBookingRepository .countCreatedBetweenForStatuses(startUtc, endUtc, ok);
-        long venue    = venueBookingRepository   .countCreatedBetweenForStatuses(startUtc, endUtc, ok);
+        long events = eventBookingRepository.countCreatedBetweenForStatuses(startUtc, endUtc, ok);
+        long services = serviceBookingRepository.countCreatedBetweenForStatuses(startUtc, endUtc, ok);
+        long venue = venueBookingRepository.countCreatedBetweenForStatuses(startUtc, endUtc, ok);
 
         long total = events + services + venue;
         return java.util.Map.of("venue", venue, "services", services, "events", events, "total", total);
     }
 
-
     public Map<String, Long> dailyCancellationsBreakdown(LocalDate day) {
         ZoneId cairo = ZoneId.of("Africa/Cairo");
-        ZoneId utc   = ZoneOffset.UTC;
+        ZoneId utc = ZoneOffset.UTC;
 
         ZonedDateTime cairoStart = day.atStartOfDay(cairo);
-        ZonedDateTime cairoEnd   = day.plusDays(1).atStartOfDay(cairo);
+        ZonedDateTime cairoEnd = day.plusDays(1).atStartOfDay(cairo);
 
         LocalDateTime startUtc = cairoStart.withZoneSameInstant(utc).toLocalDateTime();
-        LocalDateTime endUtc   = cairoEnd  .withZoneSameInstant(utc).toLocalDateTime();
+        LocalDateTime endUtc = cairoEnd.withZoneSameInstant(utc).toLocalDateTime();
 
-        long events   = eventBookingRepository   .countCancelledBetween(BookingStatus.CANCELLED, startUtc, endUtc);
-        long services = serviceBookingRepository .countCancelledBetween(BookingStatus.CANCELLED, startUtc, endUtc);
-        long venue    = venueBookingRepository   .countCancelledBetween(BookingStatus.CANCELLED, startUtc, endUtc);
+        long events = eventBookingRepository.countCancelledBetween(BookingStatus.CANCELLED, startUtc, endUtc);
+        long services = serviceBookingRepository.countCancelledBetween(BookingStatus.CANCELLED, startUtc, endUtc);
+        long venue = venueBookingRepository.countCancelledBetween(BookingStatus.CANCELLED, startUtc, endUtc);
 
         return Map.of("venue", venue, "services", services, "events", events, "total", venue + services + events);
     }
-
-
 
     public Page<OrganizerRevenueDto> getRevenuePerOrganizer(LocalDate startDate, LocalDate endDate, Pageable pageable) {
         var rows = eventBookingRepository.sumRevenueByOrganizer(); // projection: organizerId, revenue
@@ -225,17 +229,14 @@ public class StatisticsManagement {
             dto.setTotalRevenue(r.getRevenue() == null ? java.math.BigDecimal.ZERO : r.getRevenue());
             return dto;
         })
-        .sorted(Comparator.comparing(OrganizerRevenueDto::getTotalRevenue).reversed())
-        .toList();
+                .sorted(Comparator.comparing(OrganizerRevenueDto::getTotalRevenue).reversed())
+                .toList();
 
         int start = (int) pageable.getOffset();
         int end = Math.min(start + pageable.getPageSize(), items.size());
         var content = start >= items.size() ? java.util.List.<OrganizerRevenueDto>of() : items.subList(start, end);
         return new PageImpl<>(content, pageable, items.size());
     }
-
-
-
 
     // public double getVenueUtilizationRate() {
     //     long totalVenues = venueRepository.count();
@@ -244,28 +245,27 @@ public class StatisticsManagement {
     //     long activeDistinctVenues = venueBookingRepository.countDistinctActiveVenueIdsAt(now);
     //     return (double) activeDistinctVenues / (double) totalVenues; // 0..1
     // }
-
-
     public double getVenueUtilizationRate() {
-    long totalVenues = venueRepository.count();
-    if (totalVenues == 0) return 0.0;
+        long totalVenues = venueRepository.count();
+        if (totalVenues == 0) {
+            return 0.0;
+        }
 
-    var zone = java.time.ZoneId.of("Africa/Cairo"); // or from config
-    LocalDateTime now = java.time.ZonedDateTime.now(zone).toLocalDateTime();
+        var zone = java.time.ZoneId.of("Africa/Cairo");
+        LocalDateTime now = java.time.ZonedDateTime.now(zone).toLocalDateTime();
+        long active = venueBookingRepository.countDistinctActiveVenueIdsAt(now);
 
-    // For strict “right now”:
-    long active = venueBookingRepository.countDistinctActiveVenueIdsAt(now);
-
-    // If you prefer “now..end of day”:
-    // LocalDateTime eod = now.toLocalDate().atTime(23, 59, 59, 999_000_000);
-    // long active = venueBookingRepository.countDistinctVenueIdsInWindow(now, eod);
-
-    return (double) active / (double) totalVenues;
-}
+        // If we prefer “now..end of day”:
+        // LocalDateTime eod = now.toLocalDate().atTime(23, 59, 59, 999_000_000);
+        // long active = venueBookingRepository.countDistinctVenueIdsInWindow(now, eod);
+        return (double) active / (double) totalVenues;
+    }
 
     public double getServiceProviderUtilizationRate() {
         long totalProviders = serviceProviderRepository.count();
-        if (totalProviders == 0) return 0.0;
+        if (totalProviders == 0) {
+            return 0.0;
+        }
         LocalDateTime now = LocalDateTime.now();
         long activeDistinctProviders = serviceBookingRepository.countDistinctActiveServiceProvidersAt(now);
         return (double) activeDistinctProviders / (double) totalProviders; // 0..1
