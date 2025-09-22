@@ -2,11 +2,7 @@ package com.example.cdr.eventsmanagementsystem.Service.Booking;
 
 import java.time.LocalDateTime;
 
-import com.example.cdr.eventsmanagementsystem.Service.Payment.StripeService;
-import com.example.cdr.eventsmanagementsystem.Util.BookingUtil;
 import org.springframework.context.ApplicationEventPublisher;
-
-import com.example.cdr.eventsmanagementsystem.Model.Booking.BookingType;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.security.core.Authentication;
@@ -26,6 +22,7 @@ import com.example.cdr.eventsmanagementsystem.DTO.Booking.Request.EventBookingRe
 import com.example.cdr.eventsmanagementsystem.DTO.Booking.Response.EventBookingResponse;
 import com.example.cdr.eventsmanagementsystem.Mapper.EventBookingMapper;
 import com.example.cdr.eventsmanagementsystem.Model.Booking.BookingStatus;
+import com.example.cdr.eventsmanagementsystem.Model.Booking.BookingType;
 import com.example.cdr.eventsmanagementsystem.Model.Booking.EventBooking;
 import com.example.cdr.eventsmanagementsystem.Model.Event.Event;
 import com.example.cdr.eventsmanagementsystem.Model.User.Attendee;
@@ -36,7 +33,9 @@ import com.example.cdr.eventsmanagementsystem.NotificationEvent.BookingCreation.
 import com.example.cdr.eventsmanagementsystem.Repository.EventBookingRepository;
 import com.example.cdr.eventsmanagementsystem.Repository.EventRepository;
 import com.example.cdr.eventsmanagementsystem.Service.Auth.UserSyncService;
+import com.example.cdr.eventsmanagementsystem.Service.Payment.StripeService;
 import com.example.cdr.eventsmanagementsystem.Util.AuthUtil;
+import com.example.cdr.eventsmanagementsystem.Util.BookingUtil;
 import com.stripe.model.Customer;
 
 import jakarta.persistence.EntityNotFoundException;
@@ -106,6 +105,9 @@ public class EventBookingService {
         }
 
         EventBooking booking = bookingMapper.toEventBooking(request);
+
+        booking = bookingRepository.save(booking); 
+
         var session = stripeService.createCheckoutSession(
                 attendee.getStripeCustomerId(),
                 event.getRetailPrice(),
