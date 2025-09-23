@@ -11,5 +11,4 @@ import org.springframework.stereotype.Repository;
 @Repository
 public interface ServiceRepository extends JpaRepository<Services, Long> {
     Page<Services> findByServiceProvider(ServiceProvider serviceProvider, Pageable pageable);
-    Services getServiceById(Long id);
 }

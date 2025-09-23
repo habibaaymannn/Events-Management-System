@@ -36,7 +36,7 @@ public class VenueService {
     private final ImageUtil imageUtil;
 
     public VenueDTO getVenueById(Long venueId) {
-        Venue venue = venueRepository.getVenueById(venueId);
+        Venue venue = getVenue(venueId);
         return venueMapper.toVenueDTO(venue);
     }
 
@@ -63,8 +63,8 @@ public class VenueService {
 
     @Transactional
     public VenueDTO updateVenue(Long venueId, VenueDTO dto,  List<MultipartFile> newImages) throws IOException {
-        Venue venue = venueRepository.getVenueById(venueId);
-        verifyAccess(venueId);
+        Venue venue = getVenue(venueId);
+        verifyAccess(venue);
         venueMapper.updateVenue(dto, venue);
         venue.setImages(imageUtil.mergeImages(venue.getImages(), newImages));
         Venue updatedVenue = venueRepository.save(venue);
@@ -73,12 +73,16 @@ public class VenueService {
 
     @Transactional
     public void deleteVenue(Long venueId) {
-        verifyAccess(venueId);
-        venueRepository.deleteById(venueId);
+        Venue venue = getVenue(venueId);
+        verifyAccess(venue);
+        venueRepository.delete(venue);
     }
 
-    private void verifyAccess(Long venueId) throws AccessDeniedException {
-        Venue venue = venueRepository.findById(venueId).orElseThrow(() -> new EntityNotFoundException("Venue not found"));
+    private Venue getVenue(Long venueId) {
+        return venueRepository.findById(venueId).orElseThrow(() -> new EntityNotFoundException("Venue not found"));
+    }
+
+    private void verifyAccess(Venue venue) throws AccessDeniedException {
         String venueProviderId = AuthUtil.getCurrentUserId();
 
         if (Objects.isNull(venue.getVenueProvider())|| !venue.getVenueProvider().getKeycloakId().equals(venueProviderId)) {

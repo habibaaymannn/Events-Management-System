@@ -22,7 +22,7 @@ export async function getVenueById(venueId) {
  * @returns {Promise<Array>} - Array of venue objects.
  */
 export async function getAllVenues() {
-  const url = buildApiUrl("/v1/venues/all/venue-provider");
+  const url = buildApiUrl("/v1/venues/all/provider");
   const response = await fetch(url, { method: "GET", headers: getAuthHeaders(true) });
   if (!response.ok) throw new Error(`Failed to fetch venues: ${response.status} ${response.statusText}`);
 
@@ -154,12 +154,4 @@ export async function respondToVenueBookingRequest(bookingId, status, reason = "
   }
 
   return await response.json();
-}
-
-function unwrapApiData(json) {
-  if (Array.isArray(json)) return json;
-  if (json && Array.isArray(json.data)) return json.data;
-  if (json && Array.isArray(json.content)) return json.content;
-  if (json && json.data && Array.isArray(json.data.content)) return json.data.content;
-  return [];
 }

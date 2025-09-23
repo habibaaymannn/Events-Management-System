@@ -30,7 +30,7 @@ public class ServicesService {
     private final ServiceMapper serviceMapper;
 
     public ServicesDTO getServiceById(Long serviceId) {
-        Services service = serviceRepository.getServiceById(serviceId);
+        Services service = getService(serviceId);
         return serviceMapper.toServiceDTO(service);
     }
 
@@ -45,7 +45,6 @@ public class ServicesService {
         return services.map(serviceMapper::toServiceDTO);
     }
 
-    @Transactional
     public ServicesDTO addService(ServicesDTO dto) {
         Services newService = serviceMapper.toService(dto);
         ServiceProvider serviceProvider = ensureCurrentUserAsServiceProvider();
@@ -54,10 +53,9 @@ public class ServicesService {
         return serviceMapper.toServiceDTO(savedService);
     }
 
-    @Transactional
     public ServicesDTO updateService(Long serviceId, ServicesDTO dto) {
-        Services service = serviceRepository.getServiceById(serviceId);
-        verifyAccess(serviceId);
+        Services service = getService(serviceId);
+        verifyAccess(service);
         serviceMapper.updateService(dto, service);
         Services updatedVenue = serviceRepository.save(service);
         return serviceMapper.toServiceDTO(updatedVenue);
@@ -65,16 +63,20 @@ public class ServicesService {
 
     @Transactional
     public void deleteService(Long serviceId) {
-        verifyAccess(serviceId);
+        Services service = getService(serviceId);
+        verifyAccess(service);
         serviceRepository.deleteById(serviceId);
     }
 
-    private void verifyAccess(Long serviceId) throws AccessDeniedException {
-        Services service = serviceRepository.findById(serviceId).orElseThrow(() -> new EntityNotFoundException("Service not found"));
+    private Services getService(Long serviceId) {
+        return serviceRepository.findById(serviceId).orElseThrow(() -> new EntityNotFoundException("Service not found"));
+    }
+
+    private void verifyAccess(Services service) throws AccessDeniedException {
         String serviceProviderId = AuthUtil.getCurrentUserId();
 
         if (Objects.isNull(service.getServiceProvider())|| !service.getServiceProvider().getKeycloakId().equals(serviceProviderId)) {
-            throw new AccessDeniedException("You are not allowed to access this service");
+            throw new AccessDeniedException("You are not allowed to access this venue");
         }
     }
 

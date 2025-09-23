@@ -19,7 +19,7 @@ export async function getServiceById(serviceId) {
  * BE returns a Spring Page<ServicesDTO>. We return the array (content).
  */
 export async function getMyServices() {
-  const url = buildApiUrl('/v1/services/all/service-provider');
+  const url = buildApiUrl('/v1/services/all/provider');
   const response = await fetch(url, {
     method: 'GET',
     headers: getAuthHeaders(),
