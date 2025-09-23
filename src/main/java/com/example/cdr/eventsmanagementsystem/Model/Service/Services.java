@@ -44,5 +44,5 @@ public class Services extends BaseEntity {
     private ServiceProvider serviceProvider;
 
     @Column(nullable = false)
-    private boolean deleted = false;
+    private boolean deleted;
 }

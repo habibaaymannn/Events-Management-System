@@ -55,5 +55,5 @@ public class Venue extends BaseEntity {
     private Set<EventType> supportedEventTypes = new HashSet<>();
 
     @Column(nullable = false)
-    private boolean deleted = false;
+    private boolean deleted;
 }
