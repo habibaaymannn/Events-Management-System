@@ -1,6 +1,56 @@
 import { buildApiUrl, getAuthHeaders } from '../config/apiConfig';
 
 /**
+ * Get a single venue by ID.
+ * @returns {Promise<object>} - Venue object.
+ * @param venueId
+ */
+export async function getVenueById(venueId) {
+  const url = buildApiUrl(`/v1/venues/${encodeURIComponent(venueId)}`);
+  const response = await fetch(url, {
+    method: "GET",
+    headers: getAuthHeaders(true),
+  });
+  if (!response.ok) {
+    throw new Error(`Failed to fetch venue: ${response.statusText}`);
+  }
+  return await response.json();
+}
+
+/**
+ * Get all venues for the venue provider.
+ * @returns {Promise<Array>} - Array of venue objects.
+ */
+export async function getAllVenues() {
+  const url = buildApiUrl("/v1/venues/all/provider");
+  const response = await fetch(url, { method: "GET", headers: getAuthHeaders(true) });
+  if (!response.ok) throw new Error(`Failed to fetch venues: ${response.status} ${response.statusText}`);
+
+  const json = await response.json();
+  return Array.isArray(json) ? json : (json.content ?? []);
+}
+
+/**
+ * Get all bookings for a venue provider.
+ * @param {string} venueProviderId - Current venue provider's ID.
+ * @param {number} page - Page number (optional, default 0).
+ * @param {number} size - Page size (optional, default 20).
+ * @returns {Promise<object>} - Paginated booking data.
+ */
+export async function getBookingsByVenueProviderId(venueProviderId, page = 0, size = 20) {
+  const url = buildApiUrl(`/v1/bookings/venues/venue-provider/${encodeURIComponent(venueProviderId)}?page=${page}&size=${size}`);
+  const response = await fetch(url, {
+    method: "GET", headers: getAuthHeaders(true) });
+
+  if (!response.ok) {
+    throw new Error(`Failed to fetch bookings: ${response.statusText}`);
+  }
+
+  const json = await response.json();
+  return json;
+}
+
+/**
  * Create a new venue.
  * @returns {Promise<object>} - Created venue object.
  * @param venueJsonData
@@ -29,31 +79,10 @@ export async function createVenue(venueJsonData, imageFiles) {
     headers: headers,
     body: formData,
   });
-
   if (!response.ok) {
     const txt = await response.text().catch(() => "");
     throw new Error(`Failed to create venue: ${response.status} ${response.statusText} ${txt}`);
   }
-  return await response.json();
-}
-
-
-/**
- * Get a single venue by ID.
- * @returns {Promise<object>} - Venue object.
- * @param venueId
- */
-export async function getVenueById(venueId) {
-  const url = buildApiUrl(`/v1/venues/${encodeURIComponent(venueId)}`);
-  const response = await fetch(url, {
-    method: "GET",
-    headers: getAuthHeaders(true),
-  });
-
-  if (!response.ok) {
-    throw new Error(`Failed to fetch venue: ${response.statusText}`);
-  }
-
   return await response.json();
 }
 
@@ -65,7 +94,6 @@ export async function getVenueById(venueId) {
  */
 export async function updateVenue(venueId, formData) {
   const url = buildApiUrl(`/v1/venues/${venueId}`);
-
   const headers = getAuthHeaders();
   delete headers['Content-Type']; // Let browser set multipart content type
 
@@ -100,46 +128,6 @@ export async function deleteVenue(id) {
 }
 
 /**
- * Get all venues for the venue provider.
- * @returns {Promise<Array>} - Array of venue objects.
- */
-
-function unwrapApiData(json) {
-  if (Array.isArray(json)) return json;
-  if (json && Array.isArray(json.data)) return json.data;
-  if (json && Array.isArray(json.content)) return json.content;
-  if (json && json.data && Array.isArray(json.data.content)) return json.data.content;
-  return [];
-}
-
-export async function getAllVenues() {
-  const url = buildApiUrl("/v1/venues/all");
-  const response = await fetch(url, { method: "GET", headers: getAuthHeaders(true) });
-  if (!response.ok) throw new Error(`Failed to fetch venues: ${response.status} ${response.statusText}`);
-
-  const json = await response.json();
-  return Array.isArray(json) ? json : (json.content ?? []);
-}
-
-//
-// /**
-//  * Cancel a booking as a venue provider.
-//  * @param {number|string} bookingId - Booking ID.
-//  * @returns {Promise<void>} - Resolves if successful.
-//  */
-// export async function cancelVenueBooking(bookingId) {
-//   const url = buildApiUrl(`/v1/venues/bookings/${bookingId}/cancel`);
-//   const response = await fetch(url, {
-//     method: "POST",
-//     headers: getAuthHeaders(true),
-//   });
-//
-//   if (!response.ok) {
-//     throw new Error(`Failed to cancel booking: ${response.statusText}`);
-//   }
-// }
-
-/**
  * Accept or reject a venue booking request.
  * @param {number|string} bookingId - Booking request ID.
  * @param {string} status - Status to set ("ACCEPTED" or "REJECTED").
@@ -167,24 +155,3 @@ export async function respondToVenueBookingRequest(bookingId, status, reason = "
 
   return await response.json();
 }
-/**
- * Get all bookings for a venue provider.
- * @param {string} venueProviderId - Current venue provider's ID.
- * @param {number} page - Page number (optional, default 0).
- * @param {number} size - Page size (optional, default 20).
- * @returns {Promise<object>} - Paginated booking data.
- */
-export async function getBookingsByVenueProviderId(venueProviderId, page = 0, size = 20) {
-  const url = buildApiUrl(`/v1/bookings/venues/venue-provider/${encodeURIComponent(venueProviderId)}?page=${page}&size=${size}`);
-  const response = await fetch(url, {
-    method: "GET", headers: getAuthHeaders(true) });
-
-  if (!response.ok) {
-    throw new Error(`Failed to fetch bookings: ${response.statusText}`);
-  }
-
-  const json = await response.json();
-  return json;
-}
-
-

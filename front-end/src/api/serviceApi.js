@@ -1,14 +1,70 @@
-// src/api/serviceApi.js
 import { buildApiUrl, getAuthHeaders } from '../config/apiConfig';
 
-
-function unwrapApiData(json) {
-  if (Array.isArray(json)) return json;
-  if (json && Array.isArray(json.data)) return json.data;
-  if (json && Array.isArray(json.content)) return json.content;
-  if (json && json.data && Array.isArray(json.data.content)) return json.data.content;
-  return [];
+/**
+ * Get details of a single service by ID
+ * GET /v1/services/{serviceId}
+ */
+export async function getServiceById(serviceId) {
+  const url = buildApiUrl(`/v1/services/${encodeURIComponent(serviceId)}`);
+  const response = await fetch(url, {
+    method: 'GET',
+    headers: getAuthHeaders(true),
+  });
+  if (!response.ok) throw new Error(`Failed to fetch service details: ${response.status} ${response.statusText}`);
+  return await response.json();
 }
+
+/**
+ * Get all services for the current service provider.
+ * BE returns a Spring Page<ServicesDTO>. We return the array (content).
+ */
+export async function getMyServices() {
+  const url = buildApiUrl('/v1/services/all/provider');
+  const response = await fetch(url, {
+    method: 'GET',
+    headers: getAuthHeaders(),
+  });
+  if (!response.ok) throw new Error(`Failed to fetch services: ${response.status} ${response.statusText}`);
+
+  const json = await response.json();
+  return unwrapApiData(json);
+}
+
+/**
+ * Get all available services for booking (for event organizers).
+ */
+export async function getAllAvailableServices() {
+  const url = buildApiUrl('/v1/services/all');
+  const response = await fetch(url, {
+    method: 'GET',
+    headers: getAuthHeaders(),
+  });
+  if (!response.ok) throw new Error(`Failed to fetch available services: ${response.status} ${response.statusText}`);
+
+  const json = await response.json();
+  return unwrapApiData(json);
+}
+
+/**
+ * Get all bookings for a venue provider.
+ * @param serviceProviderId
+ * @param {number} page - Page number (optional, default 0).
+ * @param {number} size - Page size (optional, default 20).
+ * @returns {Promise<object>} - Paginated booking data.
+ */
+export async function getServiceProviderBookings(serviceProviderId, page = 0, size = 20) {
+  const url = buildApiUrl(`/v1/bookings/services/service-provider/${encodeURIComponent(serviceProviderId)}?page=${page}&size=${size}`);
+  const response = await fetch(url, {
+    method: "GET", headers: getAuthHeaders(true) });
+
+  if (!response.ok) {
+    throw new Error(`Failed to fetch bookings: ${response.statusText}`);
+  }
+
+  const json = await response.json();
+  return json;
+}
+
 /**
  * Add a new service for the service provider.
  * POST /v1/services/create
@@ -42,123 +98,8 @@ export async function updateService(serviceId, serviceData) {
 }
 
 /**
- * Get details of a single service by ID
- * GET /v1/services/{serviceId}
- */
-export async function getServiceById(serviceId) {
-  const url = buildApiUrl(`/v1/services/${encodeURIComponent(serviceId)}`);
-  const response = await fetch(url, {
-    method: 'GET',
-    headers: getAuthHeaders(true),
-  });
-  if (!response.ok) throw new Error(`Failed to fetch service details: ${response.status} ${response.statusText}`);
-  return await response.json();
-}
-
-
-/**
- * Accept or reject a booking request as a service provider.
- * POST /v1/services/bookings/{bookingId}/status
- * Body: { status: "ACCEPTED" | "REJECTED", cancellationReason?: string }
- */
-export async function respondToBookingRequest(bookingId, status, reason = '') {
-  const url = buildApiUrl(`/v1/services/bookings/${bookingId}/status`);
-  const requestBody = { status };
-  if (status === 'REJECTED' && reason) requestBody.cancellationReason = reason;
-
-  const response = await fetch(url, {
-    method: 'POST',
-    headers: getAuthHeaders(true),
-    body: JSON.stringify(requestBody),
-  });
-  if (!response.ok) throw new Error(`Failed to ${status.toLowerCase()} booking: ${response.status} ${response.statusText}`);
-  return await response.json();
-}
-
-/**
- * Cancel a booking as a service provider.
- * BE does NOT expose ".../cancel" in your constants.
- * Use the same status endpoint with status=CANCELLED for consistency.
- * POST /v1/services/bookings/{bookingId}/status
- * Body: { status: "CANCELLED", cancellationReason?: string }
- */
-export async function cancelServiceBooking(bookingId, reason = '') {
-  const url = buildApiUrl(`/v1/services/bookings/${bookingId}/status`);
-  const requestBody = { status: 'CANCELLED' };
-  if (reason) requestBody.cancellationReason = reason;
-
-  const response = await fetch(url, {
-    method: 'POST',
-    headers: getAuthHeaders(true),
-    body: JSON.stringify(requestBody),
-  });
-  if (!response.ok) throw new Error(`Failed to cancel booking: ${response.status} ${response.statusText}`);
-  return await response.json();
-}
-
-/**
- * Update availability of a service.
- * Your BE constant is "/{serviceId}/update-availability".
- * It takes availability as a QUERY PARAM (common pattern).
- * PATCH /v1/services/{serviceId}/update-availability?availability=AVAILABLE
- * If caller passes { availability: "AVAILABLE" } we lift it into the query string.
- */
-export async function updateServiceAvailability(serviceId, availabilityData) {
-  const availability = availabilityData?.availability;
-  let url = buildApiUrl(`/v1/services/${encodeURIComponent(serviceId)}/update-availability`);
-  if (availability) {
-    const qs = new URLSearchParams({ availability }).toString();
-    url += `?${qs}`;
-  }
-
-  const response = await fetch(url, {
-    method: 'PATCH',
-    headers: getAuthHeaders(),
-    // Most controllers ignore body for this endpoint; keep it empty to be safe
-  });
-  if (!response.ok) throw new Error(`Failed to update service availability: ${response.status} ${response.statusText}`);
-  return await response.json();
-}
-
-/**
- * Get all bookings for a venue provider.
- * @param serviceProviderId
- * @param {number} page - Page number (optional, default 0).
- * @param {number} size - Page size (optional, default 20).
- * @returns {Promise<object>} - Paginated booking data.
- */
-export async function getServiceProviderBookings(serviceProviderId, page = 0, size = 20) {
-  const url = buildApiUrl(`/v1/bookings/services/service-provider/${encodeURIComponent(serviceProviderId)}?page=${page}&size=${size}`);
-  const response = await fetch(url, {
-    method: "GET", headers: getAuthHeaders(true) });
-
-  if (!response.ok) {
-    throw new Error(`Failed to fetch bookings: ${response.statusText}`);
-  }
-
-  const json = await response.json();
-  return json;
-}
-
-/**
- * Get all services for the current service provider.
- * GET /v1/services/all
- * BE returns a Spring Page<ServicesDTO>. We return the array (content).
- */
-export async function getMyServices() {
-  const url = buildApiUrl('/v1/services/all');
-  const response = await fetch(url, {
-    method: 'GET',
-    headers: getAuthHeaders(),
-  });
-  if (!response.ok) throw new Error(`Failed to fetch services: ${response.status} ${response.statusText}`);
-
-  const json = await response.json();
-  return unwrapApiData(json);
-}
-  /**
-   * Delete a service by ID.
-   * DELETE /v1/services/{serviceId}
+ * Delete a service by ID.
+ * DELETE /v1/services/{serviceId}
    */
 export async function deleteService(serviceId) {
     const url = buildApiUrl(`/v1/services/${encodeURIComponent(serviceId)}`);
@@ -170,19 +111,12 @@ export async function deleteService(serviceId) {
       throw new Error(`Failed to delete service: ${response.status} ${response.statusText}`);
     }
     return true;
-  }
+}
 
-/**
- * Get all available services for booking (for event organizers).
- */
-export async function getAllAvailableServices() {
-  const url = buildApiUrl('/v1/services/all');
-  const response = await fetch(url, {
-    method: 'GET',
-    headers: getAuthHeaders(),
-  });
-  if (!response.ok) throw new Error(`Failed to fetch available services: ${response.status} ${response.statusText}`);
-
-  const json = await response.json();
-  return unwrapApiData(json);
+function unwrapApiData(json) {
+  if (Array.isArray(json)) return json;
+  if (json && Array.isArray(json.data)) return json.data;
+  if (json && Array.isArray(json.content)) return json.content;
+  if (json && json.data && Array.isArray(json.data.content)) return json.data.content;
+  return [];
 }
