@@ -2,7 +2,7 @@ import React, { useState, useEffect } from "react";
 import { Routes, Route, useLocation } from "react-router-dom";
 import "./EventOrganizerDashboard.css";
 import { initializeAllDummyData } from "../../utils/initializeDummyData";
-import { createEvent, updateEvent, deleteEvent, getAllEvents, getEventsByOrganizer } from "../../api/eventApi";
+import { createEvent, updateEvent, cancelEvent, getAllEvents, getEventsByOrganizer } from "../../api/eventApi";
 import {
   bookVenue,
   bookService,
@@ -412,7 +412,7 @@ const EventOrganizerDashboard = () => {
     
     if (window.confirm(confirmMessage)) {
       try {
-        await deleteEvent(event.id);
+        await cancelEvent(event.id);
 
         // Remove event from local state
         setEvents(events.filter(ev => ev.id !== event.id));

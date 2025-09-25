@@ -22,7 +22,7 @@ export async function getVenueById(venueId) {
  * @returns {Promise<Array>} - Array of venue objects.
  */
 export async function getAllVenues() {
-  const url = buildApiUrl("/v1/venues/all/provider");
+  const url = buildApiUrl("/v1/venues/all");
   const response = await fetch(url, { method: "GET", headers: getAuthHeaders(true) });
   if (!response.ok) throw new Error(`Failed to fetch venues: ${response.status} ${response.statusText}`);
 

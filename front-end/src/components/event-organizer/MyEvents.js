@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { getAllEvents, deleteEvent, updateEvent, createEvent, getEventsByOrganizer } from "../../api/eventApi";
+import { getAllEvents, cancelEvent, updateEvent, createEvent, getEventsByOrganizer } from "../../api/eventApi";
 import { getBookingById, getBookingsByEventId } from "../../api/bookingApi";
 
 const MyEvents = () => {
@@ -39,7 +39,7 @@ const MyEvents = () => {
     
     if (window.confirm(confirmMessage)) {
       try {
-        await deleteEvent(event.id);
+        await cancelEvent(event.id);
         loadEvents();
         alert(`Event "${event.name}" deleted successfully.`);
       } catch (error) {

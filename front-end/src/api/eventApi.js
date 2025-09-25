@@ -45,17 +45,19 @@ export async function updateEvent(id, eventData) {
  * @param {number|string} id - Event ID.
  * @returns {Promise<void>} - Resolves if successful.
  */
-export async function deleteEvent(id) {
-  const url = buildApiUrl(`/v1/events/${id}`);
+export async function cancelEvent(id) {
+  const url = buildApiUrl(`/v1/events/${id}/cancel`);
   const response = await fetch(url, {
-    method: "DELETE",
-    headers: getAuthHeaders(),
+    method: "POST",
+    headers: getAuthHeaders(true),
   });
 
   if (!response.ok) {
-    throw new Error(`Failed to delete event: ${response.statusText}`);
+    throw new Error(`Failed to cancel event: ${response.statusText}`);
   }
 }
+
+export const deleteEvent = cancelEvent;
 
 /**
  * Get all events (paginated).
