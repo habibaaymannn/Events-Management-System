@@ -45,7 +45,7 @@ app:
     from: ${MAIL_FROM:${spring.mail.username}}   # default to the same Gmail sender
   supportEmail: ${SUPPORT_EMAIL:${spring.mail.username}}  # fallback to sender
   payment:
-    return-url: http://localhost:8180/v1/payments/confirm
+    return-url: http://localhost:3000/event-organizer/
     webhook-secret: ${STRIPE_WEBHOOK_SECRET:}
   booking:
     free-cancel-days-before-start: 1

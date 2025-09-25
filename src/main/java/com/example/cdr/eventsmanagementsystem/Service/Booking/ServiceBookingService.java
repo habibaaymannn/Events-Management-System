@@ -3,10 +3,6 @@ package com.example.cdr.eventsmanagementsystem.Service.Booking;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
-import com.example.cdr.eventsmanagementsystem.Model.Booking.BookingType;
-
-import com.example.cdr.eventsmanagementsystem.Service.Payment.StripeService;
-import com.example.cdr.eventsmanagementsystem.Util.BookingUtil;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -27,6 +23,7 @@ import com.example.cdr.eventsmanagementsystem.DTO.Booking.Request.ServiceBooking
 import com.example.cdr.eventsmanagementsystem.DTO.Booking.Response.ServiceBookingResponse;
 import com.example.cdr.eventsmanagementsystem.Mapper.ServiceBookingMapper;
 import com.example.cdr.eventsmanagementsystem.Model.Booking.BookingStatus;
+import com.example.cdr.eventsmanagementsystem.Model.Booking.BookingType;
 import com.example.cdr.eventsmanagementsystem.Model.Booking.ServiceBooking;
 import com.example.cdr.eventsmanagementsystem.Model.Service.Services;
 import com.example.cdr.eventsmanagementsystem.Model.User.Organizer;
@@ -37,7 +34,9 @@ import com.example.cdr.eventsmanagementsystem.NotificationEvent.BookingCreation.
 import com.example.cdr.eventsmanagementsystem.Repository.ServiceBookingRepository;
 import com.example.cdr.eventsmanagementsystem.Repository.ServiceRepository;
 import com.example.cdr.eventsmanagementsystem.Service.Auth.UserSyncService;
+import com.example.cdr.eventsmanagementsystem.Service.Payment.StripeService;
 import com.example.cdr.eventsmanagementsystem.Util.AuthUtil;
+import com.example.cdr.eventsmanagementsystem.Util.BookingUtil;
 import com.stripe.model.Customer;
 
 import jakarta.persistence.EntityNotFoundException;
@@ -104,6 +103,9 @@ public class ServiceBookingService {
         }
 
         ServiceBooking booking = bookingMapper.toServiceBooking(request);
+
+        booking = bookingRepository.save(booking);
+
         var session = stripeService.createCheckoutSession(
                 organizer.getStripeCustomerId(),
                 BigDecimal.valueOf(service.getPrice()),

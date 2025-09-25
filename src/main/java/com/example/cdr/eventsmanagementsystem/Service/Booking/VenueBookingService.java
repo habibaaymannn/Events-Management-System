@@ -3,11 +3,7 @@ package com.example.cdr.eventsmanagementsystem.Service.Booking;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
-import com.example.cdr.eventsmanagementsystem.Service.Payment.StripeService;
-import com.example.cdr.eventsmanagementsystem.Util.BookingUtil;
 import org.springframework.context.ApplicationEventPublisher;
-
-import com.example.cdr.eventsmanagementsystem.Model.Booking.BookingType;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.security.core.Authentication;
@@ -28,6 +24,7 @@ import com.example.cdr.eventsmanagementsystem.DTO.Booking.Request.VenueBookingRe
 import com.example.cdr.eventsmanagementsystem.DTO.Booking.Response.VenueBookingResponse;
 import com.example.cdr.eventsmanagementsystem.Mapper.VenueBookingMapper;
 import com.example.cdr.eventsmanagementsystem.Model.Booking.BookingStatus;
+import com.example.cdr.eventsmanagementsystem.Model.Booking.BookingType;
 import com.example.cdr.eventsmanagementsystem.Model.Booking.VenueBooking;
 import com.example.cdr.eventsmanagementsystem.Model.User.Organizer;
 import com.example.cdr.eventsmanagementsystem.Model.Venue.Venue;
@@ -37,7 +34,9 @@ import com.example.cdr.eventsmanagementsystem.NotificationEvent.BookingCreation.
 import com.example.cdr.eventsmanagementsystem.Repository.VenueBookingRepository;
 import com.example.cdr.eventsmanagementsystem.Repository.VenueRepository;
 import com.example.cdr.eventsmanagementsystem.Service.Auth.UserSyncService;
+import com.example.cdr.eventsmanagementsystem.Service.Payment.StripeService;
 import com.example.cdr.eventsmanagementsystem.Util.AuthUtil;
+import com.example.cdr.eventsmanagementsystem.Util.BookingUtil;
 import com.stripe.model.Customer;
 
 import jakarta.persistence.EntityNotFoundException;
@@ -104,6 +103,9 @@ public class VenueBookingService {
 
         BigDecimal amount = BigDecimal.valueOf(venue.getPricing().getPerEvent());
         VenueBooking booking = bookingMapper.toVenueBooking(request);
+
+        booking = bookingRepository.save(booking);
+
         var session = stripeService.createCheckoutSession(
                 organizer.getStripeCustomerId(),
                 amount,

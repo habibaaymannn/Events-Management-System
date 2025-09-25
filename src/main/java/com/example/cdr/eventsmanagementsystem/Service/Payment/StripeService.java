@@ -11,7 +11,6 @@ import com.example.cdr.eventsmanagementsystem.Constants.RefundConstants;
 import com.example.cdr.eventsmanagementsystem.Model.Booking.BookingType;
 import com.stripe.Stripe;
 import com.stripe.exception.StripeException;
-
 import com.stripe.model.Customer;
 import com.stripe.model.PaymentIntent;
 import com.stripe.model.PaymentMethod;
@@ -178,12 +177,15 @@ public class StripeService {
 
             Map<String, String> metadata = new HashMap<>();
             metadata.put("bookingId", String.valueOf(bookingId));
+            metadata.put("bookingType", bookingType.name());
 
             SessionCreateParams.Builder builder = SessionCreateParams.builder()
                 .setMode(SessionCreateParams.Mode.PAYMENT)
                 .setCustomer(customerId)
-                 .setSuccessUrl(paymentReturnUrl + "?session_id={CHECKOUT_SESSION_ID}&booking_type=" + bookingType.name())
-                .setCancelUrl(paymentReturnUrl + "?canceled=true&booking_type=" + bookingType.name())
+                //  .setSuccessUrl(paymentReturnUrl + "?session_id={CHECKOUT_SESSION_ID}&booking_type=" + bookingType.name())
+                .setSuccessUrl(paymentReturnUrl + "book-venues") // just to test
+                // .setCancelUrl(paymentReturnUrl + "?canceled=true&booking_type=" + bookingType.name())
+                .setCancelUrl(paymentReturnUrl + "my-events") // just to test
                 .addLineItem(lineItem)
                 .putAllMetadata(metadata);
 
@@ -210,8 +212,10 @@ public class StripeService {
             SessionCreateParams params = SessionCreateParams.builder()
                 .setMode(SessionCreateParams.Mode.SETUP)
                 .setCustomer(customerId)
-                .setSuccessUrl(paymentReturnUrl + "?setup_session_id={CHECKOUT_SESSION_ID}")
-                .setCancelUrl(paymentReturnUrl + "?setup_canceled=true")
+                // .setSuccessUrl(paymentReturnUrl + "?setup_session_id={CHECKOUT_SESSION_ID}")
+                .setSuccessUrl(paymentReturnUrl + "book-venues") // just to test
+                // .setCancelUrl(paymentReturnUrl + "?setup_canceled=true")
+                .setCancelUrl(paymentReturnUrl + "my-events") // just to test
                 .putAllMetadata(metadata)
                 .build();
 
