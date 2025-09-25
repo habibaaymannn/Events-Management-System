@@ -14,6 +14,10 @@ import "./user-management.overrides.css";
 
 const UserManagement = () => {
   const navigate = useNavigate();
+  // Track per-user reset results (so each row can show its own banner)
+  const [resetResults, setResetResults] = useState({}); 
+  // shape: { [userId]: { emailSent: boolean, forgotPasswordEntryUrl: string, accountUrl: string } }
+  const [resetLoading, setResetLoading] = useState({});
 
   // Lists / selection
   const [users, setUsers] = useState([]);
@@ -162,6 +166,29 @@ const UserManagement = () => {
       showToast("Failed to update role", "error");
     }
   };
+
+
+
+
+  const handleSendReset = async (userId, email) => {
+  try {
+    setResetLoading((m) => ({ ...m, [userId]: true }));
+    const res = await resetUserPassword(userId);
+    setResetResults((m) => ({ ...m, [userId]: res }));
+    // UX: quick confirmation
+    const msg = res?.emailSent 
+      ? `Password reset email was sent to ${email}.`
+      : `Tried to send reset email to ${email}. If it didn’t arrive, use the links shown.`;
+    // If you have a toast system, use it instead:
+    // toast.success(msg)
+    alert(msg);
+  } catch (e) {
+    console.error(e);
+    alert(e.message || "Failed to send reset email");
+  } finally {
+    setResetLoading((m) => ({ ...m, [userId]: false }));
+  }
+};
 
   const handleDeactivateUser = async (userId) => {
     try {
@@ -442,69 +469,132 @@ const UserManagement = () => {
                 </tr>
               ) : (
                 users.map((user) => (
-                  <tr key={user.id}>
-                    <td style={{ fontWeight: 600 }}>
-                      {user.firstName && user.lastName ? `${user.firstName} ${user.lastName}` : user.email}
-                    </td>
-                    <td>{user.email}</td>
-                    <td>
-                      <select
-                        value={mapBackendRoleToFrontendSelect(user.role)}
-                        onChange={(e) => handleAssignRole(user.id, e.target.value)}
-                        className="form-control"
-                        style={{ minWidth: "150px" }}
-                      >
-                        {roles.map((role) => (
-                          <option key={role.value} value={role.value}>
-                            {role.label}
-                          </option>
-                        ))}
-                      </select>
-                    </td>
-                    <td>
-                      <span
-                        className={`status-badge ${
-                          user.enabled !== false ? "status-confirmed" : "status-cancelled"
-                        }`}
-                      >
-                        {user.enabled !== false ? "Active" : "Inactive"}
-                      </span>
-                    </td>
-                    <td>{user.createdAt ? new Date(user.createdAt).toLocaleDateString() : "N/A"}</td>
-                    <td>
-                      <div style={{ display: "flex", gap: 4, flexWrap: "wrap" }}>
-                        <button onClick={() => handleViewUserDetails(user)} className="btn btn-info" style={{ padding: "6px 12px", fontSize: "0.8rem" }}>
-                          View Details
-                        </button>
-                        <button
-                          onClick={() =>
-                            user.enabled !== false ? handleDeactivateUser(user.id) : handleActivateUser(user.id)
-                          }
-                          className={`btn ${user.enabled !== false ? "btn-dark-orange" : "btn-success"}`}
-                          style={{ padding: "6px 12px", fontSize: "0.8rem" }}
+                  <React.Fragment key={user.id}>
+                    <tr>
+                      <td style={{ fontWeight: 600 }}>
+                        {user.firstName && user.lastName ? `${user.firstName} ${user.lastName}` : user.email}
+                      </td>
+                      <td>{user.email}</td>
+                      <td>
+                        <select
+                          value={mapBackendRoleToFrontendSelect(user.role)}
+                          onChange={(e) => handleAssignRole(user.id, e.target.value)}
+                          className="form-control"
+                          style={{ minWidth: "150px" }}
                         >
-                          {user.enabled !== false ? "Deactivate" : "Activate"}
-                        </button>
-                        <button
-                          onClick={() => handleResetPassword(user.id)}
-                          className="btn btn-secondary"
-                          style={{ padding: "6px 12px", fontSize: "0.8rem" }}
+                          {roles.map((role) => (
+                            <option key={role.value} value={role.value}>
+                              {role.label}
+                            </option>
+                          ))}
+                        </select>
+                      </td>
+                      <td>
+                        <span
+                          className={`status-badge ${
+                            user.enabled !== false ? "status-confirmed" : "status-cancelled"
+                          }`}
                         >
-                          Reset Password
-                        </button>
-                        <button
-                          onClick={() => startDeleteFlow(user)}
-                          className="btn btn-glow-danger"
-                          style={{ padding: "6px 12px", fontSize: "0.8rem" }}
-                        >
-                          Delete
-                        </button>
-                      </div>
-                    </td>
-                  </tr>
+                          {user.enabled !== false ? "Active" : "Inactive"}
+                        </span>
+                      </td>
+                      <td>{user.createdAt ? new Date(user.createdAt).toLocaleDateString() : "N/A"}</td>
+                      <td>
+                        <div style={{ display: "flex", gap: 4, flexWrap: "wrap" }}>
+                          <button
+                            onClick={() => handleViewUserDetails(user)}
+                            className="btn btn-info"
+                            style={{ padding: "6px 12px", fontSize: "0.8rem" }}
+                          >
+                            View Details
+                          </button>
+
+                          <button
+                            onClick={() =>
+                              user.enabled !== false ? handleDeactivateUser(user.id) : handleActivateUser(user.id)
+                            }
+                            className={`btn ${user.enabled !== false ? "btn-dark-orange" : "btn-success"}`}
+                            style={{ padding: "6px 12px", fontSize: "0.8rem" }}
+                          >
+                            {user.enabled !== false ? "Deactivate" : "Activate"}
+                          </button>
+
+                          <button
+                            className="btn btn-sm"
+                            onClick={() => handleSendReset(user.id, user.email)}
+                            disabled={!!resetLoading[user.id]}
+                            title="Send a reset-password email"
+                            style={{
+                              background: "#712C81",
+                              color: "white",
+                              borderRadius: 8,
+                              padding: "6px 10px",
+                              opacity: resetLoading[user.id] ? 0.6 : 1,
+                              cursor: resetLoading[user.id] ? "not-allowed" : "pointer",
+                            }}
+                          >
+                            {resetLoading[user.id] ? "Sending..." : "Send reset email"}
+                          </button>
+
+                          <button
+                            onClick={() => startDeleteFlow(user)}
+                            className="btn btn-glow-danger"
+                            style={{ padding: "6px 12px", fontSize: "0.8rem" }}
+                          >
+                            Delete
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+
+                    {resetResults[user.id] && (
+                      <tr>
+                        <td colSpan={6}>
+                          <div
+                            style={{
+                              marginTop: 8,
+                              padding: 10,
+                              borderRadius: 10,
+                              background: "rgba(113,44,129,0.08)",
+                              border: "1px solid rgba(113,44,129,0.25)",
+                            }}
+                          >
+                            <div style={{ fontWeight: 600, marginBottom: 6 }}>
+                              {resetResults[user.id].emailSent
+                                ? "Reset email sent successfully."
+                                : "Reset email may not have been sent. You can still share these links:"}
+                            </div>
+                            <div style={{ display: "flex", gap: 16, flexWrap: "wrap" }}>
+                              {!!resetResults[user.id].forgotPasswordEntryUrl && (
+                                <a
+                                  href={resetResults[user.id].forgotPasswordEntryUrl}
+                                  target="_blank"
+                                  rel="noreferrer"
+                                  style={{ textDecoration: "underline", color: "#712C81" }}
+                                >
+                                  Forgot Password entry (public)
+                                </a>
+                              )}
+                              {!!resetResults[user.id].accountUrl && (
+                                <a
+                                  href={resetResults[user.id].accountUrl}
+                                  target="_blank"
+                                  rel="noreferrer"
+                                  style={{ textDecoration: "underline", color: "#712C81" }}
+                                >
+                                  Account Console
+                                </a>
+                              )}
+                            </div>
+                          </div>
+                        </td>
+                      </tr>
+                    )}
+                  </React.Fragment>
                 ))
               )}
             </tbody>
+
           </table>
         </div>
       </div>
@@ -577,6 +667,7 @@ const UserManagement = () => {
           </div>
         </div>
       )}
+
 
       {/* Delete Flow Modal */}
       {deleteFlow.open && (

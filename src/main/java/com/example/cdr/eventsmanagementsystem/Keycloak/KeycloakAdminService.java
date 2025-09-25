@@ -10,7 +10,22 @@ import org.keycloak.admin.client.KeycloakBuilder;
 import org.keycloak.admin.client.resource.*;
 import org.keycloak.representations.idm.*;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpEntity;
+import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
+import org.springframework.util.LinkedMultiValueMap;
+import org.springframework.util.MultiValueMap;
+import org.springframework.web.client.RestClientException;
+import org.springframework.web.client.RestTemplate;
+
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.http.*;
+import org.springframework.stereotype.Service;
+import org.springframework.util.LinkedMultiValueMap;
+import org.springframework.util.MultiValueMap;
+import org.springframework.web.client.RestClientException;
+import org.springframework.web.client.RestTemplate;
 
 import java.util.Collections;
 import java.util.Optional;
@@ -21,14 +36,21 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
 import java.util.List;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import com.example.cdr.eventsmanagementsystem.Keycloak.KeycloakAdminProps;
 
 
 
+@Slf4j
+@RequiredArgsConstructor
 @Service
 public class KeycloakAdminService {
 
     private final KeycloakAdminProps props;
     private final Keycloak kc;
+    private final RestTemplate restTemplate = new RestTemplate();
 
     private static final java.util.List<String> MANAGED =
         java.util.List.of("admin", "organizer", "attendee", "service_provider", "venue_provider");
@@ -250,6 +272,120 @@ public PasswordResetResponse sendResetPasswordAndOptions(String userId) {
 
     return new PasswordResetResponse(true, forgotPasswordEntryUrl, accountUrl);
 }
+
+
+    /**
+     * Public "Forgot password?" entry page (Auth endpoint) – for fallback/self-service.
+     */
+    public String buildForgotPasswordEntryUrl() {
+        String publicBase = trimTrailingSlash(props.getPublicBaseUrl());
+        String realm = props.getRealm();
+        String clientId = props.getFrontendClientId();
+        String redirect = props.getPostActionRedirectUri();
+
+        // standard OIDC auth URL
+        return String.format(
+            "%s/realms/%s/protocol/openid-connect/auth?client_id=%s&redirect_uri=%s&response_type=code&scope=openid",
+            publicBase,
+            urlEncode(realm),
+            urlEncode(clientId),
+            urlEncode(redirect)
+        );
+    }
+
+    /**
+     * Keycloak Account Console (optional link for users/admins).
+     */
+    public String buildAccountUrl() {
+        String publicBase = trimTrailingSlash(props.getPublicBaseUrl());
+        String realm = props.getRealm();
+        return String.format("%s/realms/%s/account", publicBase, urlEncode(realm));
+    }
+
+
+    private String fetchAdminAccessToken() {
+        // Password grant (or client credentials if you prefer) against PUBLIC or INTERNAL?
+        // Either works; token endpoint is fine via internal (lower latency).
+        String tokenUrl = String.format("%s/realms/%s/protocol/openid-connect/token",
+                trimTrailingSlash(props.getInternalBaseUrl()),
+                props.getRealm());
+
+        HttpHeaders headers = new HttpHeaders();
+        headers.setContentType(MediaType.APPLICATION_FORM_URLENCODED);
+
+        MultiValueMap<String, String> form = new LinkedMultiValueMap<>();
+        form.add("grant_type", "password");
+        form.add("client_id", props.getAdminClientId()); // usually "admin-cli" (no secret)
+        if (props.getAdminClientSecret() != null && !props.getAdminClientSecret().isBlank()) {
+            form.add("client_secret", props.getAdminClientSecret());
+        }
+        form.add("username", props.getAdminUsername());
+        form.add("password", props.getAdminPassword());
+
+        try {
+            ResponseEntity<Map> resp = restTemplate.postForEntity(tokenUrl, new HttpEntity<>(form, headers), Map.class);
+            if (resp.getStatusCode().is2xxSuccessful() && resp.getBody() != null) {
+                Object accessToken = resp.getBody().get("access_token");
+                return accessToken != null ? accessToken.toString() : null;
+            }
+            log.error("Admin token request failed: {}", resp.getStatusCode());
+            return null;
+        } catch (RestClientException ex) {
+            log.error("Admin token request error: {}", ex.getMessage(), ex);
+            return null;
+        }
+    }
+
+
+    /**
+     * Sends a time-limited action-token email for UPDATE_PASSWORD to the given userId.
+     * Uses internal KC URL for admin REST, but public URL in redirect/links.
+     */
+    public boolean sendUpdatePasswordEmail(String userId) {
+        String token = fetchAdminAccessToken();
+        if (token == null) {
+            log.error("Admin token retrieval failed; cannot send UPDATE_PASSWORD email");
+            return false;
+        }
+
+        // Build execute-actions-email URL on the PUBLIC base (external hostname)
+        String base = trimTrailingSlash(props.getPublicBaseUrl());
+        String realm = props.getRealm();
+
+        // redirect_uri must be allowed by your public SPA client (ems-frontend)
+        String redirect = props.getPostActionRedirectUri();
+        String clientId = props.getFrontendClientId();
+
+        String url = String.format(
+            "%s/admin/realms/%s/users/%s/execute-actions-email?client_id=%s&redirect_uri=%s",
+            base,
+            urlEncode(realm),
+            urlEncode(userId),
+            urlEncode(clientId),
+            urlEncode(redirect)
+        );
+
+        HttpHeaders headers = new HttpHeaders();
+        headers.setBearerAuth(token);
+        headers.setContentType(MediaType.APPLICATION_JSON);
+
+        // Body is a JSON array of actions to execute
+        List<String> actions = List.of("UPDATE_PASSWORD");
+
+        HttpEntity<List<String>> request = new HttpEntity<>(actions, headers);
+
+        try {
+            ResponseEntity<Void> resp = restTemplate.exchange(url, HttpMethod.PUT, request, Void.class);
+            boolean ok = resp.getStatusCode().is2xxSuccessful();
+            if (!ok) {
+                log.warn("execute-actions-email returned status {}", resp.getStatusCode());
+            }
+            return ok;
+        } catch (RestClientException ex) {
+            log.error("Error calling execute-actions-email: {}", ex.getMessage(), ex);
+            return false;
+        }
+    }
 
 
     private static String trimTrailingSlash(String s) {
