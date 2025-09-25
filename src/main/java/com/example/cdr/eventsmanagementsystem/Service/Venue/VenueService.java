@@ -1,5 +1,9 @@
 package com.example.cdr.eventsmanagementsystem.Service.Venue;
 
+import com.example.cdr.eventsmanagementsystem.DTO.Venue.VenueTypeDTO;
+import com.example.cdr.eventsmanagementsystem.Mapper.VenueTypeMapper;
+import com.example.cdr.eventsmanagementsystem.Model.Venue.VenueType;
+import com.example.cdr.eventsmanagementsystem.Repository.VenueTypeRepository;
 import com.example.cdr.eventsmanagementsystem.Util.ImageUtil;
 import org.springframework.security.access.AccessDeniedException;
 import java.io.IOException;
@@ -34,15 +38,22 @@ public class VenueService {
     private final VenueMapper venueMapper;
     private final UserSyncService userSyncService;
     private final ImageUtil imageUtil;
+    private final VenueTypeRepository venueTypeRepository;
+    private final VenueTypeMapper venueTypeMapper;
 
     public Page<VenueDTO> getAllVenues(Pageable pageable) {
         Page<Venue> venues = venueRepository.findAll(pageable);
         return venues.map(venueMapper::toVenueDTO);
     }
 
+    public Page<VenueTypeDTO> getAllVenueTypes(Pageable pageable) {
+        Page<VenueType> venueTypes = venueTypeRepository.findAll(pageable);
+        return venueTypes.map(venueTypeMapper::toVenueTypeDTO);
+    }
+
     @Transactional
     public VenueDTO addVenue(VenueDTO dto, List<MultipartFile> files) throws IOException {
-        Venue newVenue = venueMapper.toVenue(dto);
+        Venue newVenue = venueMapper.toVenue(dto, venueTypeRepository);
         newVenue.setImages(imageUtil.extractImageData(files));
 
         VenueProvider venueProvider = userSyncService.ensureUserExists(VenueProvider.class);
@@ -54,7 +65,7 @@ public class VenueService {
     @Transactional
     public VenueDTO updateVenue(Long venueId, VenueDTO dto,  List<MultipartFile> newImages) throws IOException {
         Venue venue = verifyAccess(venueId);
-        venueMapper.updateVenue(dto, venue);
+        venueMapper.updateVenue(dto, venue, venueTypeRepository);
         venue.setImages(imageUtil.mergeImages(venue.getImages(), newImages));
         Venue updatedVenue = venueRepository.save(venue);
         return venueMapper.toVenueDTO(updatedVenue);

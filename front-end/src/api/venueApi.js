@@ -121,6 +121,17 @@ export async function getAllVenues() {
   return Array.isArray(json) ? json : (json.content ?? []);
 }
 
+export async function getAllVenueTypes() {
+  const page = 0;
+  const size = 50;
+  const url = buildApiUrl(`/v1/venues/types?page=${page}&size=${size}`);
+  const response = await fetch(url, { method: "GET", headers: getAuthHeaders(true) });
+  if (!response.ok) throw new Error(`Failed to fetch venue types: ${response.status} ${response.statusText}`);
+
+  const json = await response.json();
+  return Array.isArray(json) ? json : (json.content ?? []);
+}
+
 //
 // /**
 //  * Cancel a booking as a venue provider.

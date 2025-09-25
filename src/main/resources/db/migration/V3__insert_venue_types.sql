@@ -1,0 +1,16 @@
+INSERT INTO venue_type (name, category, description) VALUES
+  ('VILLA', 'Private', 'Private luxury villas'),
+  ('CHALET', 'Private', 'Mountain chalets'),
+  ('FARMHOUSE', 'Private', 'Country farmhouses'),
+  ('HOTEL', 'Public', 'Hotel event spaces'),
+  ('RESTAURANT', 'Public', 'Restaurants with private areas'),
+  ('CONFERENCE_CENTER', 'Public', 'Conference and business centers'),
+  ('CLUB', 'Public', 'Country clubs and lounges'),
+  ('SCHOOL_HALL', 'Institution', 'School halls and auditoriums'),
+  ('UNIVERSITY_AUDITORIUM', 'Institution', 'University auditoriums'),
+  ('PARK', 'Outdoor', 'Public parks and gardens'),
+  ('GARDEN', 'Outdoor', 'Outdoor garden spaces'),
+  ('BEACH', 'Outdoor', 'Beachfront locations'),
+  ('THEATER', 'Cultural', 'Theaters and performance spaces'),
+  ('ART_GALLERY', 'Cultural', 'Art galleries and exhibition spaces'),
+  ('SPORTS_ARENA', 'Sports', 'Sports arenas and facilities');

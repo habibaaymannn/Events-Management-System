@@ -19,9 +19,9 @@ public class Venue extends BaseEntity {
     @Column(nullable = false)
     private String name;
 
-    @Enumerated(EnumType.STRING)
-    @Column(nullable = false)
-    private Type type;
+    @ManyToOne
+    @JoinColumn(name = "venue_type_id")
+    private VenueType type;
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
@@ -42,14 +42,5 @@ public class Venue extends BaseEntity {
     @ManyToOne(fetch = FetchType.EAGER)
     @JoinColumn(name = "venue_provider_id")
     private VenueProvider venueProvider;
-
-    @Column(name = "event_type", nullable = false)
-    @ElementCollection(fetch = FetchType.EAGER)
-    @CollectionTable(
-            name = "venue_supported_event_types",
-            joinColumns = @JoinColumn(name = "venue_id"),
-            foreignKey = @ForeignKey(name = "FK_venue_event_types")
-    )
-    @Enumerated(EnumType.STRING)
-    private Set<EventType> supportedEventTypes = new HashSet<>();
+    
 }

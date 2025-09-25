@@ -1,23 +1,15 @@
 package com.example.cdr.eventsmanagementsystem.Model.Event;
 
-public enum EventType {
-    WEDDING,
-    ENGAGEMENT_PARTY,
-    BIRTHDAY_PARTY,
-    FAMILY_REUNION,
-    PRIVATE_DINNER,
-    RETREAT,
-    BACHELORETTE_PARTY,
-    BABY_SHOWER,
+import jakarta.persistence.*;
+import lombok.Data;
 
-    CONFERENCE,
-    WORKSHOP,
-    SEMINAR,
-    CORPORATE_DINNER,
-    NETWORKING_EVENT,
-    PRODUCT_LAUNCH,
-    AWARD_CEREMONY,
-    FASHION_SHOW,
-    BUSINESS_EXPO,
-    FUNDRAISER,
+@Entity
+@Data
+@Table(name = "event_type")
+public class EventType {
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Long id;
+    private String name;
+    private String description;
 }

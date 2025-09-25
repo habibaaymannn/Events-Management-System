@@ -16,8 +16,9 @@ public class VenueDTO {
     private Long id;
     @NotBlank(message = "Venue name is required")
     private String name;
-    @NotBlank(message = "Type is required")
-    private String type;
+    @NotNull(message = "Type is required")
+    private Long typeId;
+    private String typeName;
     @NotBlank(message = "Availability is required")
     private String availability;
     @NotBlank(message = "Location is required")
@@ -27,7 +28,6 @@ public class VenueDTO {
     @NotNull(message = "Pricing is required")
     private Pricing pricing;
     private List<String> images;
-    @Size(min = 1, message = "At least one event type is required")
-    private List<String> eventTypes;
+    private List<String> supportedEventTypes;
     private String venueProviderId;
 }

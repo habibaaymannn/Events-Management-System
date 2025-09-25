@@ -30,7 +30,8 @@ public class Event extends BaseEntity {
     @Column(nullable = false)
     private String description;
 
-    @Enumerated(EnumType.STRING)
+    @ManyToOne
+    @JoinColumn(name = "event_type_id")
     private EventType type;
 
     @Column(nullable = false)

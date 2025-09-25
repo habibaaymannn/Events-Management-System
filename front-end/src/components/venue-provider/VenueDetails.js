@@ -11,7 +11,6 @@ const VenueDetails = () => {
   const [venueBookings, setVenueBookings] = useState([]);
   const [venueProviderId, setVenueProviderId] = useState(null);
 
-
   // Initialize venueProviderId when Keycloak is ready
   useEffect(() => {
     const kc = window.keycloak;
@@ -19,6 +18,7 @@ const VenueDetails = () => {
       setVenueProviderId(kc.tokenParsed.sub);
     }
   }, []);
+
   useEffect(() => {
     if (!id) return;
     const fetchVenue = async () => {
@@ -29,6 +29,7 @@ const VenueDetails = () => {
         console.error(err);
       }
     };
+
     const fetchVenueBookings = async () => {
       try {
         if (!venueProviderId) return;
@@ -42,17 +43,12 @@ const VenueDetails = () => {
         console.error("Error fetching venue bookings:", error);
       }
     };
-
     fetchVenue();
     fetchVenueBookings();
-  }, [id,venueProviderId]);
+  }, [id, venueProviderId]);
 
   const handleSetAvailability = () => {
     navigate(`/venue/${id}/availability`);
-  };
-
-  const handleBookVenue = () => {
-    navigate(`/venue/${id}/book`);
   };
 
   const getImageUrl = (img) => {
@@ -67,62 +63,13 @@ const VenueDetails = () => {
     return null;
   };
 
-  const formatVenueType = (type) => {
-    switch (type) {
-      case 'VILLA':
-        return 'Villa';
-      case 'CHALET':
-        return 'Chalet';
-      case 'SCHOOL_HALL':
-        return 'School Hall';
-      default:
-        return type;
-    }
+  const formatType = (name) => {
+    if (!name) return "Unknown";
+    return name
+        .toLowerCase()
+        .replace(/_/g, " ") // replace underscores with spaces
+        .replace(/\b\w/g, (c) => c.toUpperCase()); // capitalize words
   };
-  const formatEventType = (type) => {
-    switch (type) {
-      case 'WEDDING':
-        return 'Wedding';
-      case 'ENGAGEMENT_PARTY':
-        return 'Engagement Party';
-      case 'BIRTHDAY_PARTY':
-        return 'Birthday Party';
-      case 'FAMILY_REUNION':
-        return 'Family Reunion';
-      case 'PRIVATE_DINNER':
-        return 'Private Dinner';
-      case 'RETREAT':
-        return 'Retreat';
-      case 'BACHELORETTE_PARTY':
-        return 'Bachelorette Party';
-      case 'BABY_SHOWER':
-        return 'Baby Shower';
-      case 'CONFERENCE':
-        return 'Conference';
-      case 'WORKSHOP':
-        return 'Workshop';
-      case 'SEMINAR':
-        return 'Seminar';
-      case 'CORPORATE_DINNER':
-        return 'Corporate Dinner';
-      case 'NETWORKING_EVENT':
-        return 'Networking Event';
-      case 'PRODUCT_LAUNCH':
-        return 'Product Launch';
-      case 'AWARD_CEREMONY':
-        return 'Award Ceremony';
-      case 'FASHION_SHOW':
-        return 'Fashion Show';
-      case 'BUSINESS_EXPO':
-        return 'Business Expo';
-      case 'FUNDRAISER':
-        return 'Fundraiser';
-      default:
-        return type.replace(/_/g, ' ').toLowerCase()
-            .replace(/\b\w/g, c => c.toUpperCase());
-    }
-  };
-
 
   if (!venue) {
     return (
@@ -193,7 +140,7 @@ const VenueDetails = () => {
               <div className="detail-grid">
                 <div className="detail-item">
                   <span className="detail-label">Type:</span>
-                  <span className="detail-value">{formatVenueType(venue.type)}</span>
+                  <span className="detail-value">{venue.typeName ? formatType(venue.typeName) : "N/A"}</span>
                 </div>
                 <div className="detail-item">
                   <span className="detail-label">Location:</span>
@@ -216,13 +163,10 @@ const VenueDetails = () => {
                 <div className="detail-item">
                   <span className="detail-label">Event Types:</span>
                   <span className="detail-value">
-                  {venue.eventTypes && venue.eventTypes.length > 0
-                      ? venue.eventTypes.map(type => formatEventType(type)).join(", ")
-                      : "N/A"}
-                </span>
+                    {venue.supportedEventTypes && venue.supportedEventTypes.length > 0 ?
+                        venue.supportedEventTypes.map(type => formatType(type)).join(", ") : "N/A"}
+                  </span>
                 </div>
-
-
               </div>
             </div>
 
@@ -246,35 +190,18 @@ const VenueDetails = () => {
                 {venueBookings.length} total bookings
               </p>
               {venueBookings.length > 0 ? (
-                  <div className="bookings-list">
-                    {venueBookings.slice(0, 5).map((booking, index) => (
-                        <div key={index} className="booking-item">
-          <span className="booking-date">
-            {new Date(booking.startTime).toLocaleDateString()}
-          </span>
-                          <span className="booking-user">
-                 Booking #{booking.id || 'N/A'}
-           </span>
-                          <span className={`booking-status status-${booking.status.toLowerCase()}`}>
-            {booking.status}
-          </span>
-                        </div>
-                    ))}
-                    {venueBookings.length > 5 && (
-                        <p className="more-bookings">
-                          ... and {venueBookings.length - 5} more bookings
-                        </p>
-                    )}
+            <div className="bookings-list">
+              {venueBookings.slice(0, 5).map((booking, index) => (
+                  <div key={index} className="booking-item">
+                    <span className="booking-date">{new Date(booking.startTime).toLocaleDateString()}</span>
+                    <span className="booking-user">Booking #{booking.id || 'N/A'}</span>
+                    <span className={`booking-status status-${booking.status.toLowerCase()}`}>{booking.status}</span>
                   </div>
-              ) : (
-                  <p style={{color: '#6c757d', fontStyle: 'italic'}}>No bookings yet</p>
-              )}
-
-              {/*<div className="action-buttons">*/}
-              {/*  <button onClick={handleBookVenue} className="action-button secondary">*/}
-              {/*    View All ServiceBookings*/}
-              {/*  </button>*/}
-              {/*</div>*/}
+              ))}
+              {venueBookings.length > 5 && (
+                  <p className="more-bookings">... and {venueBookings.length - 5} more bookings</p>)}
+            </div>
+              ) : (<p style={{color: '#6c757d', fontStyle: 'italic'}}>No bookings yet</p>)}
             </div>
           </div>
         </div>

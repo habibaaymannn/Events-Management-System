@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { getAllVenues, deleteVenue, updateVenue, createVenue } from "../../api/venueApi";
+import { getAllVenues, deleteVenue, createVenue } from "../../api/venueApi";
 
 const MyVenues = () => {
     const [venues, setVenues] = useState([]);
@@ -75,7 +75,6 @@ const MyVenues = () => {
                     perEvent: parseFloat(newVenueForm.pricing.perEvent) || 0
                 },
                 images: [],
-                supportedEventTypes: newVenueForm.supportedEventTypes
             };
             
             await createVenue(venueData);
@@ -93,7 +92,6 @@ const MyVenues = () => {
                     perEvent: ""
                 },
                 description: "",
-                supportedEventTypes: []
             });
             loadVenues();
         } catch (error) {

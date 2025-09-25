@@ -2,6 +2,7 @@ package com.example.cdr.eventsmanagementsystem.Controller;
 
 import com.example.cdr.eventsmanagementsystem.Constants.ControllerConstants.RoleConstants;
 import com.example.cdr.eventsmanagementsystem.Constants.ControllerConstants.VenueControllerConstants;
+import com.example.cdr.eventsmanagementsystem.DTO.Venue.VenueTypeDTO;
 import com.example.cdr.eventsmanagementsystem.Service.Venue.VenueService;
 import jakarta.validation.Valid;
 import org.springdoc.core.annotations.ParameterObject;
@@ -42,6 +43,13 @@ public class VenueController {
     @PreAuthorize("hasAnyRole('" + ORGANIZER_ROLE + "', '" + VENUE_PROVIDER_ROLE + "','" + ADMIN_ROLE + "')")
     public Page<VenueDTO> getAllVenues(@ParameterObject @PageableDefault() Pageable pageable) {
         return venueService.getAllVenues(pageable);
+    }
+
+    @Operation(summary = "Get all venues types", description = "Retrieves a paginated list of all venues types")
+    @GetMapping(VenueControllerConstants.GET_ALL_VENUES_TYPES_URL)
+    @PreAuthorize("hasAnyRole('" + ORGANIZER_ROLE + "', '" + VENUE_PROVIDER_ROLE + "','" + ADMIN_ROLE + "')")
+    public Page<VenueTypeDTO> getAllVenuesTypes(@ParameterObject @PageableDefault() Pageable pageable) {
+        return venueService.getAllVenueTypes(pageable);
     }
 
     @Operation(summary = "Create a new venue", description = "Creates a new venue for the venue provider")

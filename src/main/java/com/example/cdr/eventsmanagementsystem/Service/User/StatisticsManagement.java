@@ -89,7 +89,7 @@ private static void mergeCounts(Map<LocalDate, Long> base, List<LocalDateCount> 
     public Map<String, Long> getEventTypeDistribution() {
         return eventRepository.countEventsByType().stream()
                 .collect(Collectors.toMap(
-                        r -> r.getType() == null ? "UNKNOWN" : r.getType().name(),
+                        r -> r.getType() == null ? "UNKNOWN" : r.getType().getName(),
                         EventTypeCount::getCount
                 ));
     }
