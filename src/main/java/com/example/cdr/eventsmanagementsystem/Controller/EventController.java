@@ -47,19 +47,26 @@ public class EventController {
     public Page<EventDetailsDto> getAllEvents(@ParameterObject @PageableDefault() Pageable pageable) {
         return eventService.getAllEvents(pageable);
     }
-    
-    @Operation(summary = "Flag an event", description = "Flags an event for review")
-    @PostMapping(EventsControllerConstants.FLAG_EVENT_URL)
-    @PreAuthorize("hasRole('" + RoleConstants.ADMIN_ROLE + "')")
-    public void flagEvent(@PathVariable Long eventId, @RequestParam String reason) {
-        eventService.flagEvent(eventId, reason);
+
+    @Operation(summary = "Get event by ID", description = "Retrieves event details by its ID")
+    @GetMapping(EventsControllerConstants.GET_EVENT_BY_ID_URL)
+    @PreAuthorize("hasAnyRole('" + RoleConstants.ORGANIZER_ROLE + "', '" + RoleConstants.ATTENDEE_ROLE + "')")
+    public EventResponseDTO getEventById(@PathVariable Long id) {
+        return eventService.getEventById(id);
     }
 
-    @Operation(summary = "Get flagged events", description = "Retrieves all flagged events with pagination")
-    @GetMapping(EventsControllerConstants.GET_FLAGGED_EVENTS_URL)
-    @PreAuthorize("hasRole('" + RoleConstants.ADMIN_ROLE + "')")
-    public Page<EventDetailsDto> getFlaggedEvents(@ParameterObject @PageableDefault() Pageable pageable) {
-        return eventService.getFlaggedEvents(pageable);
+    @Operation(summary = "Get events by type", description = "Retrieves all events filtered by event type")
+    @GetMapping(EventsControllerConstants.GET_EVENTS_BY_TYPE_URL)
+    @PreAuthorize("hasAnyRole('" + RoleConstants.ORGANIZER_ROLE + "', '" + RoleConstants.ATTENDEE_ROLE + "')")
+    public List<EventResponseDTO> getEventsByType(@PathVariable EventType type) {
+        return eventService.getEventsByType(type);
+    }
+
+    @Operation(summary = "Get events by organizer", description = "Retrieves all events created by the current organizer")
+    @GetMapping(EventsControllerConstants.GET_EVENTS_BY_ORGANIZER_URL)
+    @PreAuthorize("hasRole('" + RoleConstants.ORGANIZER_ROLE + "')")
+    public Page<EventResponseDTO> getEventsByOrganizer(@ParameterObject @PageableDefault() Pageable pageable) {
+        return eventService.getEventsByOrganizer(pageable);
     }
 
     @Operation(summary = "Create a new event", description = "Creates a new event with the provided details")
@@ -67,13 +74,6 @@ public class EventController {
     @PreAuthorize("hasRole('" + RoleConstants.ORGANIZER_ROLE + "')")
     public EventResponseDTO createEvent(@RequestBody EventDTO eventDTO) {
         return eventService.createEvent(eventDTO);
-    }
-
-    @Operation(summary = "Get event by ID", description = "Retrieves event details by its ID")
-    @GetMapping(EventsControllerConstants.GET_EVENT_BY_ID_URL)
-    @PreAuthorize("hasAnyRole('" + RoleConstants.ORGANIZER_ROLE + "', '" + RoleConstants.ATTENDEE_ROLE + "')")
-    public EventResponseDTO getEventById(@PathVariable Long id) {
-        return eventService.getEventById(id);
     }
 
     @Operation(summary = "Update an event", description = "Updates event details by ID")
@@ -90,17 +90,17 @@ public class EventController {
         eventService.cancelEvent(id);
     }
 
-    @Operation(summary = "Get events by type", description = "Retrieves all events filtered by event type")
-    @GetMapping(EventsControllerConstants.GET_EVENTS_BY_TYPE_URL)
-    @PreAuthorize("hasAnyRole('" + RoleConstants.ORGANIZER_ROLE + "', '" + RoleConstants.ATTENDEE_ROLE + "')")
-    public List<EventResponseDTO> getEventsByType(@PathVariable EventType type) {
-        return eventService.getEventsByType(type);
+    @Operation(summary = "Flag an event", description = "Flags an event for review")
+    @PostMapping(EventsControllerConstants.FLAG_EVENT_URL)
+    @PreAuthorize("hasRole('" + RoleConstants.ADMIN_ROLE + "')")
+    public void flagEvent(@PathVariable Long eventId, @RequestParam String reason) {
+        eventService.flagEvent(eventId, reason);
     }
 
-    @Operation(summary = "Get events by organizer", description = "Retrieves all events created by the current organizer")
-    @GetMapping(EventsControllerConstants.GET_EVENTS_BY_ORGANIZER_URL)
-    @PreAuthorize("hasRole('" + RoleConstants.ORGANIZER_ROLE + "')")
-    public Page<EventResponseDTO> getEventsByOrganizer(@ParameterObject @PageableDefault() Pageable pageable) {
-        return eventService.getEventsByOrganizer(pageable);
+    @Operation(summary = "Get flagged events", description = "Retrieves all flagged events with pagination")
+    @GetMapping(EventsControllerConstants.GET_FLAGGED_EVENTS_URL)
+    @PreAuthorize("hasRole('" + RoleConstants.ADMIN_ROLE + "')")
+    public Page<EventDetailsDto> getFlaggedEvents(@ParameterObject @PageableDefault() Pageable pageable) {
+        return eventService.getFlaggedEvents(pageable);
     }
 }
