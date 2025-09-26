@@ -15,6 +15,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
+import org.apache.commons.lang3.StringUtils;
 
 import com.example.cdr.eventsmanagementsystem.DTO.Admin.DashboardStatisticsDto;
 import com.example.cdr.eventsmanagementsystem.DTO.Admin.OrganizerRevenueDto;
@@ -76,11 +77,6 @@ public class StatisticsManagement {
         dto.setNumAttendees(attendeeRepository.count());
         dto.setNumServiceProviders(serviceProviderRepository.count());
         dto.setNumVenueProviders(venueProviderRepository.count());
-
-        // dto.setVenueUtilizationRate(getVenueUtilizationRate());
-        // dto.setServiceProviderUtilizationRate(getServiceProviderUtilizationRate());
-        // dto.setRevenueByOrganizer(buildUiRevenue());
-        // Venue counts + rate
         long venueTotal = venueRepository.count();
         long venueActiveNow = venueBookingRepository.countDistinctActiveVenueIdsAt(now);
         dto.setVenueTotal(venueTotal);
@@ -104,14 +100,16 @@ public class StatisticsManagement {
 
         var out = new java.util.ArrayList<UiRevenue>(rows.size());
         for (var r : rows) {
-            String first = r.getFirstName();
-            String last = r.getLastName();
+            String firstName = r.getFirstName();
+            String lastName = r.getLastName();
             String displayName;
 
-            if ((first == null || first.isBlank()) && (last == null || last.isBlank())) {
-                displayName = "Organizer " + r.getOrganizerId();
+            if (StringUtils.isBlank(lastName)) {
+                displayName = firstName;
+            } else if (StringUtils.isBlank(firstName)) {
+                displayName = lastName;
             } else {
-                displayName = ((first == null ? "" : first) + (last == null || last.isBlank() ? "" : " " + last)).trim();
+                displayName = firstName + " " + lastName;
             }
 
             out.add(new UiRevenue(displayName, r.getRevenue()));

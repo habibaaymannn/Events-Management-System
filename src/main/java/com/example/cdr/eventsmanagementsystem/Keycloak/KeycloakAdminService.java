@@ -2,7 +2,6 @@ package com.example.cdr.eventsmanagementsystem.Keycloak;
 
 import jakarta.annotation.PreDestroy;
 import jakarta.ws.rs.core.Response;
-// import lombok.RequiredArgsConstructor; // <-- remove Lombok constructor
 import org.keycloak.OAuth2Constants;
 import org.keycloak.admin.client.CreatedResponseUtil;
 import org.keycloak.admin.client.Keycloak;
@@ -10,8 +9,6 @@ import org.keycloak.admin.client.KeycloakBuilder;
 import org.keycloak.admin.client.resource.*;
 import org.keycloak.representations.idm.*;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.http.HttpEntity;
-import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import org.springframework.util.LinkedMultiValueMap;
 import org.springframework.util.MultiValueMap;
@@ -30,6 +27,15 @@ import org.springframework.web.client.RestTemplate;
 import java.util.Collections;
 import java.util.Optional;
 import java.util.stream.Collectors;
+
+import java.util.Objects;
+
+import org.springframework.stereotype.Service;
+import org.springframework.web.reactive.function.BodyInserters;
+import org.springframework.web.reactive.function.client.WebClient;
+import org.springframework.http.MediaType;
+import com.example.cdr.eventsmanagementsystem.Config.WebClientConfig;
+import reactor.core.publisher.Mono;
 
 import com.example.cdr.eventsmanagementsystem.DTO.Admin.PasswordResetResponse;
 import java.util.HashMap;
@@ -51,6 +57,7 @@ public class KeycloakAdminService {
     private final KeycloakAdminProps props;
     private final Keycloak kc;
     private final RestTemplate restTemplate = new RestTemplate();
+    private final WebClient webclient;
 
     private static final java.util.List<String> MANAGED =
         java.util.List.of("admin", "organizer", "attendee", "service_provider", "venue_provider");
@@ -59,7 +66,8 @@ public class KeycloakAdminService {
         java.util.List.of("admin", "organizer", "service_provider", "venue_provider", "attendee");
     // Single explicit constructor so Spring knows exactly what to use
     @Autowired
-    public KeycloakAdminService(KeycloakAdminProps props) {
+    public KeycloakAdminService(WebClient webclient,KeycloakAdminProps props) {
+        this.webclient = webclient;
         this.props = props;
 
         KeycloakBuilder builder = KeycloakBuilder.builder()
@@ -121,26 +129,6 @@ public class KeycloakAdminService {
     }
 
 
-    //  public long countUsersByUserType(String userType) {
-    //     try {
-    //         // Keycloak search-by-attribute support varies; the safe approach:
-    //         // list a reasonable page and filter client-side. For larger realms, page through.
-    //         List<UserRepresentation> page = realm().users().search("", 0, 1000);
-    //         return page.stream().filter(u -> {
-    //             Map<String, List<String>> attrs = u.getAttributes();
-    //             if (attrs == null) return false;
-    //             List<String> vals = attrs.getOrDefault("userType", Collections.emptyList());
-    //             return vals.stream().anyMatch(v -> v != null && v.equalsIgnoreCase(userType));
-    //         }).count();
-    //     } catch (Exception e) {
-    //         // log if you want: log.warn("countUsersByUserType failed", e);
-    //         return 0L;
-    //     }
-    // }
-
-
-//     ** Normalize a single role string from Keycloak user attributes.
-//  *  We prioritize the custom attribute "userType". */
 private String extractRole(UserRepresentation u) {
     // 1) Preferred: attribute userType: ["admin" | "organizer" | "attendee" | "service_provider" | "venue_provider"]
     if (u.getAttributes() != null) {
@@ -304,36 +292,27 @@ public PasswordResetResponse sendResetPasswordAndOptions(String userId) {
 
 
     private String fetchAdminAccessToken() {
-        // Password grant (or client credentials if you prefer) against PUBLIC or INTERNAL?
-        // Either works; token endpoint is fine via internal (lower latency).
-        String tokenUrl = String.format("%s/realms/%s/protocol/openid-connect/token",
-                trimTrailingSlash(props.getInternalBaseUrl()),
-                props.getRealm());
+        String tokenUrl = props.getInternalBaseUrl()
+            + "/realms/" + props.getRealm()
+            + "/protocol/openid-connect/token";
 
-        HttpHeaders headers = new HttpHeaders();
-        headers.setContentType(MediaType.APPLICATION_FORM_URLENCODED);
+        Map<String, Object> tokenResp = webclient.post()
+            .uri(tokenUrl)
+            .contentType(MediaType.APPLICATION_FORM_URLENCODED)
+            .body(BodyInserters
+                .fromFormData("grant_type", "password")
+                .with("client_id", props.getAdminClientId())
+                .with("client_secret", props.getAdminClientSecret())
+                .with("username", props.getAdminUsername())
+                .with("password", props.getAdminPassword()))
+            .retrieve()
+            .bodyToMono(Map.class)
+            .onErrorResume(e -> Mono.empty())
+            .block();
 
-        MultiValueMap<String, String> form = new LinkedMultiValueMap<>();
-        form.add("grant_type", "password");
-        form.add("client_id", props.getAdminClientId()); // usually "admin-cli" (no secret)
-        if (props.getAdminClientSecret() != null && !props.getAdminClientSecret().isBlank()) {
-            form.add("client_secret", props.getAdminClientSecret());
-        }
-        form.add("username", props.getAdminUsername());
-        form.add("password", props.getAdminPassword());
-
-        try {
-            ResponseEntity<Map> resp = restTemplate.postForEntity(tokenUrl, new HttpEntity<>(form, headers), Map.class);
-            if (resp.getStatusCode().is2xxSuccessful() && resp.getBody() != null) {
-                Object accessToken = resp.getBody().get("access_token");
-                return accessToken != null ? accessToken.toString() : null;
-            }
-            log.error("Admin token request failed: {}", resp.getStatusCode());
-            return null;
-        } catch (RestClientException ex) {
-            log.error("Admin token request error: {}", ex.getMessage(), ex);
-            return null;
-        }
+        if (Objects.isNull(tokenResp)) return null;
+        Object at = tokenResp.get("access_token");
+        return at == null ? null : at.toString();
     }
 
 
@@ -341,52 +320,31 @@ public PasswordResetResponse sendResetPasswordAndOptions(String userId) {
      * Sends a time-limited action-token email for UPDATE_PASSWORD to the given userId.
      * Uses internal KC URL for admin REST, but public URL in redirect/links.
      */
-    public boolean sendUpdatePasswordEmail(String userId) {
+   public boolean sendUpdatePasswordEmail(String userId) {
         String token = fetchAdminAccessToken();
-        if (token == null) {
-            log.error("Admin token retrieval failed; cannot send UPDATE_PASSWORD email");
-            return false;
-        }
+        if (Objects.isNull(token)) return false;
 
-        // Build execute-actions-email URL on the PUBLIC base (external hostname)
-        String base = trimTrailingSlash(props.getPublicBaseUrl());
-        String realm = props.getRealm();
-
-        // redirect_uri must be allowed by your public SPA client (ems-frontend)
-        String redirect = props.getPostActionRedirectUri();
-        String clientId = props.getFrontendClientId();
-
-        String url = String.format(
-            "%s/admin/realms/%s/users/%s/execute-actions-email?client_id=%s&redirect_uri=%s",
-            base,
-            urlEncode(realm),
-            urlEncode(userId),
-            urlEncode(clientId),
-            urlEncode(redirect)
-        );
-
-        HttpHeaders headers = new HttpHeaders();
-        headers.setBearerAuth(token);
-        headers.setContentType(MediaType.APPLICATION_JSON);
-
-        // Body is a JSON array of actions to execute
-        List<String> actions = List.of("UPDATE_PASSWORD");
-
-        HttpEntity<List<String>> request = new HttpEntity<>(actions, headers);
+        // Use PUBLIC base for execute-actions-email so email links use localhost
+        String base = props.getPublicBaseUrl();
+        String url = base + "/admin/realms/" + props.getRealm()
+            + "/users/" + userId + "/execute-actions-email"
+            + "?client_id=" + props.getFrontendClientId()
+            + "&redirect_uri=" + props.getPostActionRedirectUri();
 
         try {
-            ResponseEntity<Void> resp = restTemplate.exchange(url, HttpMethod.PUT, request, Void.class);
-            boolean ok = resp.getStatusCode().is2xxSuccessful();
-            if (!ok) {
-                log.warn("execute-actions-email returned status {}", resp.getStatusCode());
-            }
-            return ok;
-        } catch (RestClientException ex) {
-            log.error("Error calling execute-actions-email: {}", ex.getMessage(), ex);
+            webclient.put()
+                .uri(url)
+                .contentType(MediaType.APPLICATION_JSON)
+                .headers(h -> h.setBearerAuth(token))
+                .bodyValue(new String[] { "UPDATE_PASSWORD" })
+                .retrieve()
+                .toBodilessEntity()
+                .block();
+            return true;
+        } catch (Exception ex) {
             return false;
         }
     }
-
 
     private static String trimTrailingSlash(String s) {
         if (s == null) return "";

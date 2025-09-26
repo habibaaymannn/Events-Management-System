@@ -40,15 +40,16 @@ public interface ServiceBookingRepository extends JpaRepository<ServiceBooking, 
                                                   @Param("end") LocalDateTime end);
 
     @Query("""
-    select count(b) from EventBooking b
-    where b.status = :status
-    and b.cancelledAt is not null
-    and b.cancelledAt >= :start
-    and b.cancelledAt <  :end
-    """)
+        select count(b) from ServiceBooking b
+        where b.status = :status
+          and b.cancelledAt is not null
+          and b.cancelledAt >= :start
+          and b.cancelledAt <  :end
+        """)
     long countCancelledBetween(@Param("status") BookingStatus status,
-                            @Param("start") LocalDateTime start,
-                            @Param("end") LocalDateTime end);                                              
+                              @Param("start") LocalDateTime start,
+                              @Param("end") LocalDateTime end);
+                                              
     @Query("""
       SELECT function('date', COALESCE(b.cancelledAt, b.updatedAt)) AS date, COUNT(b) AS count
       FROM ServiceBooking b

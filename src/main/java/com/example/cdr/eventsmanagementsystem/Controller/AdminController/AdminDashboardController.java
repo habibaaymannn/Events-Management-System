@@ -5,7 +5,8 @@ import com.example.cdr.eventsmanagementsystem.Constants.ControllerConstants.Role
 import com.example.cdr.eventsmanagementsystem.DTO.Admin.DashboardStatisticsDto;
 import com.example.cdr.eventsmanagementsystem.Keycloak.KeycloakAdminService;
 import com.example.cdr.eventsmanagementsystem.Service.User.AdminService;
-import com.example.cdr.eventsmanagementsystem.Service.User.StatisticsManagement;  // << add this
+import com.example.cdr.eventsmanagementsystem.Service.User.StatisticsManagement;
+import com.example.cdr.eventsmanagementsystem.Mapper.AdminDashboardMapper;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
@@ -21,6 +22,8 @@ import java.util.Map;
 
 import org.springframework.format.annotation.DateTimeFormat;
 import java.time.LocalDate;
+import java.util.Map;
+
 
 @RestController
 @RequiredArgsConstructor
@@ -31,21 +34,17 @@ public class AdminDashboardController {
 
     private final AdminService adminService;
     private final KeycloakAdminService keycloakAdminService;
-    private final StatisticsManagement statistics;   // << inject it
+    private final StatisticsManagement statistics;
+    private final AdminDashboardMapper adminDashboardMapper;
 
     @Operation(summary = "Get dashboard statistics", description = "Retrieves statistics for the dashboard")
     @GetMapping(AdminControllerConstants.ADMIN_DASHBOARD_URL)
     public ResponseEntity<DashboardStatisticsDto> dashboard() {
         // Start with DB-derived stats (totals, utilization, revenue)
         DashboardStatisticsDto dto = statistics.getDashboardStatistics();
-
         // Overwrite the user counts with Keycloak (if you prefer KC as source of truth)
-        Map<String, Long> c = keycloakAdminService.countUsersByRole();
-        dto.setNumAdmins(c.getOrDefault("admins", 0L));
-        dto.setNumOrganizers(c.getOrDefault("organizers", 0L));
-        dto.setNumAttendees(c.getOrDefault("attendees", 0L));
-        dto.setNumServiceProviders(c.getOrDefault("service_providers", 0L));
-        dto.setNumVenueProviders(c.getOrDefault("venue_providers", 0L));
+        Map<String, Long> roleCounts = keycloakAdminService.countUsersByRole();
+        adminDashboardMapper.applyUserRoleCounts(dto, roleCounts);
 
         return ResponseEntity.ok(dto);
     }

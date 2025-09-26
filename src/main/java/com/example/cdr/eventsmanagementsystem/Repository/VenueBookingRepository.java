@@ -53,7 +53,7 @@ public interface VenueBookingRepository extends JpaRepository<VenueBooking, Long
 
 
     @Query("""
-    select count(b) from EventBooking b
+    select count(b) from VenueBooking b
     where b.status = :status
     and b.cancelledAt is not null
     and b.cancelledAt >= :start
