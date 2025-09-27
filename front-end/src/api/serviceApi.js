@@ -15,10 +15,26 @@ export async function getServiceById(serviceId) {
 }
 
 /**
- * Get all services for the current service provider.
+ * Get all services.
  * BE returns a Spring Page<ServicesDTO>. We return the array (content).
  */
 export async function getMyServices() {
+  const url = buildApiUrl('/v1/services/all');
+  const response = await fetch(url, {
+    method: 'GET',
+    headers: getAuthHeaders(),
+  });
+  if (!response.ok) throw new Error(`Failed to fetch services: ${response.status} ${response.statusText}`);
+
+  const json = await response.json();
+  return unwrapApiData(json);
+}
+
+/**
+ * Get all services for the current service provider.
+ * BE returns a Spring Page<ServicesDTO>. We return the array (content).
+ */
+export async function getMyServicesByProvider() {
   const url = buildApiUrl('/v1/services/all/provider');
   const response = await fetch(url, {
     method: 'GET',
