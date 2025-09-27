@@ -12,6 +12,10 @@ import com.example.cdr.eventsmanagementsystem.DTO.projections.LocalDateCount;
 
 
 import com.example.cdr.eventsmanagementsystem.Model.Booking.ServiceBooking;
+import com.example.cdr.eventsmanagementsystem.Model.Booking.BookingStatus;
+import java.time.ZoneId;
+import java.time.ZoneOffset;
+import java.time.ZonedDateTime;
 
 @Repository
 public interface ServiceBookingRepository extends JpaRepository<ServiceBooking, Long> {
@@ -36,6 +40,16 @@ public interface ServiceBookingRepository extends JpaRepository<ServiceBooking, 
                                                   @Param("end") LocalDateTime end);
 
     @Query("""
+    select count(b) from EventBooking b
+    where b.status = :status
+    and b.cancelledAt is not null
+    and b.cancelledAt >= :start
+    and b.cancelledAt <  :end
+    """)
+    long countCancelledBetween(@Param("status") BookingStatus status,
+                            @Param("start") LocalDateTime start,
+                            @Param("end") LocalDateTime end);                                              
+    @Query("""
       SELECT function('date', COALESCE(b.cancelledAt, b.updatedAt)) AS date, COUNT(b) AS count
       FROM ServiceBooking b
       WHERE (b.status = com.example.cdr.eventsmanagementsystem.Model.Booking.BookingStatus.CANCELLED
@@ -46,5 +60,40 @@ public interface ServiceBookingRepository extends JpaRepository<ServiceBooking, 
     """)
     List<LocalDateCount> countDailyCancellationsBetween(@Param("start") LocalDateTime start,
                                                         @Param("end") LocalDateTime end);
+
+    @Query("""
+    select count(b) from ServiceBooking b
+    where b.createdAt >= :start and b.createdAt < :end and b.status = :status
+    """)
+    long countByStatusAndCreatedAtBetween(@Param("status") BookingStatus status,
+                                        @Param("start") java.time.LocalDateTime start,
+                
+                                        @Param("end") java.time.LocalDateTime end);
+
+    @Query("""
+      select count(b) from ServiceBooking b
+      where b.createdAt >= :start
+        and b.createdAt <  :end
+        and b.status in :statuses
+    """)
+    long countCreatedBetweenForStatuses(
+        @Param("start") java.time.LocalDateTime start,
+        @Param("end")   java.time.LocalDateTime end,
+        @Param("statuses") java.util.Collection<com.example.cdr.eventsmanagementsystem.Model.Booking.BookingStatus> statuses
+    );
+                                        
+    @Query("""
+      select count(distinct s.serviceProvider.id)
+      from ServiceBooking sb
+      join Services s on s.id = sb.serviceId
+      where sb.status in (
+        com.example.cdr.eventsmanagementsystem.Model.Booking.BookingStatus.BOOKED,
+        com.example.cdr.eventsmanagementsystem.Model.Booking.BookingStatus.ACCEPTED
+      )
+      and sb.startTime <= :now and sb.endTime >= :now
+    """)
+    long countDistinctActiveServiceProvidersAt(@Param("now") java.time.LocalDateTime now);
+
+
 
 }

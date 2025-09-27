@@ -11,6 +11,9 @@ import org.springframework.stereotype.Repository;
 import java.time.LocalDateTime;
 import java.util.List;
 import com.example.cdr.eventsmanagementsystem.DTO.projections.LocalDateCount;
+import java.time.ZoneId;
+import java.time.ZoneOffset;
+import java.time.ZonedDateTime;
 
 @Repository
 public interface VenueBookingRepository extends JpaRepository<VenueBooking, Long> {
@@ -47,5 +50,56 @@ public interface VenueBookingRepository extends JpaRepository<VenueBooking, Long
     """)
     List<LocalDateCount> countDailyCancellationsBetween(@Param("start") LocalDateTime start,
                                                         @Param("end") LocalDateTime end);
+
+
+    @Query("""
+    select count(b) from EventBooking b
+    where b.status = :status
+    and b.cancelledAt is not null
+    and b.cancelledAt >= :start
+    and b.cancelledAt <  :end
+    """)
+    long countCancelledBetween(@Param("status") BookingStatus status,
+                            @Param("start") LocalDateTime start,
+                            @Param("end") LocalDateTime end);
+
+                            
+
+    @Query("""
+      select count(b) from VenueBooking b
+      where b.createdAt >= :start and b.createdAt < :end and b.status = :status
+    """)
+    long countByStatusAndCreatedAtBetween(@Param("status") BookingStatus status,
+                                          @Param("start") java.time.LocalDateTime start,
+                                          @Param("end") java.time.LocalDateTime end);
+
+    @Query("""
+      select count(b) from VenueBooking b
+      where b.createdAt >= :start
+        and b.createdAt <  :end
+        and b.status in :statuses
+    """)
+    long countCreatedBetweenForStatuses(
+        @Param("start") java.time.LocalDateTime start,
+        @Param("end")   java.time.LocalDateTime end,
+        @Param("statuses") java.util.Collection<com.example.cdr.eventsmanagementsystem.Model.Booking.BookingStatus> statuses
+    );
+                                      
+    @Query("""
+      select count(distinct vb.venueId)
+      from VenueBooking vb
+      where (vb.paymentStatus in (
+              com.example.cdr.eventsmanagementsystem.Model.Booking.PaymentStatus.CAPTURED,
+              com.example.cdr.eventsmanagementsystem.Model.Booking.PaymentStatus.PARTIALLY_REFUNDED,
+              com.example.cdr.eventsmanagementsystem.Model.Booking.PaymentStatus.AUTHORIZED
+            )
+            or vb.status in (
+              com.example.cdr.eventsmanagementsystem.Model.Booking.BookingStatus.BOOKED,
+              com.example.cdr.eventsmanagementsystem.Model.Booking.BookingStatus.ACCEPTED
+            ))
+        and vb.status <> com.example.cdr.eventsmanagementsystem.Model.Booking.BookingStatus.CANCELLED
+        and vb.startTime <= :now and vb.endTime >= :now
+    """)
+    long countDistinctActiveVenueIdsAt(@Param("now") LocalDateTime now);
 
 }
