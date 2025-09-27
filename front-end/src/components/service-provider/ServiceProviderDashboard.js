@@ -2,7 +2,7 @@ import React, { useState, useEffect } from "react";
 import {
   addNewService,
   updateService,
-  getMyServicesByProvider,
+  getMyServices,
   getServiceById
 } from "../../api/serviceApi";
 import { updateServiceBookingStatus } from "../../api/bookingApi";
@@ -92,7 +92,7 @@ const ServiceProviderDashboard = () => {
 
   const loadServices = async () => {
     try {
-      const data = await getMyServicesByProvider();
+      const data = await getMyServices();
       setServices(Array.isArray(data) ? data : []);
     } catch (error) {
       console.error("Error loading services:", error);
