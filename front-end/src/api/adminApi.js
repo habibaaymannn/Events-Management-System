@@ -156,7 +156,7 @@ export async function deleteUser(userId, { notify = false, reason = "" } = {}) {
  * @returns {Promise<void>} - Resolves if successful.
  */
 export async function flagEvent(eventId, reason) {
-  const url = buildApiUrl(`/v1/admin/events/${eventId}/flag?reason=${encodeURIComponent(reason)}`);
+  const url = buildApiUrl(`/v1/events/${eventId}/flag?reason=${encodeURIComponent(reason)}`);
   const response = await fetch(url, {
     method: "POST",
     headers: getAuthHeaders(true),
@@ -173,7 +173,7 @@ export async function flagEvent(eventId, reason) {
  * @returns {Promise<void>} - Resolves if successful.
  */
 export async function cancelEvent(eventId) {
-  const url = buildApiUrl(`/v1/admin/${eventId}/cancel`);
+  const url = buildApiUrl(`/v1/events/${eventId}/cancel`);
   const response = await fetch(url, {
     method: "POST",
     headers: getAuthHeaders(true),
@@ -191,7 +191,7 @@ export async function cancelEvent(eventId) {
  * @returns {Promise<object>} - Paginated events response.
  */
 export async function getAllEvents(page = 0, size = 10) {
-  const url = buildApiUrl(`/v1/admin/events?page=${page}&size=${size}`);
+  const url = buildApiUrl(`/v1/events/all?page=${page}&size=${size}`);
   const response = await fetch(url, {
     method: "GET",
     headers: getAuthHeaders(),
@@ -211,7 +211,7 @@ export async function getAllEvents(page = 0, size = 10) {
  * @returns {Promise<object>} - Paginated flagged events response.
  */
 export async function getFlaggedEvents(page = 0, size = 10) {
-  const url = buildApiUrl(`/v1/admin/events/flagged?page=${page}&size=${size}`);
+  const url = buildApiUrl(`/v1/events/flagged?page=${page}&size=${size}`);
   const response = await fetch(url, {
     method: "GET",
     headers: getAuthHeaders(),
@@ -232,7 +232,7 @@ export async function getFlaggedEvents(page = 0, size = 10) {
  * @returns {Promise<object>} - Paginated events response.
  */
 export async function getEventsByStatus(status, page = 0, size = 10) {
-const url = buildApiUrl(`/v1/admin/by-status?status=${encodeURIComponent(status)}&page=${page}&size=${size}`);
+  const url = buildApiUrl(`/v1/events/by-status?status=${encodeURIComponent(status)}&page=${page}&size=${size}`);
   const response = await fetch(url, {
     method: "GET",
     headers: getAuthHeaders(),

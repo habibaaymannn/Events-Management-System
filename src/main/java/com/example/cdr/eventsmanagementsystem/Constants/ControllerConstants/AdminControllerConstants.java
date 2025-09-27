@@ -15,17 +15,6 @@ public final class AdminControllerConstants {
     public static final String USER_ACTIVATE              = ADMIN_USERS_URL + USER_ID + "/activate";
     public static final String USER_RESET_PASSWORD        = ADMIN_USERS_URL + USER_ID + "/reset-password";
 
-    // ---------- Events ----------
-    public static final String ADMIN_EVENTS_URL = "/events";
-    public static final String ADMIN_EVENTS_BY_STATUS_URL = "/by-status";
-
-    // Keep this exactly as your controller expects (frontend currently calls /v1/admin/{eventId}/cancel)
-    public static final String ADMIN_EVENT_CANCEL_URL = "/{eventId}/cancel";
-
-    // These two already include /events
-    public static final String ADMIN_EVENT_FLAG_URL = "/events/{eventId}/flag";
-    public static final String ADMIN_EVENTS_FLAGGED_URL = "/events/flagged";
-
     // ---------- Dashboard / Analytics ----------
     public static final String ADMIN_DASHBOARD_URL = "/dashboard";
     public static final String ADMIN_EVENT_TYPE_DISTRIBUTION_URL = "/event-type-distribution";
