@@ -1,6 +1,7 @@
 package com.example.cdr.eventsmanagementsystem.Repository;
 
 import com.example.cdr.eventsmanagementsystem.Model.Booking.BookingStatus;
+import com.example.cdr.eventsmanagementsystem.Model.Booking.PaymentStatus;
 import com.example.cdr.eventsmanagementsystem.Model.Booking.VenueBooking;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.domain.Page;
@@ -11,6 +12,9 @@ import org.springframework.stereotype.Repository;
 import java.time.LocalDateTime;
 import java.util.List;
 import com.example.cdr.eventsmanagementsystem.DTO.projections.LocalDateCount;
+import java.time.ZoneId;
+import java.time.ZoneOffset;
+import java.time.ZonedDateTime;
 
 @Repository
 public interface VenueBookingRepository extends JpaRepository<VenueBooking, Long> {
@@ -35,17 +39,69 @@ public interface VenueBookingRepository extends JpaRepository<VenueBooking, Long
     List<LocalDateCount> countDailyBookingsBetween(@Param("start") LocalDateTime start,
                                                   @Param("end") LocalDateTime end);
 
-    // count cancellations per day (based on cancelledAt if set, else updatedAt)
     @Query("""
       SELECT function('date', COALESCE(b.cancelledAt, b.updatedAt)) AS date, COUNT(b) AS count
       FROM VenueBooking b
-      WHERE (b.status = com.example.cdr.eventsmanagementsystem.Model.Booking.BookingStatus.CANCELLED
-            OR b.cancelledAt IS NOT NULL)
+      WHERE (b.status = :cancelled OR b.cancelledAt IS NOT NULL)
         AND COALESCE(b.cancelledAt, b.updatedAt) BETWEEN :start AND :end
       GROUP BY function('date', COALESCE(b.cancelledAt, b.updatedAt))
       ORDER BY function('date', COALESCE(b.cancelledAt, b.updatedAt))
     """)
     List<LocalDateCount> countDailyCancellationsBetween(@Param("start") LocalDateTime start,
-                                                        @Param("end") LocalDateTime end);
+                                                        @Param("end") LocalDateTime end,
+                                                        @Param("cancelled") BookingStatus cancelled);
+
+
+
+    @Query("""
+    select count(b) from VenueBooking b
+    where b.status = :status
+    and b.cancelledAt is not null
+    and b.cancelledAt >= :start
+    and b.cancelledAt <  :end
+    """)
+    long countCancelledBetween(@Param("status") BookingStatus status,
+                            @Param("start") LocalDateTime start,
+                            @Param("end") LocalDateTime end);
+
+                            
+
+    @Query("""
+      select count(b) from VenueBooking b
+      where b.createdAt >= :start and b.createdAt < :end and b.status = :status
+    """)
+    long countByStatusAndCreatedAtBetween(@Param("status") BookingStatus status,
+                                          @Param("start") java.time.LocalDateTime start,
+                                          @Param("end") java.time.LocalDateTime end);
+
+    @Query("""
+      select count(b) from VenueBooking b
+      where b.createdAt >= :start
+        and b.createdAt <  :end
+        and b.status in :statuses
+    """)
+    long countCreatedBetweenForStatuses(
+        @Param("start") java.time.LocalDateTime start,
+        @Param("end")   java.time.LocalDateTime end,
+        @Param("statuses") java.util.Collection<BookingStatus> statuses
+    );
+                                      
+    @Query("""
+        select count(distinct vb.venueId)
+        from VenueBooking vb
+        where (
+            vb.paymentStatus in :paymentStatuses
+            or vb.status in :statuses
+        )
+        and vb.status <> :excludedStatus
+        and vb.startTime <= :now and vb.endTime >= :now
+    """)
+    long countDistinctActiveVenueIdsAt(
+        @Param("now") LocalDateTime now,
+        @Param("paymentStatuses") java.util.Collection<PaymentStatus> paymentStatuses,
+        @Param("statuses") java.util.Collection<BookingStatus> statuses,
+        @Param("excludedStatus") BookingStatus excludedStatus
+    );
+
 
 }

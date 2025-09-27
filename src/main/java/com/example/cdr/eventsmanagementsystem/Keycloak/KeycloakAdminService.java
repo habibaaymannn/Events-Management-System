@@ -2,7 +2,6 @@ package com.example.cdr.eventsmanagementsystem.Keycloak;
 
 import jakarta.annotation.PreDestroy;
 import jakarta.ws.rs.core.Response;
-// import lombok.RequiredArgsConstructor; // <-- remove Lombok constructor
 import org.keycloak.OAuth2Constants;
 import org.keycloak.admin.client.CreatedResponseUtil;
 import org.keycloak.admin.client.Keycloak;
@@ -11,24 +10,54 @@ import org.keycloak.admin.client.resource.*;
 import org.keycloak.representations.idm.*;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import org.springframework.util.LinkedMultiValueMap;
+import org.springframework.util.MultiValueMap;
+import org.springframework.web.client.RestClientException;
+import org.springframework.web.client.RestTemplate;
+
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.http.*;
+import org.springframework.stereotype.Service;
+import org.springframework.util.LinkedMultiValueMap;
+import org.springframework.util.MultiValueMap;
+import org.springframework.web.client.RestClientException;
+import org.springframework.web.client.RestTemplate;
 
 import java.util.Collections;
 import java.util.Optional;
 import java.util.stream.Collectors;
+
+import java.util.Objects;
+
+import org.springframework.stereotype.Service;
+import org.springframework.web.reactive.function.BodyInserters;
+import org.springframework.web.reactive.function.client.WebClient;
+import org.springframework.http.MediaType;
+import com.example.cdr.eventsmanagementsystem.Config.WebClientConfig;
+import reactor.core.publisher.Mono;
 
 import com.example.cdr.eventsmanagementsystem.DTO.Admin.PasswordResetResponse;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
 import java.util.List;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import com.example.cdr.eventsmanagementsystem.Keycloak.KeycloakAdminProps;
 
 
 
+@Slf4j
+@RequiredArgsConstructor
 @Service
 public class KeycloakAdminService {
 
     private final KeycloakAdminProps props;
     private final Keycloak kc;
+    private final RestTemplate restTemplate = new RestTemplate();
+    private final WebClient webclient;
 
     private static final java.util.List<String> MANAGED =
         java.util.List.of("admin", "organizer", "attendee", "service_provider", "venue_provider");
@@ -37,7 +66,8 @@ public class KeycloakAdminService {
         java.util.List.of("admin", "organizer", "service_provider", "venue_provider", "attendee");
     // Single explicit constructor so Spring knows exactly what to use
     @Autowired
-    public KeycloakAdminService(KeycloakAdminProps props) {
+    public KeycloakAdminService(WebClient webclient,KeycloakAdminProps props) {
+        this.webclient = webclient;
         this.props = props;
 
         KeycloakBuilder builder = KeycloakBuilder.builder()
@@ -99,26 +129,6 @@ public class KeycloakAdminService {
     }
 
 
-    //  public long countUsersByUserType(String userType) {
-    //     try {
-    //         // Keycloak search-by-attribute support varies; the safe approach:
-    //         // list a reasonable page and filter client-side. For larger realms, page through.
-    //         List<UserRepresentation> page = realm().users().search("", 0, 1000);
-    //         return page.stream().filter(u -> {
-    //             Map<String, List<String>> attrs = u.getAttributes();
-    //             if (attrs == null) return false;
-    //             List<String> vals = attrs.getOrDefault("userType", Collections.emptyList());
-    //             return vals.stream().anyMatch(v -> v != null && v.equalsIgnoreCase(userType));
-    //         }).count();
-    //     } catch (Exception e) {
-    //         // log if you want: log.warn("countUsersByUserType failed", e);
-    //         return 0L;
-    //     }
-    // }
-
-
-//     ** Normalize a single role string from Keycloak user attributes.
-//  *  We prioritize the custom attribute "userType". */
 private String extractRole(UserRepresentation u) {
     // 1) Preferred: attribute userType: ["admin" | "organizer" | "attendee" | "service_provider" | "venue_provider"]
     if (u.getAttributes() != null) {
@@ -251,6 +261,90 @@ public PasswordResetResponse sendResetPasswordAndOptions(String userId) {
     return new PasswordResetResponse(true, forgotPasswordEntryUrl, accountUrl);
 }
 
+
+    /**
+     * Public "Forgot password?" entry page (Auth endpoint) – for fallback/self-service.
+     */
+    public String buildForgotPasswordEntryUrl() {
+        String publicBase = trimTrailingSlash(props.getPublicBaseUrl());
+        String realm = props.getRealm();
+        String clientId = props.getFrontendClientId();
+        String redirect = props.getPostActionRedirectUri();
+
+        // standard OIDC auth URL
+        return String.format(
+            "%s/realms/%s/protocol/openid-connect/auth?client_id=%s&redirect_uri=%s&response_type=code&scope=openid",
+            publicBase,
+            urlEncode(realm),
+            urlEncode(clientId),
+            urlEncode(redirect)
+        );
+    }
+
+    /**
+     * Keycloak Account Console (optional link for users/admins).
+     */
+    public String buildAccountUrl() {
+        String publicBase = trimTrailingSlash(props.getPublicBaseUrl());
+        String realm = props.getRealm();
+        return String.format("%s/realms/%s/account", publicBase, urlEncode(realm));
+    }
+
+
+    private String fetchAdminAccessToken() {
+        String tokenUrl = props.getInternalBaseUrl()
+            + "/realms/" + props.getRealm()
+            + "/protocol/openid-connect/token";
+
+        Map<String, Object> tokenResp = webclient.post()
+            .uri(tokenUrl)
+            .contentType(MediaType.APPLICATION_FORM_URLENCODED)
+            .body(BodyInserters
+                .fromFormData("grant_type", "password")
+                .with("client_id", props.getAdminClientId())
+                .with("client_secret", props.getAdminClientSecret())
+                .with("username", props.getAdminUsername())
+                .with("password", props.getAdminPassword()))
+            .retrieve()
+            .bodyToMono(Map.class)
+            .onErrorResume(e -> Mono.empty())
+            .block();
+
+        if (Objects.isNull(tokenResp)) return null;
+        Object at = tokenResp.get("access_token");
+        return at == null ? null : at.toString();
+    }
+
+
+    /**
+     * Sends a time-limited action-token email for UPDATE_PASSWORD to the given userId.
+     * Uses internal KC URL for admin REST, but public URL in redirect/links.
+     */
+   public boolean sendUpdatePasswordEmail(String userId) {
+        String token = fetchAdminAccessToken();
+        if (Objects.isNull(token)) return false;
+
+        // Use PUBLIC base for execute-actions-email so email links use localhost
+        String base = props.getPublicBaseUrl();
+        String url = base + "/admin/realms/" + props.getRealm()
+            + "/users/" + userId + "/execute-actions-email"
+            + "?client_id=" + props.getFrontendClientId()
+            + "&redirect_uri=" + props.getPostActionRedirectUri();
+
+        try {
+            webclient.put()
+                .uri(url)
+                .contentType(MediaType.APPLICATION_JSON)
+                .headers(h -> h.setBearerAuth(token))
+                .bodyValue(new String[] { "UPDATE_PASSWORD" })
+                .retrieve()
+                .toBodilessEntity()
+                .block();
+            return true;
+        } catch (Exception ex) {
+            return false;
+        }
+    }
 
     private static String trimTrailingSlash(String s) {
         if (s == null) return "";
