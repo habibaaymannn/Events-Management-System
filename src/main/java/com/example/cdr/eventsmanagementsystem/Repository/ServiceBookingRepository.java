@@ -53,14 +53,15 @@ public interface ServiceBookingRepository extends JpaRepository<ServiceBooking, 
     @Query("""
       SELECT function('date', COALESCE(b.cancelledAt, b.updatedAt)) AS date, COUNT(b) AS count
       FROM ServiceBooking b
-      WHERE (b.status = com.example.cdr.eventsmanagementsystem.Model.Booking.BookingStatus.CANCELLED
-            OR b.cancelledAt IS NOT NULL)
+      WHERE (b.status = :cancelled OR b.cancelledAt IS NOT NULL)
         AND COALESCE(b.cancelledAt, b.updatedAt) BETWEEN :start AND :end
       GROUP BY function('date', COALESCE(b.cancelledAt, b.updatedAt))
       ORDER BY function('date', COALESCE(b.cancelledAt, b.updatedAt))
     """)
     List<LocalDateCount> countDailyCancellationsBetween(@Param("start") LocalDateTime start,
-                                                        @Param("end") LocalDateTime end);
+                                                        @Param("end") LocalDateTime end,
+                                                        @Param("cancelled") BookingStatus cancelled);
+
 
     @Query("""
     select count(b) from ServiceBooking b
@@ -80,20 +81,20 @@ public interface ServiceBookingRepository extends JpaRepository<ServiceBooking, 
     long countCreatedBetweenForStatuses(
         @Param("start") java.time.LocalDateTime start,
         @Param("end")   java.time.LocalDateTime end,
-        @Param("statuses") java.util.Collection<com.example.cdr.eventsmanagementsystem.Model.Booking.BookingStatus> statuses
+        @Param("statuses") java.util.Collection<BookingStatus> statuses
     );
                                         
     @Query("""
-      select count(distinct s.serviceProvider.id)
-      from ServiceBooking sb
-      join Services s on s.id = sb.serviceId
-      where sb.status in (
-        com.example.cdr.eventsmanagementsystem.Model.Booking.BookingStatus.BOOKED,
-        com.example.cdr.eventsmanagementsystem.Model.Booking.BookingStatus.ACCEPTED
-      )
-      and sb.startTime <= :now and sb.endTime >= :now
+        select count(distinct s.serviceProvider.id)
+        from ServiceBooking sb
+        join Services s on s.id = sb.serviceId
+        where sb.status in :statuses
+        and sb.startTime <= :now and sb.endTime >= :now
     """)
-    long countDistinctActiveServiceProvidersAt(@Param("now") java.time.LocalDateTime now);
+    long countDistinctActiveServiceProvidersAt(
+        @Param("now") java.time.LocalDateTime now,
+        @Param("statuses") java.util.Collection<BookingStatus> statuses
+    );
 
 
 

@@ -12,10 +12,9 @@ import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
 import com.example.cdr.eventsmanagementsystem.DTO.projections.LocalDateCount;
-import org.springframework.data.jpa.repository.Query;
-import org.springframework.data.repository.query.Param;
 import com.example.cdr.eventsmanagementsystem.Model.Booking.BookingStatus;
 import com.example.cdr.eventsmanagementsystem.Model.Booking.EventBooking;
+import com.example.cdr.eventsmanagementsystem.Model.Booking.PaymentStatus;
 import java.time.ZoneId;
 import java.time.ZoneOffset;
 import java.time.ZonedDateTime;
@@ -77,7 +76,8 @@ public interface EventBookingRepository extends JpaRepository<EventBooking, Long
         long countCreatedBetweenForStatuses(
                 @Param("start") java.time.LocalDateTime start,
                 @Param("end") java.time.LocalDateTime end,
-                @Param("statuses") java.util.Collection<com.example.cdr.eventsmanagementsystem.Model.Booking.BookingStatus> statuses
+                @Param("statuses") java.util.Collection<BookingStatus> statuses
+
         );
 
         EventBooking findByStripeSessionId(String sessionId);
@@ -102,16 +102,19 @@ public interface EventBookingRepository extends JpaRepository<EventBooking, Long
                 @Param("end") LocalDateTime end);
 
         @Query("""
-                SELECT function('date', COALESCE(b.cancelledAt, b.updatedAt)) AS date, COUNT(b) AS count
-                FROM EventBooking b
-                WHERE (b.status = com.example.cdr.eventsmanagementsystem.Model.Booking.BookingStatus.CANCELLED
-                        OR b.cancelledAt IS NOT NULL)
-                AND COALESCE(b.cancelledAt, b.updatedAt) BETWEEN :start AND :end
-                GROUP BY function('date', COALESCE(b.cancelledAt, b.updatedAt))
-                ORDER BY function('date', COALESCE(b.cancelledAt, b.updatedAt))
-                """)
-        List<LocalDateCount> countDailyCancellationsBetween(@Param("start") LocalDateTime start,
-                @Param("end") LocalDateTime end);
+        SELECT function('date', COALESCE(b.cancelledAt, b.updatedAt)) AS date, COUNT(b) AS count
+        FROM EventBooking b
+        WHERE (b.status = :cancelled OR b.cancelledAt IS NOT NULL)
+        AND COALESCE(b.cancelledAt, b.updatedAt) BETWEEN :start AND :end
+        GROUP BY function('date', COALESCE(b.cancelledAt, b.updatedAt))
+        ORDER BY function('date', COALESCE(b.cancelledAt, b.updatedAt))
+        """)
+        List<LocalDateCount> countDailyCancellationsBetween(
+        @Param("start") LocalDateTime start,
+        @Param("end") LocalDateTime end,
+        @Param("cancelled") BookingStatus cancelled
+        );
+
 
         @Query("""
                 select count(b) from EventBooking b
@@ -133,24 +136,28 @@ public interface EventBookingRepository extends JpaRepository<EventBooking, Long
         }
 
         @Query("""
-                        select e.organizer.id as organizerId,
-                        e.organizer.firstName as firstName,
-                        e.organizer.lastName  as lastName,
-                        coalesce(sum(
-                                case
-                                when b.paymentStatus = com.example.cdr.eventsmanagementsystem.Model.Booking.PaymentStatus.CAPTURED
-                                then b.amount
-                                when b.paymentStatus = com.example.cdr.eventsmanagementsystem.Model.Booking.PaymentStatus.PARTIALLY_REFUNDED
-                                then (b.amount - coalesce(b.refundAmount, 0))
-                                when b.paymentStatus = com.example.cdr.eventsmanagementsystem.Model.Booking.PaymentStatus.REFUNDED
-                                then 0
-                                else 0
-                                end
-                        ), 0) as revenue
-                        from EventBooking b
-                        join Event e on e.id = b.eventId
-                        group by e.organizer.id, e.organizer.firstName, e.organizer.lastName
-                        order by revenue desc
-                """)
-        java.util.List<OrganizerRevenueRow> sumRevenueByOrganizer();
+        select
+        e.organizer.id as organizerId,
+        e.organizer.firstName as firstName,
+        e.organizer.lastName  as lastName,
+        coalesce(sum(
+                case 
+                when b.paymentStatus = :sCaptured then b.amount
+                when b.paymentStatus = :sPartiallyRefunded then (b.amount - coalesce(b.refundAmount, 0))
+                when b.paymentStatus = :sRefunded then 0
+                else 0
+                end
+        ), 0) as revenue
+        from EventBooking b
+        join Event e on e.id = b.eventId
+        group by e.organizer.id, e.organizer.firstName, e.organizer.lastName
+        order by revenue desc
+        """)
+        java.util.List<OrganizerRevenueRow> sumRevenueByOrganizer(
+        @Param("sCaptured") PaymentStatus sCaptured,
+        @Param("sPartiallyRefunded") PaymentStatus sPartiallyRefunded,
+        @Param("sRefunded") PaymentStatus sRefunded
+        );
+
+
 }

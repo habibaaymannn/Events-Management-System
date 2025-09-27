@@ -1,6 +1,7 @@
 package com.example.cdr.eventsmanagementsystem.Repository;
 
 import com.example.cdr.eventsmanagementsystem.Model.Booking.BookingStatus;
+import com.example.cdr.eventsmanagementsystem.Model.Booking.PaymentStatus;
 import com.example.cdr.eventsmanagementsystem.Model.Booking.VenueBooking;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.domain.Page;
@@ -38,18 +39,18 @@ public interface VenueBookingRepository extends JpaRepository<VenueBooking, Long
     List<LocalDateCount> countDailyBookingsBetween(@Param("start") LocalDateTime start,
                                                   @Param("end") LocalDateTime end);
 
-    // count cancellations per day (based on cancelledAt if set, else updatedAt)
     @Query("""
       SELECT function('date', COALESCE(b.cancelledAt, b.updatedAt)) AS date, COUNT(b) AS count
       FROM VenueBooking b
-      WHERE (b.status = com.example.cdr.eventsmanagementsystem.Model.Booking.BookingStatus.CANCELLED
-            OR b.cancelledAt IS NOT NULL)
+      WHERE (b.status = :cancelled OR b.cancelledAt IS NOT NULL)
         AND COALESCE(b.cancelledAt, b.updatedAt) BETWEEN :start AND :end
       GROUP BY function('date', COALESCE(b.cancelledAt, b.updatedAt))
       ORDER BY function('date', COALESCE(b.cancelledAt, b.updatedAt))
     """)
     List<LocalDateCount> countDailyCancellationsBetween(@Param("start") LocalDateTime start,
-                                                        @Param("end") LocalDateTime end);
+                                                        @Param("end") LocalDateTime end,
+                                                        @Param("cancelled") BookingStatus cancelled);
+
 
 
     @Query("""
@@ -82,24 +83,25 @@ public interface VenueBookingRepository extends JpaRepository<VenueBooking, Long
     long countCreatedBetweenForStatuses(
         @Param("start") java.time.LocalDateTime start,
         @Param("end")   java.time.LocalDateTime end,
-        @Param("statuses") java.util.Collection<com.example.cdr.eventsmanagementsystem.Model.Booking.BookingStatus> statuses
+        @Param("statuses") java.util.Collection<BookingStatus> statuses
     );
                                       
     @Query("""
-      select count(distinct vb.venueId)
-      from VenueBooking vb
-      where (vb.paymentStatus in (
-              com.example.cdr.eventsmanagementsystem.Model.Booking.PaymentStatus.CAPTURED,
-              com.example.cdr.eventsmanagementsystem.Model.Booking.PaymentStatus.PARTIALLY_REFUNDED,
-              com.example.cdr.eventsmanagementsystem.Model.Booking.PaymentStatus.AUTHORIZED
-            )
-            or vb.status in (
-              com.example.cdr.eventsmanagementsystem.Model.Booking.BookingStatus.BOOKED,
-              com.example.cdr.eventsmanagementsystem.Model.Booking.BookingStatus.ACCEPTED
-            ))
-        and vb.status <> com.example.cdr.eventsmanagementsystem.Model.Booking.BookingStatus.CANCELLED
+        select count(distinct vb.venueId)
+        from VenueBooking vb
+        where (
+            vb.paymentStatus in :paymentStatuses
+            or vb.status in :statuses
+        )
+        and vb.status <> :excludedStatus
         and vb.startTime <= :now and vb.endTime >= :now
     """)
-    long countDistinctActiveVenueIdsAt(@Param("now") LocalDateTime now);
+    long countDistinctActiveVenueIdsAt(
+        @Param("now") LocalDateTime now,
+        @Param("paymentStatuses") java.util.Collection<PaymentStatus> paymentStatuses,
+        @Param("statuses") java.util.Collection<BookingStatus> statuses,
+        @Param("excludedStatus") BookingStatus excludedStatus
+    );
+
 
 }

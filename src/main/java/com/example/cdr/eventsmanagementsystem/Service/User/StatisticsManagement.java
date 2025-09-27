@@ -22,6 +22,7 @@ import com.example.cdr.eventsmanagementsystem.DTO.Admin.OrganizerRevenueDto;
 import com.example.cdr.eventsmanagementsystem.DTO.projections.EventTypeCount;
 import com.example.cdr.eventsmanagementsystem.DTO.projections.LocalDateCount;
 import com.example.cdr.eventsmanagementsystem.Model.Booking.BookingStatus;
+import com.example.cdr.eventsmanagementsystem.Model.Booking.PaymentStatus;
 import com.example.cdr.eventsmanagementsystem.Model.Event.EventStatus;
 import com.example.cdr.eventsmanagementsystem.Repository.EventBookingRepository;
 import com.example.cdr.eventsmanagementsystem.Repository.EventRepository;
@@ -37,11 +38,9 @@ import com.example.cdr.eventsmanagementsystem.Service.Payment.StripeService;
 import com.example.cdr.eventsmanagementsystem.DTO.Admin.UiRevenue;
 import lombok.AllArgsConstructor;
 import lombok.RequiredArgsConstructor;
-import java.time.ZoneOffset;
-import java.time.ZonedDateTime;
-import java.util.*;
-import java.util.stream.Collectors;
-import java.time.*;
+
+import static com.example.cdr.eventsmanagementsystem.Model.Booking.PaymentStatus.*;
+import static com.example.cdr.eventsmanagementsystem.Model.Booking.BookingStatus.*;
 
 /**
  * Service class for administrative operations related statistics. Handles
@@ -78,14 +77,19 @@ public class StatisticsManagement {
         dto.setNumServiceProviders(serviceProviderRepository.count());
         dto.setNumVenueProviders(venueProviderRepository.count());
         long venueTotal = venueRepository.count();
-        long venueActiveNow = venueBookingRepository.countDistinctActiveVenueIdsAt(now);
+        long venueActiveNow = venueBookingRepository.countDistinctActiveVenueIdsAt(now,
+                java.util.EnumSet.of(CAPTURED, PARTIALLY_REFUNDED, AUTHORIZED),
+                java.util.EnumSet.of(BOOKED, ACCEPTED),
+                CANCELLED);
         dto.setVenueTotal(venueTotal);
         dto.setVenueActiveNow(venueActiveNow);
         dto.setVenueUtilizationRate(venueTotal == 0 ? 0.0 : (double) venueActiveNow / venueTotal);
 
         // Service-provider counts + rate
         long svcTotal = serviceProviderRepository.count();
-        long svcActiveNow = serviceBookingRepository.countDistinctActiveServiceProvidersAt(now);
+        long svcActiveNow = serviceBookingRepository.countDistinctActiveServiceProvidersAt(now,
+                java.util.EnumSet.of(BookingStatus.BOOKED, BookingStatus.ACCEPTED)
+            );
         dto.setServiceProvidersTotal(svcTotal);
         dto.setServiceProvidersActiveNow(svcActiveNow);
         dto.setServiceProviderUtilizationRate(svcTotal == 0 ? 0.0 : (double) svcActiveNow / svcTotal);
@@ -96,7 +100,9 @@ public class StatisticsManagement {
     }
 
     private java.util.List<UiRevenue> buildUiRevenue() {
-        var rows = eventBookingRepository.sumRevenueByOrganizer();
+        var rows = eventBookingRepository.sumRevenueByOrganizer(PaymentStatus.CAPTURED,
+            PaymentStatus.PARTIALLY_REFUNDED,
+            PaymentStatus.REFUNDED);
 
         var out = new java.util.ArrayList<UiRevenue>(rows.size());
         for (var r : rows) {
@@ -144,7 +150,7 @@ public class StatisticsManagement {
 
     public Map<LocalDate, Long> getDailyBookingCount(LocalDate startDate, LocalDate endDate) {
         LocalDateTime startTs = startDate.atStartOfDay();
-        LocalDateTime endTs = endDate.plusDays(1).atStartOfDay().minusNanos(1); // inclusive end-of-day
+        LocalDateTime endTs = endDate.plusDays(1).atStartOfDay().minusNanos(1);
 
         Map<LocalDate, Long> result = initDateRange(startDate, endDate);
 
@@ -162,10 +168,10 @@ public class StatisticsManagement {
 
         Map<LocalDate, Long> result = initDateRange(startDate, endDate);
 
-        mergeCounts(result, eventBookingRepository.countDailyCancellationsBetween(startTs, endTs));
-        mergeCounts(result, venueBookingRepository.countDailyCancellationsBetween(startTs, endTs));
+        mergeCounts(result, eventBookingRepository.countDailyCancellationsBetween(startTs, endTs, BookingStatus.CANCELLED));
+        mergeCounts(result, venueBookingRepository.countDailyCancellationsBetween(startTs, endTs, BookingStatus.CANCELLED));
         // Likewise, comment if ServiceBooking isn’t in yet:
-        mergeCounts(result, serviceBookingRepository.countDailyCancellationsBetween(startTs, endTs));
+        mergeCounts(result, serviceBookingRepository.countDailyCancellationsBetween(startTs, endTs, BookingStatus.CANCELLED));
 
         return result;
     }
@@ -180,10 +186,7 @@ public class StatisticsManagement {
         var startUtc = cairoStart.withZoneSameInstant(utc).toLocalDateTime();
         var endUtc = cairoEnd.withZoneSameInstant(utc).toLocalDateTime();
 
-        var ok = java.util.EnumSet.of(
-                com.example.cdr.eventsmanagementsystem.Model.Booking.BookingStatus.BOOKED,
-                com.example.cdr.eventsmanagementsystem.Model.Booking.BookingStatus.ACCEPTED
-        );
+        var ok = java.util.EnumSet.of(BOOKED, ACCEPTED);
 
         long events = eventBookingRepository.countCreatedBetweenForStatuses(startUtc, endUtc, ok);
         long services = serviceBookingRepository.countCreatedBetweenForStatuses(startUtc, endUtc, ok);
@@ -211,7 +214,9 @@ public class StatisticsManagement {
     }
 
     public Page<OrganizerRevenueDto> getRevenuePerOrganizer(LocalDate startDate, LocalDate endDate, Pageable pageable) {
-        var rows = eventBookingRepository.sumRevenueByOrganizer(); // projection: organizerId, revenue
+        var rows = eventBookingRepository.sumRevenueByOrganizer(PaymentStatus.CAPTURED,
+            PaymentStatus.PARTIALLY_REFUNDED,
+            PaymentStatus.REFUNDED);
 
         var items = rows.stream().map(r -> {
             var dto = new OrganizerRevenueDto();
@@ -237,13 +242,7 @@ public class StatisticsManagement {
         return new PageImpl<>(content, pageable, items.size());
     }
 
-    // public double getVenueUtilizationRate() {
-    //     long totalVenues = venueRepository.count();
-    //     if (totalVenues == 0) return 0.0;
-    //     LocalDateTime now = LocalDateTime.now();
-    //     long activeDistinctVenues = venueBookingRepository.countDistinctActiveVenueIdsAt(now);
-    //     return (double) activeDistinctVenues / (double) totalVenues; // 0..1
-    // }
+
     public double getVenueUtilizationRate() {
         long totalVenues = venueRepository.count();
         if (totalVenues == 0) {
@@ -252,7 +251,10 @@ public class StatisticsManagement {
 
         var zone = java.time.ZoneId.of("Africa/Cairo");
         LocalDateTime now = java.time.ZonedDateTime.now(zone).toLocalDateTime();
-        long active = venueBookingRepository.countDistinctActiveVenueIdsAt(now);
+        long active = venueBookingRepository.countDistinctActiveVenueIdsAt(now,
+                java.util.EnumSet.of(CAPTURED, PARTIALLY_REFUNDED, AUTHORIZED),
+                java.util.EnumSet.of(BOOKED, ACCEPTED),
+                CANCELLED);
 
         // If we prefer “now..end of day”:
         // LocalDateTime eod = now.toLocalDate().atTime(23, 59, 59, 999_000_000);
@@ -266,7 +268,9 @@ public class StatisticsManagement {
             return 0.0;
         }
         LocalDateTime now = LocalDateTime.now();
-        long activeDistinctProviders = serviceBookingRepository.countDistinctActiveServiceProvidersAt(now);
+        long activeDistinctProviders = serviceBookingRepository.countDistinctActiveServiceProvidersAt(now,
+        java.util.EnumSet.of(BookingStatus.BOOKED, BookingStatus.ACCEPTED)
+    );
         return (double) activeDistinctProviders / (double) totalProviders; // 0..1
     }
 
