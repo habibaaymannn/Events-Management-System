@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { getBookingsByAttendeeId } from "../../api/bookingApi";
 import { getAllEvents } from "../../api/eventApi";
 
+
 const AttendeeDashboard = () => {
     const navigate = useNavigate();
     const [bookings, setBookings] = useState([]);
