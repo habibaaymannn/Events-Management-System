@@ -38,13 +38,14 @@ public class ServiceController {
 
     @Operation(summary = "Get services by service provider", description = "Return all services related to a service provider")
     @GetMapping(ServiceControllerConstants.GET_SERVICES_BY_PROVIDER_URL)
+    @PreAuthorize("hasAnyRole('" + ORGANIZER_ROLE + "','" + SERVICE_PROVIDER_ROLE + "')")
     public Page<ServicesDTO> getServicesByServiceProvider(@ParameterObject @PageableDefault() Pageable pageable) {
         return servicesService.getServicesByServiceProvider(pageable);
     }
 
     @Operation(summary = "Get all services", description = "Retrieves a paginated list of all services")
     @GetMapping(ServiceControllerConstants.GET_ALL_SERVICES_URL)
-    @PreAuthorize("hasAnyRole('" + ORGANIZER_ROLE + "','" + ADMIN_ROLE + "')")
+    @PreAuthorize("hasAnyRole('" + ORGANIZER_ROLE + "','" + ADMIN_ROLE + "','" + SERVICE_PROVIDER_ROLE + "')")
     public Page<ServicesDTO> getAllServices(@ParameterObject @PageableDefault() Pageable pageable) {
         return servicesService.getAllServices(pageable);
     }
