@@ -17,6 +17,32 @@ const EventAttendeeDashboard = () => {
   const [showPayment, setShowPayment] = useState(null);
   const [activeSeg, setActiveSeg] = useState("Current"); // Past | Current | Upcoming
 
+  // --- rating state ----------------------------------------------------------
+  const [showRating, setShowRating] = useState(null); // eventId currently being rated
+  const [rating, setRating] = useState(0);            // temp rating while choosing
+  const [hovered, setHovered] = useState(0);          // hover preview
+  const [ratings, setRatings] = useState(() => {
+    try {
+      return JSON.parse(localStorage.getItem("ea_ratings") || "{}");
+    } catch {
+      return {};
+    }
+  });
+
+  useEffect(() => {
+    localStorage.setItem("ea_ratings", JSON.stringify(ratings));
+  }, [ratings]);
+
+  const handleRateEvent = (eventId, value) => {
+    setRatings((prev) => ({
+      ...prev,
+      [eventId]: { rating: value, ratedDate: new Date().toISOString() },
+    }));
+    setShowRating(null);
+    setRating(0);
+    alert("Thank you for rating this event!");
+  };
+
   // --- data loading ----------------------------------------------------------
   useEffect(() => {
     (async () => {
@@ -100,7 +126,7 @@ const EventAttendeeDashboard = () => {
       : "Upcoming";
   };
 
-  // --- search / filter / sort (unchanged behavior) --------------------------
+  // --- search / filter / sort ------------------------------------------------
   const baseFiltered = useMemo(() => {
     const arr = events
       .filter((event) => {
@@ -181,9 +207,66 @@ const EventAttendeeDashboard = () => {
     setActiveSeg(SEGMENTS[(idx + 1) % SEGMENTS.length]);
   };
 
+  // --- star renderer ---------------------------------------------------------
+  const Star = ({ filled, onClick, onEnter, onLeave }) => (
+    <button
+      type="button"
+      aria-label={filled ? "filled star" : "empty star"}
+      onClick={onClick}
+      onMouseEnter={onEnter}
+      onMouseLeave={onLeave}
+      style={{
+        background: "transparent",
+        border: "none",
+        padding: 0,
+        margin: "0 3px",
+        cursor: "pointer",
+        fontSize: 28,
+        lineHeight: 1,
+        transform: filled ? "scale(1.05)" : "scale(1.0)",
+        transition: "transform 120ms ease, filter 120ms ease",
+        filter: filled ? "drop-shadow(0 1px 2px rgba(0,0,0,0.25))" : "none",
+      }}
+    >
+      <span style={{ color: filled ? "#f5b301" : "#d3d3d3" }}>★</span>
+    </button>
+  );
+
+  const StarRow = ({ value, setValue }) => (
+    <div style={{ display: "flex", alignItems: "center" }}>
+      {Array.from({ length: 5 }, (_, i) => {
+        const idx = i + 1;
+        const showFill = hovered ? idx <= hovered : idx <= value;
+        return (
+          <Star
+            key={idx}
+            filled={showFill}
+            onClick={() => setValue(idx)}
+            onEnter={() => setHovered(idx)}
+            onLeave={() => setHovered(0)}
+          />
+        );
+      })}
+    </div>
+  );
+
   // --- UI -------------------------------------------------------------------
   return (
     <div style={{ width: "98vw", maxWidth: "98vw", margin: "10px auto", padding: "0 10px" }}>
+      {/* tiny CSS helper for modal overlay if you didn't already have these classes */}
+      <style>{`
+        .modal-overlay {
+          position: fixed; inset: 0; background: rgba(0,0,0,0.35);
+          display: flex; align-items: center; justify-content: center; z-index: 1000;
+        }
+        .modal-content {
+          background: #fff; border-radius: 12px; padding: 18px; width: min(720px, 92vw);
+          box-shadow: 0 20px 60px rgba(0,0,0,0.25);
+        }
+        .modal-header { display: flex; align-items: center; justify-content: space-between; }
+        .modal-close { border: none; background: transparent; font-size: 20px; cursor: pointer; }
+      `}</style>
+
       <h2
         style={{
           textAlign: "center",
@@ -266,7 +349,10 @@ const EventAttendeeDashboard = () => {
                 activeSeg === "Current"
                   ? "#ffffff"
                   : "linear-gradient(0deg, #f7f7f7, #fcfcfc)",
-              transform: activeSeg === "Current" ? "translateX(-50%) scale(1.06)" : "translateX(-50%) scale(0.98)",
+              transform:
+                activeSeg === "Current"
+                  ? "translateX(-50%) scale(1.06)"
+                  : "translateX(-50%) scale(0.98)",
               boxShadow:
                 activeSeg === "Current"
                   ? "0 16px 32px rgba(0,0,0,0.18)"
@@ -333,7 +419,7 @@ const EventAttendeeDashboard = () => {
           </button>
         </div>
 
-        {/* Search and Filters (unchanged) */}
+        {/* Search and Filters */}
         <div className="filter-controls" style={{ margin: "8px 0 20px 0", display: "flex", gap: 10, flexWrap: "wrap" }}>
           <input
             type="text"
@@ -408,85 +494,195 @@ const EventAttendeeDashboard = () => {
               width: "100%",
             }}
           >
-            {activeList.map((event) => (
-              <div
-                key={event.id}
-                className="card"
-                style={{
-                  border: "1px solid #e9ecef",
-                  borderRadius: 12,
-                  padding: 16,
-                  background: "#f9f9f9",
-                  transition: "all 0.3s ease",
-                  cursor: "pointer",
-                }}
-                onMouseEnter={(e) => {
-                  e.currentTarget.style.transform = "translateY(-4px)";
-                  e.currentTarget.style.boxShadow = "0 8px 25px rgba(0,0,0,0.15)";
-                }}
-                onMouseLeave={(e) => {
-                  e.currentTarget.style.transform = "translateY(0)";
-                  e.currentTarget.style.boxShadow = "0 8px 32px rgba(0, 0, 0, 0.1)";
-                }}
-              >
-                <h4 style={{ margin: "0 0 12px 0", color: "#2c3e50", fontSize: "1.2rem" }}>
-                  {event.name}
-                </h4>
-                <div style={{ marginBottom: 16, fontSize: "0.9rem", color: "#495057" }}>
-                  <p style={{ margin: "4px 0" }}>
-                    <strong>Date:</strong> {event.date} {event.time && `at ${event.time}`}
-                  </p>
-                  <p style={{ margin: "4px 0" }}>
-                    <strong>Location:</strong> {event.location}
-                  </p>
-                  <p style={{ margin: "4px 0" }}>
-                    <strong>Price:</strong>{" "}
-                    <span style={{ fontWeight: 600 }}>${event.price}</span>
-                  </p>
-                  <p style={{ margin: "4px 0" }}>
-                    <strong>Category:</strong> {event.category}
-                  </p>
-                  <p style={{ margin: "4px 0" }}>
-                    <strong>Attendees:</strong> {event.attendees}/{event.maxAttendees}
-                  </p>
-                </div>
+            {activeList.map((event) => {
+              const stored = ratings[event.id];
+              const canRate =
+                activeSeg === "Past" && registeredIds.has(event.id);
 
-                <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
-                  <button
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      setSelectedEvent(event);
-                    }}
-                    className="btn btn-primary"
-                    style={{ padding: "6px 12px", fontSize: "0.8rem", flex: 1 }}
-                  >
-                    View Details
-                  </button>
+              return (
+                <div
+                  key={event.id}
+                  className="card"
+                  style={{
+                    border: "1px solid #e9ecef",
+                    borderRadius: 12,
+                    padding: 16,
+                    background: "#f9f9f9",
+                    transition: "all 0.3s ease",
+                    cursor: "pointer",
+                  }}
+                  onMouseEnter={(e) => {
+                    e.currentTarget.style.transform = "translateY(-4px)";
+                    e.currentTarget.style.boxShadow = "0 8px 25px rgba(0,0,0,0.15)";
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.transform = "translateY(0)";
+                    e.currentTarget.style.boxShadow = "0 8px 32px rgba(0, 0, 0, 0.1)";
+                  }}
+                >
+                  <h4 style={{ margin: "0 0 12px 0", color: "#2c3e50", fontSize: "1.2rem" }}>
+                    {event.name}
+                  </h4>
 
-                  <button
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      handleJoinEvent(event);
-                    }}
-                    disabled={
-                      event.attendees >= event.maxAttendees || registeredIds.has(event.id)
-                    }
-                    className={`btn ${
-                      event.attendees >= event.maxAttendees || registeredIds.has(event.id)
-                        ? "btn-secondary"
-                        : "btn-success"
-                    }`}
-                    style={{ padding: "6px 12px", fontSize: "0.8rem", flex: 1 }}
-                  >
-                    {registeredIds.has(event.id)
-                      ? "Registered"
-                      : event.attendees >= event.maxAttendees
-                      ? "Full"
-                      : "Join Event"}
-                  </button>
+                  <div style={{ marginBottom: 16, fontSize: "0.9rem", color: "#495057" }}>
+                    <p style={{ margin: "4px 0" }}>
+                      <strong>Date:</strong> {event.date} {event.time && `at ${event.time}`}
+                    </p>
+                    <p style={{ margin: "4px 0" }}>
+                      <strong>Location:</strong> {event.location}
+                    </p>
+                    <p style={{ margin: "4px 0" }}>
+                      <strong>Price:</strong>{" "}
+                      <span style={{ fontWeight: 600 }}>${event.price}</span>
+                    </p>
+                    <p style={{ margin: "4px 0" }}>
+                      <strong>Category:</strong> {event.category}
+                    </p>
+                    <p style={{ margin: "4px 0" }}>
+                      <strong>Attendees:</strong> {event.attendees}/{event.maxAttendees}
+                    </p>
+                  </div>
+
+                  {/* Rating strip (Past & registered) */}
+                  {canRate && (
+                    <div
+                      style={{
+                        borderTop: "1px dashed #e0e0e0",
+                        paddingTop: 12,
+                        marginTop: 8,
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "space-between",
+                        gap: 12,
+                        flexWrap: "wrap",
+                      }}
+                    >
+                      {stored?.rating && showRating !== event.id ? (
+                        <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                          <div style={{ display: "flex" }}>
+                            {Array.from({ length: 5 }, (_, i) => (
+                              <span
+                                key={i}
+                                style={{
+                                  color: i < stored.rating ? "#f5b301" : "#d3d3d3",
+                                  fontSize: 22,
+                                  marginRight: 2,
+                                }}
+                              >
+                                ★
+                              </span>
+                            ))}
+                          </div>
+                          <small style={{ color: "#6c757d" }}>
+                            Rated on {new Date(stored.ratedDate).toLocaleDateString()}
+                          </small>
+                          <button
+                            className="btn btn-secondary"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setRating(stored.rating);
+                              setShowRating(event.id);
+                            }}
+                            style={{ padding: "4px 10px" }}
+                          >
+                            Edit rating
+                          </button>
+                        </div>
+                      ) : showRating === event.id ? (
+                        <div style={{ width: "100%" }}>
+                          <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+                            <StarRow value={rating} setValue={setRating} />
+                            <span style={{ fontWeight: 600 }}>{rating || 0}/5</span>
+                          </div>
+                          <div
+                            style={{
+                              display: "flex",
+                              gap: 8,
+                              marginTop: 10,
+                              justifyContent: "flex-end",
+                              flexWrap: "wrap",
+                            }}
+                          >
+                            <button
+                              className="btn btn-secondary"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setShowRating(null);
+                                setRating(0);
+                              }}
+                              style={{ padding: "6px 12px", fontSize: "0.8rem" }}
+                            >
+                              Cancel
+                            </button>
+                            <button
+                              className="btn btn-success"
+                              disabled={rating === 0}
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleRateEvent(event.id, rating);
+                              }}
+                              style={{ padding: "6px 12px", fontSize: "0.8rem" }}
+                            >
+                              Submit rating
+                            </button>
+                          </div>
+                        </div>
+                      ) : (
+                        <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                          <span style={{ color: "#6c757d" }}>How was it?</span>
+                          <button
+                            className="btn btn-primary"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setShowRating(event.id);
+                              setRating(0);
+                            }}
+                            style={{ padding: "6px 12px", fontSize: "0.8rem" }}
+                          >
+                            Rate this event
+                          </button>
+                        </div>
+                      )}
+                    </div>
+                  )}
+
+                  <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginTop: 12 }}>
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setSelectedEvent(event);
+                      }}
+                      className="btn btn-primary"
+                      style={{ padding: "6px 12px", fontSize: "0.8rem", flex: 1 }}
+                    >
+                      View Details
+                    </button>
+
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleJoinEvent(event);
+                      }}
+                      disabled={
+                        event.attendees >= event.maxAttendees || registeredIds.has(event.id)
+                      }
+                      className={`btn ${
+                        event.attendees >= event.maxAttendees || registeredIds.has(event.id)
+                          ? "btn-secondary"
+                          : "btn-success"
+                      }`}
+                      style={{ padding: "6px 12px", fontSize: "0.8rem", flex: 1 }}
+                    >
+                      {registeredIds.has(event.id)
+                        ? "Registered"
+                        : event.attendees >= event.maxAttendees
+                        ? "Full"
+                        : "Join Event"}
+                    </button>
+                  </div>
                 </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
         )}
       </div>
