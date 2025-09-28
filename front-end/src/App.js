@@ -10,6 +10,7 @@ import BookVenue from "./components/venue-provider/BookVenue";
 import VenueDetails from "./components/venue-provider/VenueDetails";
 import ServiceDetails from "./components/service-provider/ServiceDetails";
 import ProtectedRoute from "./auth/ProtectedRoute";
+import PasswordUpdated from "./routes/PasswordUpdated"; 
 import Bookings from "./components/venue-provider/Bookings";
 import "./App.css";
 import ServiceBookings from "./components/service-provider/ServiceBookings";
@@ -120,6 +121,7 @@ function App() {
 
         <Route path="/unauthorized" element={<div>Unauthorized</div>} />
         <Route path="*" element={<div>Not Found</div>} />
+        <Route path="/password-updated" element={<PasswordUpdated />} />
       </Routes>
     </Router>
   );

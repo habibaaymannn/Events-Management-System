@@ -98,37 +98,27 @@ export async function deactivateUser(userId) {
 }
 
 export async function resetUserPassword(userId) {
-  const url = buildApiUrl(`/v1/admin/users/${userId}/reset-password`);
-  const r = await fetch(url, { method: "POST", headers: getAuthHeaders(true) });
-  if (!r.ok) throw new Error(`Failed to reset password: ${r.status} ${r.statusText}`);
+  const url = buildApiUrl(`/v1/admin/users/${encodeURIComponent(userId)}/reset-password`);
+  const res = await fetch(url, {
+    method: "POST",
+    headers: getAuthHeaders(true),
+    body: JSON.stringify({}) // backend ignores body; keeping JSON header consistent
+  });
 
-  // Try to parse JSON (new backend behavior)
-  const ct = r.headers.get("content-type") || "";
-  if (ct.includes("application/json")) {
-    return await r.json(); // { emailSent, forgotPasswordEntryUrl, accountUrl }
+  // 200 = OK; 502 with body means KC email failed; still return JSON to show fallback links.
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok) {
+    const msg = data?.message || `Reset password failed with status ${res.status}`;
+    throw new Error(msg);
   }
-
-  // Fallback for 204 / empty body (old behavior): build useful links client-side
-  const base = (keycloakSettings.url || "").replace(/\/$/, "");
-  const realm = keycloakSettings.realm;
-  const clientId = keycloakSettings.clientId;
-  const redirect = encodeURIComponent(`${window.location.origin}/password-updated`);
-
-  return {
-    emailSent: true,
-    forgotPasswordEntryUrl:
-      `${base}/realms/${realm}/protocol/openid-connect/auth` +
-      `?client_id=${encodeURIComponent(clientId)}` +
-      `&redirect_uri=${redirect}` +
-      `&response_type=code&scope=openid`,
-    accountUrl: `${base}/realms/${realm}/account`,
-  };
+  return data;
 }
 export async function activateUser(userId) {
   const url = buildApiUrl(`/v1/admin/users/${userId}/activate`);
   const r = await fetch(url, { method: "POST", headers: getAuthHeaders(true) });
   if (!r.ok) throw new Error(`Failed to activate user: ${r.statusText}`);
 }
+
 
 export async function deleteUser(userId, { notify = false, reason = "" } = {}) {
   const qs = new URLSearchParams();
@@ -330,3 +320,19 @@ export async function getDailyBookings(startISO, endISO) {
    }
    return await response.json();
  }
+
+
+export async function getDailyBookingsBreakdown(dateISO /* YYYY-MM-DD */) {
+  const url = buildApiUrl(`/v1/admin/daily-bookings-breakdown?date=${encodeURIComponent(dateISO)}`);
+  const res = await fetch(url, { headers: getAuthHeaders() });
+  if (!res.ok) throw new Error(`Failed to load bookings breakdown: ${res.status} ${res.statusText}`);
+  return res.json(); // { venue, services, events, total }
+}
+
+export async function getDailyCancellationsBreakdown(dateISO) {
+  const url = buildApiUrl(`/v1/admin/daily-cancellations-breakdown?date=${encodeURIComponent(dateISO)}`);
+  const res = await fetch(url, { headers: getAuthHeaders() });
+  if (!res.ok) throw new Error(`Failed to load cancellations breakdown: ${res.status} ${res.statusText}`);
+  return res.json(); // { venue, services, events, total }
+}
+

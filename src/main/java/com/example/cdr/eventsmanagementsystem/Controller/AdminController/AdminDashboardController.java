@@ -3,25 +3,27 @@ package com.example.cdr.eventsmanagementsystem.Controller.AdminController;
 import com.example.cdr.eventsmanagementsystem.Constants.ControllerConstants.AdminControllerConstants;
 import com.example.cdr.eventsmanagementsystem.Constants.ControllerConstants.RoleConstants;
 import com.example.cdr.eventsmanagementsystem.DTO.Admin.DashboardStatisticsDto;
-import com.example.cdr.eventsmanagementsystem.Service.User.AdminService;
 import com.example.cdr.eventsmanagementsystem.Keycloak.KeycloakAdminService;
+import com.example.cdr.eventsmanagementsystem.Service.User.AdminService;
+import com.example.cdr.eventsmanagementsystem.Service.User.StatisticsManagement;
+import com.example.cdr.eventsmanagementsystem.Mapper.AdminDashboardMapper;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
+
 import java.time.LocalDate;
 import java.util.Map;
-/**
 
- * REST controller for admin dashboard operations.
- * Provides endpoints to retrieve dashboard statistics, event type distribution,
- * daily bookings, and daily cancellations.
- */
-import org.springframework.http.ResponseEntity;
+import org.springframework.format.annotation.DateTimeFormat;
+import java.time.LocalDate;
+import java.util.Map;
+
 
 @RestController
 @RequiredArgsConstructor
@@ -29,30 +31,20 @@ import org.springframework.http.ResponseEntity;
 @PreAuthorize("hasRole('" + RoleConstants.ADMIN_ROLE + "')")
 @Tag(name = "Admin - Dashboard", description = "Admin dashboard & statistics APIs")
 public class AdminDashboardController {
+
     private final AdminService adminService;
     private final KeycloakAdminService keycloakAdminService;
+    private final StatisticsManagement statistics;
+    private final AdminDashboardMapper adminDashboardMapper;
 
     @Operation(summary = "Get dashboard statistics", description = "Retrieves statistics for the dashboard")
     @GetMapping(AdminControllerConstants.ADMIN_DASHBOARD_URL)
     public ResponseEntity<DashboardStatisticsDto> dashboard() {
-    DashboardStatisticsDto dto = new DashboardStatisticsDto();
-
-        // ---- USERS (from Keycloak) ----
-        Map<String, Long> c = keycloakAdminService.countUsersByRole();
-        dto.setNumAdmins(c.getOrDefault("admins", 0L));
-        dto.setNumOrganizers(c.getOrDefault("organizers", 0L));
-        dto.setNumAttendees(c.getOrDefault("attendees", 0L));
-        dto.setNumServiceProviders(c.getOrDefault("service_providers", 0L));
-        dto.setNumVenueProviders(c.getOrDefault("venue_providers", 0L));
-
-        // ---- EVENTS (keep your existing queries if any) ----
-        // dto.setTotalUpcoming(...);
-        // dto.setTotalOngoing(...);
-        // dto.setTotalCompleted(...);
-        // dto.setTotalCancelled(...);
-
-        // dto.setVenueUtilizationRate(...);
-        // dto.setServiceProviderUtilizationRate(...);
+        // Start with DB-derived stats (totals, utilization, revenue)
+        DashboardStatisticsDto dto = statistics.getDashboardStatistics();
+        // Overwrite the user counts with Keycloak (if you prefer KC as source of truth)
+        Map<String, Long> roleCounts = keycloakAdminService.countUsersByRole();
+        adminDashboardMapper.applyUserRoleCounts(dto, roleCounts);
 
         return ResponseEntity.ok(dto);
     }
@@ -76,4 +68,17 @@ public class AdminDashboardController {
                                                       @RequestParam LocalDate end) {
         return adminService.getDailyCancellationCount(start, end);
     }
+
+    @GetMapping("/daily-bookings-breakdown")
+    public ResponseEntity<Map<String, Long>> dailyBookingsBreakdown(
+            @RequestParam("date") @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate date) {
+        return ResponseEntity.ok(statistics.dailyBookingsBreakdown(date));
+    }
+
+    @GetMapping("/daily-cancellations-breakdown")
+    public ResponseEntity<Map<String, Long>> dailyCancellationsBreakdown(
+            @RequestParam("date") @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate date) {
+        return ResponseEntity.ok(statistics.dailyCancellationsBreakdown(date));
+    }
+
 }

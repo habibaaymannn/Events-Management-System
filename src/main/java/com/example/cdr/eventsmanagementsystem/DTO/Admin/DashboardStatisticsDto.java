@@ -1,6 +1,7 @@
 package com.example.cdr.eventsmanagementsystem.DTO.Admin;
 
 import lombok.Data;
+import java.util.List;
 
 @Data
 public class DashboardStatisticsDto {
@@ -17,6 +18,12 @@ public class DashboardStatisticsDto {
 
     private double venueUtilizationRate;
     private double serviceProviderUtilizationRate;
+    private List<UiRevenue> revenueByOrganizer;
+
+    private long venueActiveNow;
+    private long venueTotal;
+    private long serviceProvidersActiveNow;
+    private long serviceProvidersTotal;
 }
 
 
