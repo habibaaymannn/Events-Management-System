@@ -15,7 +15,7 @@ export async function getServiceById(serviceId) {
 }
 
 /**
- * Get all services for the current service provider.
+ * Get all services.
  * BE returns a Spring Page<ServicesDTO>. We return the array (content).
  */
 export async function getMyServices() {

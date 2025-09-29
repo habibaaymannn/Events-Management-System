@@ -3,7 +3,6 @@ import {
   addNewService,
   updateService,
   getMyServices,
-  respondToBookingRequest,
   getServiceById
 } from "../../api/serviceApi";
 import { updateServiceBookingStatus } from "../../api/bookingApi";

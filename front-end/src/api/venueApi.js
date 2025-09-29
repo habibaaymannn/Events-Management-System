@@ -18,11 +18,25 @@ export async function getVenueById(venueId) {
 }
 
 /**
- * Get all venues for the venue provider.
+ * Get all venues.
  * @returns {Promise<Array>} - Array of venue objects.
  */
 export async function getAllVenues() {
   const url = buildApiUrl("/v1/venues/all");
+  const response = await fetch(url, { method: "GET", headers: getAuthHeaders(true) });
+  if (!response.ok) throw new Error(`Failed to fetch venues: ${response.status} ${response.statusText}`);
+
+  const json = await response.json();
+  return Array.isArray(json) ? json : (json.content ?? []);
+}
+
+
+/**
+ * Get all venues for the venue provider.
+ * @returns {Promise<Array>} - Array of venue objects.
+ */
+export async function getAllVenuesByProvider() {
+  const url = buildApiUrl("/v1/venues/all/provider");
   const response = await fetch(url, { method: "GET", headers: getAuthHeaders(true) });
   if (!response.ok) throw new Error(`Failed to fetch venues: ${response.status} ${response.statusText}`);
 
