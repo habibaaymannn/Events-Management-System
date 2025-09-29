@@ -41,14 +41,13 @@ public class VenueController {
 
     @Operation(summary = "Get venues by venue provider", description = "Return all venues related to a venue provider")
     @GetMapping(VenueControllerConstants.GET_VENUES_BY_PROVIDER_URL)
-    @PreAuthorize("hasAnyRole('" + ORGANIZER_ROLE + "','" + VENUE_PROVIDER_ROLE + "')")
     public Page<VenueDTO> getVenuesByVenueProvider(@ParameterObject @PageableDefault() Pageable pageable) {
         return venueService.getVenuesByVenueProvider(pageable);
     }
 
     @Operation(summary = "Get all venues", description = "Retrieves a paginated list of all venues")
     @GetMapping(VenueControllerConstants.GET_ALL_VENUES_URL)
-    @PreAuthorize("hasAnyRole('" + ORGANIZER_ROLE +  "','" + ADMIN_ROLE + "','" + VENUE_PROVIDER_ROLE + "')")
+    @PreAuthorize("hasAnyRole('" + ORGANIZER_ROLE +  "','" + ADMIN_ROLE  + "')")
     public Page<VenueDTO> getAllVenues(@ParameterObject @PageableDefault() Pageable pageable) {
         return venueService.getAllVenues(pageable);
     }
