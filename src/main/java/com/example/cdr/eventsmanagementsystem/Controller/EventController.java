@@ -43,7 +43,7 @@ public class EventController {
     
     @Operation(summary = "Get All events", description = "Retrieves all events with pagination")
     @GetMapping(EventsControllerConstants.GET_ALL_EVENTS_URL)
-    @PreAuthorize("hasRole('" + RoleConstants.ADMIN_ROLE + "')")
+    @PreAuthorize("hasAnyRole('" + RoleConstants.ADMIN_ROLE + "','" + RoleConstants.ATTENDEE_ROLE + "')")
     public Page<EventDetailsDto> getAllEvents(@ParameterObject @PageableDefault() Pageable pageable) {
         return eventService.getAllEvents(pageable);
     }

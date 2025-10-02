@@ -1,11 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate, Routes, Route } from "react-router-dom";
-import Calendar from "react-calendar";
-import VenueDetails from "./VenueDetails";
 import "react-calendar/dist/Calendar.css";
-import { getAllVenues, createVenue, updateVenue, deleteVenue } from "../../api/venueApi";
-import SetAvailability from "./SetAvailability";
-import BookVenue from "./BookVenue";
+import { getAllVenuesByProvider, createVenue, updateVenue, deleteVenue } from "../../api/venueApi";
 
 const allEventTypes = [
   "WEDDING",
@@ -55,7 +51,7 @@ const VenueProviderDashboard = () => {
 
   const loadVenues = async () => {
     try {
-      const data = await getAllVenues();
+      const data = await getAllVenuesByProvider();
       setVenues(data);
     } catch (error) {
       // Handle error
