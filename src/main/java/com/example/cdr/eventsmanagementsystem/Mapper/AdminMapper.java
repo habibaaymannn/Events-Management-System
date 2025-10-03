@@ -35,6 +35,7 @@ public interface AdminMapper {
     @Mapping(source = "organizer", target = "organizerName", qualifiedByName = "organizerName")
     @Mapping(source = "venue.id", target = "venueId")
     @Mapping(source = "venue.name", target = "venueName")
+    @Mapping(source = "venue.location", target = "venueLocation")
     EventDetailsDto toEventDetailsDto(Event event);
 
     default UserDetailsDto toUserDetails(BaseRoleEntity user) {

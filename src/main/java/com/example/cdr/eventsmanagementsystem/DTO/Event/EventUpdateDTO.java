@@ -22,4 +22,6 @@ public class EventUpdateDTO {
     private LocalDateTime endTime;
 
     private BigDecimal retailPrice;
+
+    private Long venueId;
 }

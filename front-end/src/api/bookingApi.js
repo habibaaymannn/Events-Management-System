@@ -83,6 +83,21 @@ export async function bookService(bookingData) {
   return await response.json();
 }
 
+/**
+ * Book an event for an attendee.
+ * @param {object} bookingData - Event booking data with startTime, endTime, currency, amount, isCaptured, eventId.
+ * @returns {Promise<object>} - Created booking object with paymentUrl for Stripe redirect.
+ */
+export async function bookEvent(bookingData) {
+  const url = buildApiUrl("/v1/bookings/events/create");
+  const response = await fetch(url, {
+    method: "POST",
+    headers: getAuthHeaders(true),
+    body: JSON.stringify(bookingData),
+  });
+  if (!response.ok) throw new Error(`Failed to book event: ${response.status} ${response.statusText}`);
+  return await response.json();
+}
 
 /**
  * Get booking details by ID.
@@ -271,6 +286,26 @@ export async function cancelServiceBooking(bookingId, cancellationReason = "") {
     console.warn('Failed to parse JSON response:', error);
     return { success: true, message: 'Booking cancelled successfully' };
   }
+}
+
+/**
+ * Cancel an event's booking.
+ * @returns {Promise<void>} - Resolves if successful.
+ */
+export async function cancelEventBooking(bookingId, cancellationReason = "") {
+  const url = buildApiUrl(`/v1/bookings/events/cancel`);
+  const response = await fetch(url, {
+    method: "POST",
+    headers: getAuthHeaders(true),
+    body: JSON.stringify({
+      bookingId: bookingId,
+      reason: cancellationReason
+    }),
+  });
+  if (!response.ok) {
+    throw new Error(`Failed to cancel booking: ${response.statusText}`);
+  }
+  return { success: true, message: 'Booking cancelled successfully' };
 }
 
 /**
