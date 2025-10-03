@@ -23,7 +23,10 @@ import org.springframework.util.LinkedMultiValueMap;
 import org.springframework.util.MultiValueMap;
 import org.springframework.web.client.RestClientException;
 import org.springframework.web.client.RestTemplate;
-
+import org.keycloak.admin.client.resource.*;
+import org.keycloak.representations.idm.*;
+import org.keycloak.admin.client.CreatedResponseUtil;
+import jakarta.ws.rs.core.Response;
 import java.util.Collections;
 import java.util.Optional;
 import java.util.stream.Collectors;
@@ -44,6 +47,7 @@ import java.util.Set;
 import java.util.List;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import java.util.Arrays;
 
 import com.example.cdr.eventsmanagementsystem.Keycloak.KeycloakAdminProps;
 
@@ -95,38 +99,92 @@ public class KeycloakAdminService {
         return kc.realm(props.getRealm());
     }
 
-    // ---------- CREATE USER ----------
-    public String createUser(String username, String email, String firstName, String lastName, String password, String realmRole) {
-        UsersResource users = realm().users();
+// ---------- CREATE USER (email one-time action: UPDATE_PASSWORD) ----------
+public String createUser(String username,
+                         String email,
+                         String firstName,
+                         String lastName,
+                         String ignoredPasswordParam,
+                         String realmRole) {
 
-        UserRepresentation u = new UserRepresentation();
-        u.setUsername(username);
-        u.setEnabled(true);
-        u.setEmail(email);
-        u.setFirstName(firstName);
-        u.setLastName(lastName);
-        u.setEmailVerified(props.isMarkEmailVerifiedOnCreate());
+    UsersResource users = realm().users();
 
-        Response r = users.create(u);
-        if (r.getStatus() >= 300) {
-            throw new RuntimeException("Keycloak create user failed: HTTP " + r.getStatus());
+    // 1) Build user (no profile required actions)
+    UserRepresentation u = new UserRepresentation();
+    u.setUsername(username);
+    u.setEnabled(true);
+    u.setEmail(email);
+    u.setFirstName(firstName);
+    u.setLastName(lastName);
+    u.setEmailVerified(props.isMarkEmailVerifiedOnCreate());
+    u.setRequiredActions(java.util.Collections.emptyList());
+
+    // 2) Create
+    jakarta.ws.rs.core.Response r = users.create(u);
+    if (r == null) throw new RuntimeException("Keycloak create user failed: null response");
+
+    if (r.getStatus() >= 300) {
+        String msg = null;
+        try {
+            var err = r.readEntity(org.keycloak.representations.idm.ErrorRepresentation.class);
+            if (err != null) msg = err.getErrorMessage();
+        } catch (Exception ignore) {}
+        if (r.getStatus() == 409) {
+            throw new RuntimeException("Keycloak create user failed: HTTP 409 (username or email exists)"
+                    + (msg != null ? " - " + msg : ""));
         }
-        String userId = CreatedResponseUtil.getCreatedId(r);
-
-        CredentialRepresentation cr = new CredentialRepresentation();
-        cr.setType(CredentialRepresentation.PASSWORD);
-        cr.setTemporary(props.isTemporaryPasswordOnCreate());
-        cr.setValue(password);
-
-        UserResource userRes = users.get(userId);
-        userRes.resetPassword(cr);
-
-        if (realmRole != null && !realmRole.isBlank()) {
-            RoleRepresentation rr = realm().roles().get(realmRole).toRepresentation();
-            userRes.roles().realmLevel().add(Collections.singletonList(rr));
-        }
-        return userId;
+        throw new RuntimeException("Keycloak create user failed: HTTP " + r.getStatus()
+                + (msg != null ? " - " + msg : ""));
     }
+
+    String userId = org.keycloak.admin.client.CreatedResponseUtil.getCreatedId(r);
+    UserResource userRes = users.get(userId);
+
+    // 3) Assign realm role
+    if (realmRole != null && !realmRole.isBlank()) {
+        RoleRepresentation rr = realm().roles().get(realmRole).toRepresentation();
+        userRes.roles().realmLevel().add(java.util.Collections.singletonList(rr));
+    }
+
+    // 4) Try to send the UPDATE_PASSWORD email
+    boolean emailSent = false;
+    try {
+        // Simple overload first (works on all KC versions)
+        userRes.executeActionsEmail(java.util.Arrays.asList("UPDATE_PASSWORD"));
+        emailSent = true;
+    } catch (Throwable t1) {
+        try {
+            // If your Admin Client supports clientId+redirect overload, this will work:
+            userRes.executeActionsEmail(
+                "ems-frontend",
+                "http://localhost:3000/*",   // MUST be in Valid Redirect URIs
+                java.util.Arrays.asList("UPDATE_PASSWORD")
+            );
+            emailSent = true;
+        } catch (Throwable t2) {
+            // leave emailSent=false; we’ll fall back to temp password below
+        }
+    }
+
+    // 5) Ensure only UPDATE_PASSWORD is on the user (defensive)
+    UserRepresentation current = userRes.toRepresentation();
+    current.setRequiredActions(java.util.Arrays.asList("UPDATE_PASSWORD"));
+    userRes.update(current);
+
+    // 6) Fallback: if email couldn’t be sent, set a temporary password
+    if (!emailSent) {
+        org.keycloak.representations.idm.CredentialRepresentation cr =
+            new org.keycloak.representations.idm.CredentialRepresentation();
+        cr.setType(org.keycloak.representations.idm.CredentialRepresentation.PASSWORD);
+        cr.setTemporary(true);
+        cr.setValue(java.util.UUID.randomUUID().toString()); // or pass one back to your API response (don’t log)
+        userRes.resetPassword(cr);
+        // You can now email the temp password yourself from your backend if needed.
+    }
+
+    return userId;
+}
+
 
 
 private String extractRole(UserRepresentation u) {
