@@ -22,6 +22,7 @@ public class EventResponseDTO {
     private String organizerName;
     private Long venueId;
     private String venueName;
+    private String venueLocation;
     private List<Long> serviceProviderIds;
     private List<String> serviceProviderNames;
     private BigDecimal retailPrice;

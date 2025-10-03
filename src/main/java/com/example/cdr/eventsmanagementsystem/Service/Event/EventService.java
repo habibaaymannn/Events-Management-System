@@ -2,6 +2,7 @@ package com.example.cdr.eventsmanagementsystem.Service.Event;
 
 import java.util.List;
 
+import com.example.cdr.eventsmanagementsystem.Repository.VenueRepository;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
@@ -36,6 +37,7 @@ public class EventService {
     private final EventMapper eventMapper;
     private final UserSyncService userSyncService;
     private final AdminMapper adminMapper;
+    private final VenueRepository venueRepository;
 
 
     public EventResponseDTO createEvent(EventDTO eventDTO) {
@@ -59,7 +61,7 @@ public class EventService {
         Event existingEvent = eventRepository.findById(eventId)
                 .orElseThrow(() -> new EntityNotFoundException(EVENT_NOT_FOUND));
 
-        eventMapper.updateEventFromDTO(updateDTO, existingEvent);
+        eventMapper.updateEventFromDTO(updateDTO, existingEvent, venueRepository);
 
         Event savedEvent = eventRepository.save(existingEvent);
         return eventMapper.toEventResponseDTO(savedEvent);

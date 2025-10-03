@@ -709,9 +709,14 @@ const EventOrganizerDashboard = () => {
         venueId: venue.id,
         eventId: selectedEventForBooking.id
       };
-
+      const updatedEventData = {
+        ...selectedEventForBooking,
+        venueId: venue.id,
+      };
+      // this will save venue id to event
+      await updateEvent(selectedEventForBooking.id, updatedEventData);
       const result = await bookVenue(bookingData);
-      
+
       // Redirect to Stripe payment URL
       if (result.paymentUrl) {
         // Store the booking info for when user returns from Stripe
@@ -731,7 +736,7 @@ const EventOrganizerDashboard = () => {
           getVenueBookingsByEventId(selectedEventForBooking.id).catch(() => []),
           getServiceBookingsByEventId(selectedEventForBooking.id).catch(() => [])
         ]);
-        
+
         setEventBookings(prev => ({
           ...prev,
           [selectedEventForBooking.id]: {
@@ -819,17 +824,25 @@ const EventOrganizerDashboard = () => {
   const handleSaveEvent = async (e) => {
     e.preventDefault();
     try {
-      await updateEvent(editEventId, formEvent);
-      const updatedEvent = { ...formEvent, id: editEventId };
+      const currentEvent = events.find(event => event.id === editEventId);
+      const updatedData = { ...formEvent,
+        venueId: currentEvent?.venueId,
+      };
+      await updateEvent(editEventId, updatedData);
+      const updatedEvent = {
+        ...formEvent,
+        id: editEventId,
+        venueId: currentEvent?.venueId,
+      };
       setEvents(events.map(ev => ev.id === editEventId ? updatedEvent : ev));
-      
+
       setAlerts([...alerts, {
         id: Date.now(),
         type: 'success',
         message: `Event "${formEvent.name}" updated successfully!`,
         timestamp: new Date().toISOString()
       }]);
-      
+
     setShowEdit(false);
     setEditEventId(null);
     setFormEvent({

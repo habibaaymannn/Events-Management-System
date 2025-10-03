@@ -12,6 +12,7 @@ public class EventDetailsDto {
     private Long id;
     private String name;
     private EventType type;
+    private double retailPrice;
     private EventStatus status;
     private LocalDateTime startTime;
     private LocalDateTime endTime;
@@ -19,6 +20,7 @@ public class EventDetailsDto {
     private String organizerName;
     private Long venueId;
     private String venueName;
+    private String venueLocation;
     private boolean flagged;
     private String flagReason;
 }
