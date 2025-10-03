@@ -149,8 +149,12 @@ public String createUser(String username,
     // 4) Try to send the UPDATE_PASSWORD email
     boolean emailSent = false;
     try {
-        // Simple overload first (works on all KC versions)
-        userRes.executeActionsEmail(java.util.Arrays.asList("UPDATE_PASSWORD"));
+            userRes.executeActionsEmail(
+                "ems-frontend", 
+                "http://localhost:3000/login",          // <- where to go after UPDATE_PASSWORD
+                java.util.List.of("UPDATE_PASSWORD")
+            );
+
         emailSent = true;
     } catch (Throwable t1) {
         try {
