@@ -363,7 +363,8 @@
     "starttls": "true",
     "ssl": "false"
   },
-  "loginTheme": "",
+  "loginTheme": "ems",
+  "emailTheme": "ems",
   "eventsEnabled": true,
-  "eventsListeners": ["role-assignment-listener", "jboss-logging"]
+  "eventsListeners": ["role-assignment-listener", "jboss-logging", "first-login-email"]
 }
