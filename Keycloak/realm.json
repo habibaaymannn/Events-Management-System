@@ -225,9 +225,9 @@
     "userProfileEnabled": "true",
     "declarativeUserProfileEnabled": "true",
 
-    "userProfileMetadata": "{\"attributes\":[{\"name\":\"username\",\"required\":{\"roles\":[\"user\"]}},{\"name\":\"firstName\",\"required\":{\"roles\":[\"user\"]},\"permissions\":{\"view\":[\"admin\",\"user\"],\"edit\":[\"admin\",\"user\"]}},{\"name\":\"lastName\",\"required\":{\"roles\":[\"user\"]},\"permissions\":{\"view\":[\"admin\",\"user\"],\"edit\":[\"admin\",\"user\"]}},{\"name\":\"email\",\"required\":{\"roles\":[\"user\"]}},{\"name\":\"userType\",\"displayName\":\"Role\",\"required\":{\"roles\":[\"user\"]},\"permissions\":{\"view\":[\"admin\",\"user\"],\"edit\":[\"admin\"]},\"annotations\":{\"inputType\":\"select\",\"selectOptions\":\"organizer|Organizer,service_provider|Service Provider,venue_provider|Venue Provider,attendee|Attendee\"},\"validations\":{\"options\":{\"options\":[\"organizer\",\"service_provider\",\"venue_provider\",\"attendee\"]}}}]}",
+    "userProfileMetadata": "{\"attributes\":[{\"name\":\"username\",\"required\":{\"roles\":[\"user\"]}},{\"name\":\"firstName\",\"required\":{\"roles\":[\"user\"]},\"permissions\":{\"view\":[\"admin\",\"user\"],\"edit\":[\"admin\",\"user\"]}},{\"name\":\"lastName\",\"required\":{\"roles\":[\"user\"]},\"permissions\":{\"view\":[\"admin\",\"user\"],\"edit\":[\"admin\",\"user\"]}},{\"name\":\"email\",\"required\":{\"roles\":[\"user\"]}},{\"name\":\"userType\",\"displayName\":\"Role\",\"required\":{\"roles\":[\"user\"]},\"permissions\":{\"view\":[\"admin\",\"user\"],\"edit\":[\"admin\",\"user\"]},\"annotations\":{\"inputType\":\"select\",\"selectOptions\":\"organizer|Organizer,service_provider|Service Provider,venue_provider|Venue Provider,attendee|Attendee\"},\"validations\":{\"options\":{\"options\":[\"organizer\",\"service_provider\",\"venue_provider\",\"attendee\",\"admin\"]}}}]}",
 
-    "userProfileConfiguration": "{\"attributes\":[{\"name\":\"username\",\"required\":{\"roles\":[\"user\"]}},{\"name\":\"firstName\",\"required\":{\"roles\":[\"user\"]},\"permissions\":{\"view\":[\"admin\",\"user\"],\"edit\":[\"admin\",\"user\"]}},{\"name\":\"lastName\",\"required\":{\"roles\":[\"user\"]},\"permissions\":{\"view\":[\"admin\",\"user\"],\"edit\":[\"admin\",\"user\"]}},{\"name\":\"email\",\"required\":{\"roles\":[\"user\"]}},{\"name\":\"userType\",\"displayName\":\"Role\",\"required\":{\"roles\":[\"user\"]},\"permissions\":{\"view\":[\"admin\",\"user\"],\"edit\":[\"admin\"]},\"annotations\":{\"inputType\":\"select\",\"selectOptions\":\"organizer|Organizer,service_provider|Service Provider,venue_provider|Venue Provider,attendee|Attendee\"},\"validations\":{\"options\":{\"options\":[\"organizer\",\"service_provider\",\"venue_provider\",\"attendee\"]}}}]}",
+    "userProfileConfiguration": "{\"attributes\":[{\"name\":\"username\",\"required\":{\"roles\":[\"user\"]}},{\"name\":\"firstName\",\"required\":{\"roles\":[\"user\"]},\"permissions\":{\"view\":[\"admin\",\"user\"],\"edit\":[\"admin\",\"user\"]}},{\"name\":\"lastName\",\"required\":{\"roles\":[\"user\"]},\"permissions\":{\"view\":[\"admin\",\"user\"],\"edit\":[\"admin\",\"user\"]}},{\"name\":\"email\",\"required\":{\"roles\":[\"user\"]}},{\"name\":\"userType\",\"displayName\":\"Role\",\"required\":{\"roles\":[\"user\"]},\"permissions\":{\"view\":[\"admin\",\"user\"],\"edit\":[\"admin\",\"user\"]},\"annotations\":{\"inputType\":\"select\",\"selectOptions\":\"organizer|Organizer,service_provider|Service Provider,venue_provider|Venue Provider,attendee|Attendee\"},\"validations\":{\"options\":{\"options\":[\"organizer\",\"service_provider\",\"venue_provider\",\"attendee\",\"admin\"]}}}]}",
     
     "userProfileConfigurationDeprecated": "",
     "frontendUrl": "http://localhost:8080"
@@ -242,7 +242,7 @@
         "subComponents": {},
         "config": {
           "kc.user.profile.config": [
-            "{\"attributes\":[{\"name\":\"username\",\"required\":{\"roles\":[\"user\"]}},{\"name\":\"firstName\",\"required\":{\"roles\":[\"user\"]},\"permissions\":{\"view\":[\"admin\",\"user\"],\"edit\":[\"admin\",\"user\"]}},{\"name\":\"lastName\",\"required\":{\"roles\":[\"user\"]},\"permissions\":{\"view\":[\"admin\",\"user\"],\"edit\":[\"admin\",\"user\"]}},{\"name\":\"email\",\"required\":{\"roles\":[\"user\"]}},{\"name\":\"userType\",\"displayName\":\"Role\",\"required\":{\"roles\":[\"user\"]},\"permissions\":{\"view\":[\"admin\",\"user\"],\"edit\":[\"admin\"]},\"annotations\":{\"inputType\":\"select\",\"selectOptions\":\"organizer|Organizer,service_provider|Service Provider,venue_provider|Venue Provider,attendee|Attendee\"},\"validations\":{\"options\":{\"options\":[\"organizer\",\"service_provider\",\"venue_provider\",\"attendee\"]}}}]}"
+            "{\"attributes\":[{\"name\":\"username\",\"required\":{\"roles\":[\"user\"]}},{\"name\":\"firstName\",\"required\":{\"roles\":[\"user\"]},\"permissions\":{\"view\":[\"admin\",\"user\"],\"edit\":[\"admin\",\"user\"]}},{\"name\":\"lastName\",\"required\":{\"roles\":[\"user\"]},\"permissions\":{\"view\":[\"admin\",\"user\"],\"edit\":[\"admin\",\"user\"]}},{\"name\":\"email\",\"required\":{\"roles\":[\"user\"]}},{\"name\":\"userType\",\"displayName\":\"Role\",\"required\":{\"roles\":[\"user\"]},\"permissions\":{\"view\":[\"admin\",\"user\"],\"edit\":[\"admin\",\"user\"]},\"annotations\":{\"inputType\":\"select\",\"selectOptions\":\"organizer|Organizer,service_provider|Service Provider,venue_provider|Venue Provider,attendee|Attendee\"},\"validations\":{\"options\":{\"options\":[\"organizer\",\"service_provider\",\"venue_provider\",\"attendee\", \"admin\"]}}}]}"
           ]
         }
       }
@@ -263,7 +263,7 @@
       "name": "Update Password",
       "providerId": "UPDATE_PASSWORD",
       "enabled": true,
-      "defaultAction": true
+      "defaultAction": false
     },
     {
       "alias": "VERIFY_EMAIL",
@@ -277,7 +277,7 @@
       "name": "Update Profile",
       "providerId": "UPDATE_PROFILE",
       "enabled": true,
-      "defaultAction": true
+      "defaultAction": false
     },
     {
       "alias": "terms_and_conditions",
