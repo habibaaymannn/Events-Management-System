@@ -1,21 +1,27 @@
 package com.example.cdr.eventsmanagementsystem.Service.Service;
 
-import com.example.cdr.eventsmanagementsystem.DTO.Service.ServicesDTO;
-import com.example.cdr.eventsmanagementsystem.Mapper.ServiceMapper;
-import com.example.cdr.eventsmanagementsystem.Model.User.ServiceProvider;
-import com.example.cdr.eventsmanagementsystem.Repository.ServiceRepository;
-import com.example.cdr.eventsmanagementsystem.Model.Service.Services;
-import com.example.cdr.eventsmanagementsystem.Service.Auth.UserSyncService;
-import com.example.cdr.eventsmanagementsystem.Util.AuthUtil;
-import jakarta.persistence.EntityNotFoundException;
-import lombok.RequiredArgsConstructor;
+import java.io.IOException;
+import java.util.List;
+import java.util.Objects;
+
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.multipart.MultipartFile;
 
-import java.util.Objects;
+import com.example.cdr.eventsmanagementsystem.DTO.Service.ServicesDTO;
+import com.example.cdr.eventsmanagementsystem.Mapper.ServiceMapper;
+import com.example.cdr.eventsmanagementsystem.Model.Service.Services;
+import com.example.cdr.eventsmanagementsystem.Model.User.ServiceProvider;
+import com.example.cdr.eventsmanagementsystem.Repository.ServiceRepository;
+import com.example.cdr.eventsmanagementsystem.Service.Auth.UserSyncService;
+import com.example.cdr.eventsmanagementsystem.Util.AuthUtil;
+import com.example.cdr.eventsmanagementsystem.Util.ImageUtil;
+
+import jakarta.persistence.EntityNotFoundException;
+import lombok.RequiredArgsConstructor;
 
 /**
  * Service class for managing services.
@@ -28,6 +34,7 @@ public class ServicesService {
     private final ServiceRepository serviceRepository;
     private final UserSyncService userSyncService;
     private final ServiceMapper serviceMapper;
+    private final ImageUtil imageUtil;
 
     public ServicesDTO getServiceById(Long serviceId) {
         Services service = getService(serviceId);
@@ -45,18 +52,20 @@ public class ServicesService {
         return services.map(serviceMapper::toServiceDTO);
     }
 
-    public ServicesDTO addService(ServicesDTO dto) {
+    public ServicesDTO addService(ServicesDTO dto, List<MultipartFile> files) throws IOException{
         Services newService = serviceMapper.toService(dto);
+        newService.setImages(imageUtil.extractImageData(files));
         ServiceProvider serviceProvider = ensureCurrentUserAsServiceProvider();
         newService.setServiceProvider(serviceProvider);
         Services savedService = serviceRepository.save(newService);
         return serviceMapper.toServiceDTO(savedService);
     }
 
-    public ServicesDTO updateService(Long serviceId, ServicesDTO dto) {
+    public ServicesDTO updateService(Long serviceId, ServicesDTO dto, List<MultipartFile> newImages) throws IOException {
         Services service = getService(serviceId);
         verifyAccess(service);
         serviceMapper.updateService(dto, service);
+        service.setImages(imageUtil.extractImageData(newImages));
         Services updatedVenue = serviceRepository.save(service);
         return serviceMapper.toServiceDTO(updatedVenue);
     }
