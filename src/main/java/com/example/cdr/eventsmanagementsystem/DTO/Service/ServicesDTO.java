@@ -1,14 +1,15 @@
 package com.example.cdr.eventsmanagementsystem.DTO.Service;
 
+import java.util.List;
+
 import com.example.cdr.eventsmanagementsystem.Model.Service.Availability;
 import com.example.cdr.eventsmanagementsystem.Model.Service.ServiceType;
 import com.fasterxml.jackson.annotation.JsonAlias;
+
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import lombok.Getter;
 import lombok.Setter;
-
-import java.util.List;
 
 @Getter
 @Setter
@@ -35,4 +36,6 @@ public class ServicesDTO {
     private Availability availability;
 
     private String serviceProviderId;
+
+    private List<String> images;
 }
