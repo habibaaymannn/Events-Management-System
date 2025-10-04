@@ -16,7 +16,7 @@ public interface ServiceMapper {
     Services toService(ServicesDTO dto);
 
     @Mapping(source = "serviceProvider.keycloakId", target = "serviceProviderId")
-    @Mapping(target = "images", expression = "java(bytesToBase64(venue.getImages()))")
+    @Mapping(target = "images", expression = "java(bytesToBase64(service.getImages()))")
     ServicesDTO toServiceDTO(Services service);
 
     @Mapping(target = "id", ignore = true)
