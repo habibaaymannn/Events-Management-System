@@ -59,14 +59,14 @@ public class ServiceController {
 
     @Operation(summary = "Create a new service", description = "Creates a new service for the service provider")
     @PostMapping(path = ServiceControllerConstants.CREATE_SERVICE_URL, consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
-    public ResponseEntity<ServicesDTO> createService(@Valid @RequestBody ServicesDTO dto, @RequestPart(value = "images", required = false) List<MultipartFile> imgFiles) throws IOException{
+    public ResponseEntity<ServicesDTO> createService(@Valid @RequestPart("service") ServicesDTO dto, @RequestPart(value = "images", required = false) List<MultipartFile> imgFiles) throws IOException{
         ServicesDTO servicesDTO = servicesService.addService(dto, imgFiles);
         return ResponseEntity.ok(servicesDTO);
     }
 
     @Operation(summary = "Update an existing service", description = "Updates the details of a service by ID")
     @PutMapping(ServiceControllerConstants.UPDATE_SERVICE_URL)
-    public ResponseEntity<ServicesDTO> updateService(@PathVariable Long serviceId, @Valid @RequestBody ServicesDTO dto, @RequestPart(value = "newImages", required = false) List<MultipartFile> newImages) throws IOException {
+    public ResponseEntity<ServicesDTO> updateService(@PathVariable Long serviceId, @Valid @RequestPart("service") ServicesDTO dto, @RequestPart(value = "newImages", required = false) List<MultipartFile> newImages) throws IOException {
         ServicesDTO updatedService = servicesService.updateService(serviceId, dto, newImages);
         return ResponseEntity.ok(updatedService);
     }
