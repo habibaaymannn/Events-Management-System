@@ -14,44 +14,18 @@ const SERVICE_CATEGORIES = [
   {
     value: "CATERING",
     label: "Catering Services",
-    details: [
-      "Full meal service (buffet, seated dinner)",
-      "Light snacks and beverages",
-      "Coffee and dessert stations",
-      "Food trucks or live cooking stations",
-    ],
   },
   {
     value: "DECOR_AND_STYLING",
     label: "Decor and Styling",
-    details: [
-      "Thematic decoration (e.g., weddings, corporate branding)",
-      "Floral arrangements",
-      "Stage design and backdrops",
-      "Lighting decoration (mood/ambient lighting, balloons)",
-    ],
   },
   {
     value: "AUDIO_VISUAL",
     label: "Audio Visual Services",
-    details: [
-      "Sound systems (speakers, mics, mixers)",
-      "Projectors and LED screens",
-      "Lighting rigs and effects",
-      "Live streaming equipment",
-      "Video recording / photography",
-    ],
   },
   {
     value: "FURNITURE_RENTAL",
     label: "Furniture & Equipment Rental",
-    details: [
-      "Chairs and tables",
-      "Tents and canopies (for outdoor events)",
-      "Stages or podiums",
-      "Dance floors",
-      "Booths or exhibition stands",
-    ],
   },
 ];
 
@@ -353,13 +327,6 @@ const ServiceProviderDashboard = () => {
                     ))}
                   </select>
 
-                  {formService.type && (
-                      <ul style={{marginTop: 10, color: "#495057", fontSize: "0.95rem", paddingLeft: 20}}>
-                        {SERVICE_CATEGORIES.find(c => c.value === formService.type)?.details.map((detail, idx) => (
-                            <li key={idx}>{detail}</li>
-                        ))}
-                      </ul>
-                  )}
                 </div>
 
                 <div className="form-group">
