@@ -21,7 +21,7 @@ const ServiceDetails = () => {
 
     useEffect(() => {
         const kc = window.keycloak;
-        if (kc?.tokenParsed?.sub) {
+        if (kc && kc.tokenParsed?.sub) {
             setServiceProviderId(kc.tokenParsed.sub);
         }
     }, []);

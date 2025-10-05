@@ -83,10 +83,7 @@ export async function addNewService(serviceData, imageFiles) {
     imageFiles.forEach(file => {
       formData.append('images', file);
     });
-  } else {
-    // Append empty array if no images
-    formData.append('images', new Blob([], { type: 'application/json' }));
-  }
+  } 
 
   const headers = getAuthHeaders();
   delete headers['Content-Type'];
