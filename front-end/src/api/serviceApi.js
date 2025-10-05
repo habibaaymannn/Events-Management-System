@@ -69,14 +69,39 @@ export async function getServiceProviderBookings(serviceProviderId, page = 0, si
  * Add a new service for the service provider.
  * POST /v1/services/create
  */
-export async function addNewService(serviceData) {
+export async function addNewService(serviceData, imageFiles) {
   const url = buildApiUrl('/v1/services/create');
+  const formData = new FormData();
+
+  formData.append('service', new Blob([JSON.stringify(serviceData)], {
+    type: 'application/json'
+  }));
+
+  // FIX: Handle case where imageFiles is undefined or empty
+  if (imageFiles && imageFiles.length > 0) {
+    // Append each image file with key "images"
+    imageFiles.forEach(file => {
+      formData.append('images', file);
+    });
+  } else {
+    // Append empty array if no images
+    formData.append('images', new Blob([], { type: 'application/json' }));
+  }
+
+  const headers = getAuthHeaders();
+  delete headers['Content-Type'];
+
   const response = await fetch(url, {
-    method: 'POST',
-    headers: getAuthHeaders(true),
-    body: JSON.stringify(serviceData),
+    method: "POST",
+    headers: headers,
+    body: formData,
   });
-  if (!response.ok) throw new Error(`Failed to add service: ${response.status} ${response.statusText}`);
+
+  if (!response.ok) {
+    const txt = await response.text().catch(() => "");
+    throw new Error(`Failed to create service: ${response.status} ${response.statusText} ${txt}`);
+  }
+
   return await response.json();
 }
 
@@ -84,15 +109,33 @@ export async function addNewService(serviceData) {
  * Update a service by ID.
  * PUT /v1/services/{serviceId}
  */
-export async function updateService(serviceId, serviceData) {
+export async function updateService(serviceId, serviceData, newImageFiles) {
   const url = buildApiUrl(`/v1/services/${encodeURIComponent(serviceId)}`);
+  const formData = new FormData();
+
+  formData.append('service', new Blob([JSON.stringify(serviceData)], {
+    type: 'application/json'
+  }));
+
+  // Handle new images
+  if (newImageFiles && newImageFiles.length > 0) {
+    newImageFiles.forEach(file => {
+      formData.append('newImages', file);
+    });
+  }
+
+  const headers = getAuthHeaders();
+  delete headers['Content-Type']; // Let browser set multipart content type
+
   const response = await fetch(url, {
-    method: 'PUT',
-    headers: getAuthHeaders(true),
-    body: JSON.stringify(serviceData),
+    method: "PUT",
+    headers: headers,
+    body: formData,
   });
+
   if (!response.ok) {
-    throw new Error(`Failed to update service: ${response.status} ${response.statusText}`);
+    const txt = await response.text().catch(() => "");
+    throw new Error(`Failed to update service: ${response.status} ${response.statusText} ${txt}`);
   }
   return await response.json();
 }
@@ -115,8 +158,8 @@ export async function deleteService(serviceId) {
 
 function unwrapApiData(json) {
   if (Array.isArray(json)) return json;
-  if (json && Array.isArray(json.data)) return json.data;
-  if (json && Array.isArray(json.content)) return json.content;
-  if (json && json.data && Array.isArray(json.data.content)) return json.data.content;
+  if (Array.isArray(json?.data)) return json.data;
+  if (Array.isArray(json?.content)) return json.content;
+  if (Array.isArray(json?.data?.content)) return json.data.content;
   return [];
 }

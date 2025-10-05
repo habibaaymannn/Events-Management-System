@@ -1,6 +1,5 @@
 import { useEffect, useState } from "react";
-import { useNavigate } from "react-router-dom";
-import { addNewService, getMyServices, updateServiceAvailability } from "../../api/serviceApi";
+import { addNewService, getMyServices, updateService, updateServiceAvailability } from "../../api/serviceApi";
 
 const serviceCategories = [
   { value: "CATERING", label: "Catering" },
@@ -11,7 +10,6 @@ const serviceCategories = [
 ];
 
 const MyServices = () => {
-    const navigate = useNavigate();
     const [services, setServices] = useState([]);
     const [showAddForm, setShowAddForm] = useState(false);
     const [editingService, setEditingService] = useState(null);
@@ -23,6 +21,9 @@ const MyServices = () => {
         availability: "AVAILABLE", // you already send this to BE
         description: ""            // optional; BE doesn’t require it
     });
+    const [imageFiles, setImageFiles] = useState([]);
+    const [imagePreviews, setImagePreviews] = useState([]);
+    const [existingImages, setExistingImages] = useState([]);
 
     useEffect(() => {
         loadServices();
@@ -45,6 +46,25 @@ const MyServices = () => {
         }));
     };
 
+    const handleImageChange = (e) => {
+        const files = Array.from(e.target.files);
+        setImageFiles(files);
+
+        const previews = files.map(file => URL.createObjectURL(file));
+        setImagePreviews(previews);
+    };
+
+    const removeImagePreview = (index) => {
+        const newFiles = imageFiles.filter((_, i) => i !== index);
+        const newPreviews = imagePreviews.filter((_, i) => i !== index);
+        setImageFiles(newFiles);
+        setImagePreviews(newPreviews);
+    };
+
+    const removeExistingImage = (index) => {
+        setExistingImages(existingImages.filter((_, i) => i !== index));
+    };
+
     const handleSubmit = async (e) => {
         e.preventDefault();
         try {
@@ -63,10 +83,9 @@ const MyServices = () => {
             };
 
             if (editingService) {
-                // Update service logic would go here if endpoint exists
-                console.log("Update service not implemented yet");
+                await updateService(editingService.id, serviceData, imageFiles);
             } else {
-                await addNewService(serviceData);
+                await addNewService(serviceData, imageFiles);
             }
 
             resetForm();
@@ -74,6 +93,7 @@ const MyServices = () => {
             loadServices();
         } catch (error) {
             console.error("Error saving service:", error);
+            alert(`Failed to save service: ${error.message}`);
         }
     };
 
@@ -87,6 +107,9 @@ const MyServices = () => {
             description: ""            // optional; BE doesn’t require it
         });
         setEditingService(null);
+        setImageFiles([]);
+        setImagePreviews([]);
+        setExistingImages([]);
     };
 
     const handleEdit = (service) => {
@@ -99,6 +122,9 @@ const MyServices = () => {
             availability: service.availability,
             description: service.description ?? ""
         });
+        setExistingImages(service.images || []);
+        setImageFiles([]);
+        setImagePreviews([]);
         setShowAddForm(true);
     };
 
@@ -196,6 +222,114 @@ const MyServices = () => {
                                     />
                                 </div>
                             </div>
+
+                            {/* Image Upload Section */}
+                            <div className="form-group" style={{ gridColumn: '1 / -1' }}>
+                                <label className="form-label">Service Images</label>
+                                <input
+                                    type="file"
+                                    accept="image/*"
+                                    multiple
+                                    onChange={handleImageChange}
+                                    className="form-control"
+                                />
+                                <small style={{ color: '#6c757d', fontSize: '0.85rem', marginTop: '0.5rem', display: 'block' }}>
+                                    You can upload multiple images (jpg, png, etc.)
+                                </small>
+                            </div>
+
+                            {/* Existing Images (for edit mode) */}
+                            {editingService && existingImages.length > 0 && (
+                                <div className="form-group" style={{ gridColumn: '1 / -1' }}>
+                                    <label className="form-label">Current Images</label>
+                                    <div style={{ display: 'flex', gap: '1rem', flexWrap: 'wrap', marginTop: '0.5rem' }}>
+                                        {existingImages.map((imageUrl, index) => (
+                                            <div key={index} style={{ position: 'relative', width: '120px', height: '120px' }}>
+                                                <img
+                                                    src={imageUrl}
+                                                    alt={`Service ${index + 1}`}
+                                                    style={{
+                                                        width: '100%',
+                                                        height: '100%',
+                                                        objectFit: 'cover',
+                                                        borderRadius: '8px',
+                                                        border: '2px solid #e9ecef'
+                                                    }}
+                                                />
+                                                <button
+                                                    type="button"
+                                                    onClick={() => removeExistingImage(index)}
+                                                    style={{
+                                                        position: 'absolute',
+                                                        top: '-8px',
+                                                        right: '-8px',
+                                                        background: '#dc3545',
+                                                        color: 'white',
+                                                        border: 'none',
+                                                        borderRadius: '50%',
+                                                        width: '24px',
+                                                        height: '24px',
+                                                        cursor: 'pointer',
+                                                        fontSize: '16px',
+                                                        display: 'flex',
+                                                        alignItems: 'center',
+                                                        justifyContent: 'center'
+                                                    }}
+                                                >
+                                                    ×
+                                                </button>
+                                            </div>
+                                        ))}
+                                    </div>
+                                </div>
+                            )}
+
+                            {/* New Image Previews */}
+                            {imagePreviews.length > 0 && (
+                                <div className="form-group" style={{ gridColumn: '1 / -1' }}>
+                                    <label className="form-label">New Images Preview</label>
+                                    <div style={{ display: 'flex', gap: '1rem', flexWrap: 'wrap', marginTop: '0.5rem' }}>
+                                        {imagePreviews.map((preview, index) => (
+                                            <div key={index} style={{ position: 'relative', width: '120px', height: '120px' }}>
+                                                <img
+                                                    src={preview}
+                                                    alt={`Preview ${index + 1}`}
+                                                    style={{
+                                                        width: '100%',
+                                                        height: '100%',
+                                                        objectFit: 'cover',
+                                                        borderRadius: '8px',
+                                                        border: '2px solid #667eea'
+                                                    }}
+                                                />
+                                                <button
+                                                    type="button"
+                                                    onClick={() => removeImagePreview(index)}
+                                                    style={{
+                                                        position: 'absolute',
+                                                        top: '-8px',
+                                                        right: '-8px',
+                                                        background: '#dc3545',
+                                                        color: 'white',
+                                                        border: 'none',
+                                                        borderRadius: '50%',
+                                                        width: '24px',
+                                                        height: '24px',
+                                                        cursor: 'pointer',
+                                                        fontSize: '16px',
+                                                        display: 'flex',
+                                                        alignItems: 'center',
+                                                        justifyContent: 'center'
+                                                    }}
+                                                >
+                                                    ×
+                                                </button>
+                                            </div>
+                                        ))}
+                                    </div>
+                                </div>
+                            )}
+
                             <div className="form-actions">
                                 <button type="submit" className="service-btn success">
                                     {editingService ? "Update Service" : "Add Service"}

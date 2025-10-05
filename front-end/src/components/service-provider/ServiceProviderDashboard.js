@@ -80,6 +80,9 @@ const ServiceProviderDashboard = () => {
     availability: "AVAILABLE",
     description: ""
   });
+  const [imageFiles, setImageFiles] = useState([]);
+  const [imagePreviews, setImagePreviews] = useState([]);
+  const [existingImages, setExistingImages] = useState([]);
 
   const [updatingRequestId, setUpdatingRequestId] = useState(null); // 🔹
 
@@ -122,6 +125,25 @@ const ServiceProviderDashboard = () => {
     }
   };
 
+  const handleImageChange = (e) => {
+    const files = Array.from(e.target.files);
+    setImageFiles(files);
+
+    const previews = files.map(file => URL.createObjectURL(file));
+    setImagePreviews(previews);
+  };
+
+  const removeImagePreview = (index) => {
+    const newFiles = imageFiles.filter((_, i) => i !== index);
+    const newPreviews = imagePreviews.filter((_, i) => i !== index);
+    setImageFiles(newFiles);
+    setImagePreviews(newPreviews);
+  };
+
+  const removeExistingImage = (index) => {
+    setExistingImages(existingImages.filter((_, i) => i !== index));
+  };
+
   const handleServiceFormSubmit = async (e) => {
     e.preventDefault();
     try {
@@ -140,9 +162,9 @@ const ServiceProviderDashboard = () => {
       };
 
       if (editServiceId) {
-        await updateService(editServiceId, serviceData);
+        await updateService(editServiceId, serviceData, imageFiles);
       } else {
-        await addNewService(serviceData);
+        await addNewService(serviceData, imageFiles);
       }
 
       setFormService({
@@ -153,11 +175,15 @@ const ServiceProviderDashboard = () => {
         availability: "AVAILABLE",
         description: ""
       });
+      setImageFiles([]);
+      setImagePreviews([]);
+      setExistingImages([]);
       setShowAdd(false);
       setEditServiceId(null);
       loadServices();
     } catch (error) {
       console.error("Error saving service:", error);
+      alert(`Failed to save service: ${error.message}`);
     }
   };
 
@@ -180,6 +206,9 @@ const ServiceProviderDashboard = () => {
       availability: service.availability ?? "AVAILABLE",
       description: service.description ?? ""
     });
+    setExistingImages(service.images || []);
+    setImageFiles([]);
+    setImagePreviews([]);
     setShowAdd(true);
   };
 
@@ -283,7 +312,11 @@ const ServiceProviderDashboard = () => {
                 price: "",
                 servicesAreasText: "",
                 availability: "AVAILABLE",
+                description: ""
               });
+              setImageFiles([]);
+              setImagePreviews([]);
+              setExistingImages([]);
             }}
             className="btn btn-primary"
             style={{ marginBottom: 24 }}
@@ -372,6 +405,115 @@ const ServiceProviderDashboard = () => {
                   className="form-control"
               />
                 </div>
+
+                {/* Image Upload Section */}
+                <div className="form-group">
+                  <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: 600 }}>Service Images</label>
+                  <input
+                      type="file"
+                      accept="image/*"
+                      multiple
+                      onChange={handleImageChange}
+                      className="form-control"
+                  />
+                  <small style={{ color: '#6c757d', fontSize: '0.85rem', marginTop: '0.5rem', display: 'block' }}>
+                    You can upload multiple images (jpg, png, etc.)
+                  </small>
+                </div>
+
+                {/* Existing Images (for edit mode) */}
+                {editServiceId && existingImages.length > 0 && (
+                    <div className="form-group">
+                      <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: 600 }}>Current Images</label>
+                      <div style={{ display: 'flex', gap: '1rem', flexWrap: 'wrap', marginTop: '0.5rem' }}>
+                        {existingImages.map((imageUrl, index) => (
+                            <div key={index} style={{ position: 'relative', width: '120px', height: '120px' }}>
+                              <img
+                                  src={imageUrl}
+                                  alt={`Service ${index + 1}`}
+                                  style={{
+                                    width: '100%',
+                                    height: '100%',
+                                    objectFit: 'cover',
+                                    borderRadius: '8px',
+                                    border: '2px solid #e9ecef'
+                                  }}
+                              />
+                              <button
+                                  type="button"
+                                  onClick={() => removeExistingImage(index)}
+                                  style={{
+                                    position: 'absolute',
+                                    top: '-8px',
+                                    right: '-8px',
+                                    background: '#dc3545',
+                                    color: 'white',
+                                    border: 'none',
+                                    borderRadius: '50%',
+                                    width: '24px',
+                                    height: '24px',
+                                    cursor: 'pointer',
+                                    fontSize: '16px',
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    justifyContent: 'center',
+                                    padding: 0
+                                  }}
+                              >
+                                ×
+                              </button>
+                            </div>
+                        ))}
+                      </div>
+                    </div>
+                )}
+
+                {/* New Image Previews */}
+                {imagePreviews.length > 0 && (
+                    <div className="form-group">
+                      <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: 600 }}>New Images Preview</label>
+                      <div style={{ display: 'flex', gap: '1rem', flexWrap: 'wrap', marginTop: '0.5rem' }}>
+                        {imagePreviews.map((preview, index) => (
+                            <div key={index} style={{ position: 'relative', width: '120px', height: '120px' }}>
+                              <img
+                                  src={preview}
+                                  alt={`Preview ${index + 1}`}
+                                  style={{
+                                    width: '100%',
+                                    height: '100%',
+                                    objectFit: 'cover',
+                                    borderRadius: '8px',
+                                    border: '2px solid #667eea'
+                                  }}
+                              />
+                              <button
+                                  type="button"
+                                  onClick={() => removeImagePreview(index)}
+                                  style={{
+                                    position: 'absolute',
+                                    top: '-8px',
+                                    right: '-8px',
+                                    background: '#dc3545',
+                                    color: 'white',
+                                    border: 'none',
+                                    borderRadius: '50%',
+                                    width: '24px',
+                                    height: '24px',
+                                    cursor: 'pointer',
+                                    fontSize: '16px',
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    justifyContent: 'center',
+                                    padding: 0
+                                  }}
+                              >
+                                ×
+                              </button>
+                            </div>
+                        ))}
+                      </div>
+                    </div>
+                )}
 
                 <button type="submit" className="btn btn-success">
                   {editServiceId ? "Update Service" : "Add Service"}
