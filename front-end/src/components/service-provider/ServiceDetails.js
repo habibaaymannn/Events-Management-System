@@ -17,6 +17,7 @@ const ServiceDetails = () => {
     const [serviceBookings, setServiceBookings] = useState([]);
     const [serviceProviderId, setServiceProviderId] = useState(null);
     const [loading, setLoading] = useState(true);
+    const [currentImageIndex, setCurrentImageIndex] = useState(0);
 
     useEffect(() => {
         const kc = window.keycloak;
@@ -54,8 +55,21 @@ const ServiceDetails = () => {
         loadServiceBookings()
     }, [id, serviceProviderId]);
 
+    const getImageUrl = (img) => {
+        if (typeof img === "string") {
+            if (img.startsWith("data:") || img.startsWith("http")) {
+                return img;
+            } else {
+                return `data:image/jpeg;base64,${img}`;
+            }
+        }
+        return null;
+    };
+
     if (loading) return <p>Loading service details...</p>;
     if (!service) return <p>Service not found.</p>;
+
+    const validImages = service.images?.filter(img => getImageUrl(img)) || [];
 
     return (
         <div className="service-details-container">
@@ -68,34 +82,95 @@ const ServiceDetails = () => {
                     <h1 className="service-title">{service.name}</h1>
                 </div>
 
+                {/* Images Section */}
+                {validImages.length > 0 && (
+                    <div className="detail-card">
+                        <h3>Images</h3>
+                        <div style={{ marginBottom: '1rem' }}>
+                            <div style={{ 
+                                width: '100%', 
+                                height: '400px', 
+                                borderRadius: '12px', 
+                                overflow: 'hidden',
+                                marginBottom: '1rem',
+                                boxShadow: '0 4px 12px rgba(0, 0, 0, 0.15)',
+                                background: '#fff',
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'center'
+                            }}>
+                                <img
+                                    src={getImageUrl(validImages[currentImageIndex])}
+                                    alt={service.name}
+                                    style={{
+                                        width: '100%',
+                                        height: '100%',
+                                        objectFit: 'contain',
+                                        background: '#fff'
+                                    }}
+                                />
+                            </div>
+                            {validImages.length > 1 && (
+                                <div style={{ 
+                                    display: 'flex', 
+                                    gap: '10px', 
+                                    overflowX: 'auto',
+                                    padding: '10px 0'
+                                }}>
+                                    {validImages.map((img, index) => (
+                                        <img
+                                            key={`${img}-${index}`}
+                                            src={getImageUrl(img)}
+                                            alt={`${service.name} ${index + 1}`}
+                                            style={{
+                                                width: '100px',
+                                                height: '75px',
+                                                objectFit: 'cover',
+                                                borderRadius: '8px',
+                                                cursor: 'pointer',
+                                                border: index === currentImageIndex ? '2px solid #3b82f6' : '2px solid transparent',
+                                                transition: 'all 0.3s ease',
+                                                flexShrink: 0,
+                                                background: '#f8f9fa'
+                                            }}
+                                            onClick={() => setCurrentImageIndex(index)}
+                                            onMouseEnter={(e) => {
+                                                if (index !== currentImageIndex) {
+                                                    e.target.style.borderColor = '#3b82f6';
+                                                    e.target.style.transform = 'scale(1.05)';
+                                                }
+                                            }}
+                                            onMouseLeave={(e) => {
+                                                if (index !== currentImageIndex) {
+                                                    e.target.style.borderColor = 'transparent';
+                                                    e.target.style.transform = 'scale(1)';
+                                                }
+                                            }}
+                                        />
+                                    ))}
+                                </div>
+                            )}
+                        </div>
+                    </div>
+                )}
+
                 {/* Service Information */}
                 <div className="detail-card">
                     <h3>Service Information</h3>
-                    <div className="detail-grid">
-                        <div className="detail-item">
-                            <span className="detail-label">Category:</span>
-                            <span className="detail-value">
-                {SERVICE_CATEGORIES.find(c => c.value === service.type)?.label || service.type}
-              </span>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                        <div>
+                            <strong>Category:</strong> {SERVICE_CATEGORIES.find(c => c.value === service.type)?.label || service.type}
                         </div>
-                        <div className="detail-item">
-                            <span className="detail-label">Price:</span>
-                            <span className="detail-value">${service.price}</span>
+                        <div>
+                            <strong>Price:</strong> ${service.price}
                         </div>
-                        <div className="detail-item">
-                            <span className="detail-label">Locations:</span>
-                            <span className="detail-value">
-                {Array.isArray(service.servicesAreas) ? service.servicesAreas.join(", ") : service.location}
-              </span>
+                        <div>
+                            <strong>Locations:</strong> {Array.isArray(service.servicesAreas) ? service.servicesAreas.join(", ") : service.location}
                         </div>
-                        {/*<div className="detail-item">*/}
-                        {/*    <span className="detail-label">Availability:</span>*/}
-                        {/*    <span className="detail-value">{service.availability}</span>*/}
-                        {/*</div>*/}
+                        <div>
+                            <strong>Description:</strong> {service.description ?? "No description"}
+                        </div>
                     </div>
-                    <p style={{ marginTop: "12px" }}>
-                        <strong>Description:</strong> {service.description ?? "No description"}
-                    </p>
                 </div>
 
                 {/* Availability Section */}
