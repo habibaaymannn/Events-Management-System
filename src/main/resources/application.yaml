@@ -45,7 +45,10 @@ app:
     from: ${MAIL_FROM:${spring.mail.username}}   # default to the same Gmail sender
   supportEmail: ${SUPPORT_EMAIL:${spring.mail.username}}  # fallback to sender
   payment:
-    return-url: http://localhost:8180/v1/payments/confirm
+    # Where the browser should land after checkout (your SPA)
+    return-url-frontend: http://localhost:3000/organizer
+    # Your backend confirmation endpoint (if you ever need a server-side callback link)
+    return-url-backend:  http://localhost:8180/v1/payments/confirm
     webhook-secret: ${STRIPE_WEBHOOK_SECRET:}
   booking:
     free-cancel-days-before-start: 1

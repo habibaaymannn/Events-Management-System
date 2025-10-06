@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { Routes, Route, useLocation } from "react-router-dom";
+import { Routes, Route, useLocation, useNavigate } from "react-router-dom";
 import "./EventOrganizerDashboard.css";
 import { initializeAllDummyData } from "../../utils/initializeDummyData";
 import { createEvent, updateEvent, cancelEvent, getAllEvents, getEventsByOrganizer } from "../../api/eventApi";
@@ -58,7 +58,7 @@ const initialEvents = [];
 
 const EventOrganizerDashboard = () => {
   const location = useLocation();
-  
+  const navigate = useNavigate();
   // Initialize all dummy data when component mounts
   useEffect(() => {
     const { events } = initializeAllDummyData();
@@ -294,7 +294,8 @@ const EventOrganizerDashboard = () => {
           }]);
         }
         
-        window.history.replaceState({}, document.title, window.location.pathname);
+        navigate("/organizer", { replace: true });
+        window.scrollTo(0, 0);
       }
     };
     
@@ -1029,7 +1030,13 @@ const EventOrganizerDashboard = () => {
                       }}
                       role="button"
                       tabIndex={0}
-                      onKeyDown={(e) => e.key === 'Enter' && (setSelectedVenue(venue), setVenueDetailsId(venue.id), setVenueDetailsOpen(true))}
+                      onKeyDown={(e) => {
+                           if (e.key === 'Enter') {
+                             setSelectedVenue(venue);
+                             setVenueDetailsId(venue.id);
+                             setVenueDetailsOpen(true);
+                           }
+                         }}
                     >
                         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                           <div>
@@ -1157,7 +1164,13 @@ const EventOrganizerDashboard = () => {
                       }}
                       role="button"
                       tabIndex={0}
-                      onKeyDown={(e) => e.key === 'Enter' && (setSelectedService(service), setServiceDetailsId(service.id), setServiceDetailsOpen(true))}
+                      onKeyDown={(e) => {
+                           if (e.key === 'Enter') {
+                             setSelectedService(service);
+                             setServiceDetailsId(service.id);
+                             setServiceDetailsOpen(true);
+                           }
+                         }}
                   
                     >
                         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>

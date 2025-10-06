@@ -36,8 +36,12 @@ public class StripeService {
     @Value("${spring.stripe.api-key}")
     private String stripeApiKey;
     
-    @Value("${app.payment.return-url}")
+    @Value("${app.payment.return-url-frontend}")
+    private String frontendReturnUrl;
+    
+    @Value("${app.payment.return-url-backend}")
     private String paymentReturnUrl;
+    
     
     @PostConstruct
     public void init() {
@@ -159,67 +163,104 @@ public class StripeService {
         }
     }
 
-    public Session createCheckoutSession(String customerId, BigDecimal amount, String currency, String name, Long bookingId, String setupFutureUsage, boolean manualCapture,BookingType bookingType) {
-        try {
-            ProductData product = ProductData.builder()
-                .setName(name)
-                .build();
+    public Session createCheckoutSession(
+        String customerId,
+        BigDecimal amount,
+        String currency,
+        String name,
+        Long bookingId,
+        String setupFutureUsage,
+        boolean manualCapture,
+        BookingType bookingType
+        ) {
+            try {
+                String productName = (name == null || name.isBlank()) ? "Booking" : name;
+                String cur = (currency == null || currency.isBlank()) ? "usd" : currency.toLowerCase();
 
-            PriceData priceData = PriceData.builder()
-                .setCurrency(currency)
-                .setUnitAmount(toCents(amount))
-                .setProductData(product)
-                .build();
+                ProductData product = ProductData.builder()
+                        .setName(productName)
+                        .build();
 
-            SessionCreateParams.LineItem lineItem = SessionCreateParams.LineItem.builder()
-                .setQuantity(1L)
-                .setPriceData(priceData)
-                .build();
+                PriceData priceData = PriceData.builder()
+                        .setCurrency(cur)
+                        .setUnitAmount(toCents(amount))
+                        .setProductData(product)
+                        .build();
 
-            Map<String, String> metadata = new HashMap<>();
-            metadata.put("bookingId", String.valueOf(bookingId));
+                SessionCreateParams.LineItem lineItem = SessionCreateParams.LineItem.builder()
+                        .setQuantity(1L)
+                        .setPriceData(priceData)
+                        .build();
 
-            SessionCreateParams.Builder builder = SessionCreateParams.builder()
-                .setMode(SessionCreateParams.Mode.PAYMENT)
-                .setCustomer(customerId)
-                 .setSuccessUrl(paymentReturnUrl + "?session_id={CHECKOUT_SESSION_ID}&booking_type=" + bookingType.name())
-                .setCancelUrl(paymentReturnUrl + "?canceled=true&booking_type=" + bookingType.name())
-                .addLineItem(lineItem)
-                .putAllMetadata(metadata);
+                Map<String, String> metadata = new HashMap<>();
+                if (bookingId != null) {
+                    metadata.put("bookingId", String.valueOf(bookingId));
+                }
+                metadata.put("bookingType", bookingType.name());
 
-            if (setupFutureUsage != null) {
-                builder.setPaymentIntentData(
-                    SessionCreateParams.PaymentIntentData.builder() 
-                        .setSetupFutureUsage(SessionCreateParams.PaymentIntentData.SetupFutureUsage.valueOf(setupFutureUsage))
-                        .setCaptureMethod(manualCapture ? SessionCreateParams.PaymentIntentData.CaptureMethod.MANUAL : SessionCreateParams.PaymentIntentData.CaptureMethod.AUTOMATIC)
-                        .build()
-                );
+                // Build SPA redirect URLs
+                String joiner = frontendReturnUrl.contains("?") ? "&" : "?";
+                String successUrl = frontendReturnUrl + joiner
+                        + "session_id={CHECKOUT_SESSION_ID}"
+                        + "&booking_type=" + bookingType.name();
+                String cancelUrl = frontendReturnUrl + joiner
+                        + "canceled=true"
+                        + "&booking_type=" + bookingType.name();
+
+                SessionCreateParams.Builder builder = SessionCreateParams.builder()
+                        .setMode(SessionCreateParams.Mode.PAYMENT)
+                        .setCustomer(customerId)
+                        .setSuccessUrl(successUrl)
+                        .setCancelUrl(cancelUrl)
+                        .addLineItem(lineItem)
+                        .putAllMetadata(metadata);
+
+                if (setupFutureUsage != null) {
+                    builder.setPaymentIntentData(
+                            SessionCreateParams.PaymentIntentData.builder()
+                                    .setSetupFutureUsage(SessionCreateParams.PaymentIntentData.SetupFutureUsage.valueOf(setupFutureUsage))
+                                    .setCaptureMethod(manualCapture
+                                            ? SessionCreateParams.PaymentIntentData.CaptureMethod.MANUAL
+                                            : SessionCreateParams.PaymentIntentData.CaptureMethod.AUTOMATIC)
+                                    .build()
+                    );
+                } else if (manualCapture) {
+                    builder.setPaymentIntentData(
+                            SessionCreateParams.PaymentIntentData.builder()
+                                    .setCaptureMethod(SessionCreateParams.PaymentIntentData.CaptureMethod.MANUAL)
+                                    .build()
+                    );
+                }
+
+                return Session.create(builder.build());
+            } catch (StripeException e) {
+                throw new RuntimeException("Failed to create checkout session", e);
             }
-
-            return Session.create(builder.build());
-        } catch (StripeException e) {
-            throw new RuntimeException("Failed to create checkout session", e);
         }
-    }
 
-    public Session createSetupSession(String customerId, String userId) {
-        try {
-            Map<String, String> metadata = new HashMap<>();
-            metadata.put("userId", userId);
+        public Session createSetupSession(String customerId, String userId) {
+            try {
+                Map<String, String> metadata = new HashMap<>();
+                metadata.put("userId", userId);
 
-            SessionCreateParams params = SessionCreateParams.builder()
-                .setMode(SessionCreateParams.Mode.SETUP)
-                .setCustomer(customerId)
-                .setSuccessUrl(paymentReturnUrl + "?setup_session_id={CHECKOUT_SESSION_ID}")
-                .setCancelUrl(paymentReturnUrl + "?setup_canceled=true")
-                .putAllMetadata(metadata)
-                .build();
+                String joiner = frontendReturnUrl.contains("?") ? "&" : "?";
+                String successUrl = frontendReturnUrl + joiner + "setup_session_id={CHECKOUT_SESSION_ID}";
+                String cancelUrl  = frontendReturnUrl + joiner + "setup_canceled=true";
 
-            return Session.create(params);
-        } catch (StripeException e) {
-            throw new RuntimeException("Failed to create setup session", e);
+                SessionCreateParams params = SessionCreateParams.builder()
+                        .setMode(SessionCreateParams.Mode.SETUP)
+                        .setCustomer(customerId)
+                        .setSuccessUrl(successUrl)
+                        .setCancelUrl(cancelUrl)
+                        .putAllMetadata(metadata)
+                        .build();
+
+                return Session.create(params);
+            } catch (StripeException e) {
+                throw new RuntimeException("Failed to create setup session", e);
+            }
         }
-    }
+
 
     public Session retrieveSession(String sessionId) {
         try {
