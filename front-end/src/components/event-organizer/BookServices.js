@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import { getMyServices } from "../../api/serviceApi";
 import { bookService } from "../../api/bookingApi";
+import QuickDetailsModal from "../common/QuickDetailsModal";
 
 const mockServices = [
   {
@@ -196,6 +197,18 @@ const BookServices = () => {
     contactEmail: "",
     contactPhone: ""
   });
+  const [detailsOpen, setDetailsOpen] = useState(false);
+  const [selectedServiceId, setSelectedServiceId] = useState(null);
+
+  const openDetails = (id) => {
+    setSelectedServiceId(id);
+    setDetailsOpen(true);
+  };
+  const closeDetails = () => {
+    setDetailsOpen(false);
+    setSelectedServiceId(null);
+  };
+  const [fallbackItem, setFallbackItem] = useState(null);
 
   const filteredServices = services.filter(service => {
     if (filters.category !== "All Categories" && service.category !== filters.category) {
@@ -231,9 +244,12 @@ const BookServices = () => {
     }));
   };
 
-  const handleViewDetails = (service) => {
-    setSelectedService(service);
-  };
+   const handleViewDetails = (service) => {
+       setSelectedService(service);
+       setFallbackItem(service);
+       setSelectedServiceId(service.id);
+       setDetailsOpen(true);
+     };
 
   const handleBookService = (service) => {
     setSelectedService(service);
@@ -382,7 +398,14 @@ const BookServices = () => {
         <h4 className="section-title">Available Services ({filteredServices.length})</h4>
         <div className="services-grid">
           {filteredServices.map((service) => (
-            <div key={service.id} className="service-booking-card">
+           <div
+             key={service.id}
+             className="service-booking-card"
+             onClick={() => handleViewDetails(service)}
+             role="button"
+             tabIndex={0}
+             onKeyDown={(e) => e.key === "Enter" && handleViewDetails(service)}
+           >
               <div className="service-card-header">
                 <h5 className="service-card-title">{service.name}</h5>
                 <span className="service-category-badge">{service.category}</span>
@@ -435,16 +458,16 @@ const BookServices = () => {
               <div className="service-card-actions">
                 <button
                   className="event-btn secondary"
-                  onClick={() => handleViewDetails(service)}
+                  onClick={(e) => { e.stopPropagation(); setFallbackItem(service); openDetails(service.id); }}
                 >
                   View Details
                 </button>
                 {service.availability === "Available" && (
                   <button
                     className="event-btn success"
-                    onClick={() => handleBookService(service)}
+                    onClick={(e) => { e.stopPropagation(); handleViewDetails(service); }}
                   >
-                    Book Service
+                    View Details
                   </button>
                 )}
               </div>
@@ -723,6 +746,22 @@ const BookServices = () => {
           </div>
         </div>
       )}
+
+    <QuickDetailsModal
+      open={detailsOpen}
+      type="service"
+      itemId={selectedServiceId}
+      onClose={closeDetails}
+      fallbackItem={fallbackItem} 
+      onProceed={(svc) => {
+        setSelectedService(svc);
+        setShowBookingModal(true);
+        setDetailsOpen(false);
+        setSelectedServiceId(null);
+        setBookingData(prev => ({ ...prev, quantity: svc.minOrder || prev.quantity }));
+        }}
+    />
+
     </div>
   );
 };
