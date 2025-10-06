@@ -26,6 +26,7 @@ import MyEvents from "./MyEvents";
 import BookVenues from "./BookVenues";
 import BookServices from "./BookServices";
 import EventOverview from "./EventOverview";
+import QuickDetailsModal from "../common/QuickDetailsModal";
 
 // Enum values for EventType
 const EVENT_TYPES = [
@@ -236,7 +237,10 @@ const EventOrganizerDashboard = () => {
   const [showCancellationModal, setShowCancellationModal] = useState(false);
   const [bookingToCancel, setBookingToCancel] = useState(null);
   const [cancellationType, setCancellationType] = useState(null); // 'venue' or 'service'
-
+  const [venueDetailsOpen, setVenueDetailsOpen] = useState(false);
+  const [venueDetailsId, setVenueDetailsId] = useState(null);
+  const [serviceDetailsOpen, setServiceDetailsOpen] = useState(false);
+  const [serviceDetailsId, setServiceDetailsId] = useState(null);
  // Add or Edit Event
   const handleEventFormSubmit = async (e) => {
     e.preventDefault();
@@ -908,8 +912,19 @@ const handleBookService = async (event) => {
                 ) : (
                   <div style={{ display: 'grid', gap: '1rem', maxHeight: '400px', overflowY: 'auto' }}>
                     {availableVenues.map(venue => (
-                      <div key={venue.id} className="card" style={{ padding: '1rem', cursor: 'pointer', border: selectedVenue?.id === venue.id ? '2px solid #3b82f6' : '1px solid #e9ecef' }}
-                           onClick={() => setSelectedVenue(venue)}>
+                      <div
+                      key={venue.id}
+                      className="card"
+                      style={{ padding: '1rem', cursor: 'pointer', border: selectedVenue?.id === venue.id ? '2px solid #3b82f6' : '1px solid #e9ecef' }}
+                      onClick={() => { 
+                        setSelectedVenue(venue); 
+                        setVenueDetailsId(venue.id);
+                        setVenueDetailsOpen(true);
+                      }}
+                      role="button"
+                      tabIndex={0}
+                      onKeyDown={(e) => e.key === 'Enter' && (setSelectedVenue(venue), setVenueDetailsId(venue.id), setVenueDetailsOpen(true))}
+                    >
                         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                           <div>
                             <h6 style={{ margin: 0, color: '#2c3e50' }}>{venue.name}</h6>
@@ -932,13 +947,13 @@ const handleBookService = async (event) => {
               </div>
               
               <div className="modal-actions" style={{ marginTop: '1.5rem' }}>
-                <button
+                {/* <button
                   className="event-btn success"
                   onClick={() => handleVenueSelection(selectedVenue)}
                   disabled={!selectedVenue}
                 >
                   Proceed to Payment
-                </button>
+                </button> */}
                 <button
                   className="event-btn secondary"
                   onClick={() => {
@@ -1002,8 +1017,20 @@ const handleBookService = async (event) => {
                 ) : (
                   <div style={{ display: 'grid', gap: '1rem', maxHeight: '400px', overflowY: 'auto' }}>
                     {availableServices.map(service => (
-                      <div key={service.id} className="card" style={{ padding: '1rem', cursor: 'pointer', border: selectedService?.id === service.id ? '2px solid #28a745' : '1px solid #e9ecef' }}
-                           onClick={() => setSelectedService(service)}>
+                      <div
+                      key={service.id}
+                      className="card"
+                      style={{ padding: '1rem', cursor: 'pointer', border: selectedService?.id === service.id ? '2px solid #28a745' : '1px solid #e9ecef' }}
+                      onClick={() => {
+                        setSelectedService(service);
+                        setServiceDetailsId(service.id);
+                        setServiceDetailsOpen(true);
+                      }}
+                      role="button"
+                      tabIndex={0}
+                      onKeyDown={(e) => e.key === 'Enter' && (setSelectedService(service), setServiceDetailsId(service.id), setServiceDetailsOpen(true))}
+                  
+                    >
                         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                           <div>
                             <h6 style={{ margin: 0, color: '#2c3e50' }}>{service.name}</h6>
@@ -1028,13 +1055,13 @@ const handleBookService = async (event) => {
               </div>
 
               <div className="modal-actions" style={{ marginTop: '1.5rem' }}>
-                <button
+                {/* <button
                   className="event-btn success"
                   onClick={() => handleServiceSelection(selectedService)}
                   disabled={!selectedService}
                 >
                   Proceed to Payment
-                </button>
+                </button> */}
                 <button
                   className="event-btn secondary"
                   onClick={() => {
@@ -1173,6 +1200,24 @@ const handleBookService = async (event) => {
           </div>
         </div>
       )}
+
+      <QuickDetailsModal
+        open={venueDetailsOpen}
+        type="venue"
+        itemId={venueDetailsId}
+        fallbackItem={selectedVenue}  // lets it render instantly
+        onClose={() => setVenueDetailsOpen(false)}
+        onProceed={(venue) => handleVenueSelection(venue)}
+      />
+
+    <QuickDetailsModal
+      open={serviceDetailsOpen}
+      type="service"
+      itemId={serviceDetailsId}
+      fallbackItem={selectedService}
+      onClose={() => setServiceDetailsOpen(false)}
+      onProceed={(svc) => handleServiceSelection(svc)}
+    />
 
       {/* Edit Service Bookings Modal */}
       {showEditServiceModal && selectedEventForBooking && selectedServiceBookings.length > 0 && (

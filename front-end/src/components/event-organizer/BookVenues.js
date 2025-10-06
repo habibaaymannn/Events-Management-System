@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { getAllVenues } from "../../api/venueApi";
 import { bookVenue } from "../../api/bookingApi";
+import QuickDetailsModal from "../common/QuickDetailsModal";
 
 const mockVenues = [
   {
@@ -130,6 +131,11 @@ const BookVenues = () => {
     fetchVenues();
   }, []);
 
+  const [detailsOpen, setDetailsOpen] = useState(false);
+  const [selectedVenueId, setSelectedVenueId] = useState(null);
+
+  const openDetails = (id) => { setSelectedVenueId(id); setDetailsOpen(true); };
+  const closeDetails = () => { setDetailsOpen(false); setSelectedVenueId(null); };
   const filteredVenues = venues.filter(venue => {
     if (filters.location && !venue.location.toLowerCase().includes(filters.location.toLowerCase())) {
       return false;
@@ -163,26 +169,31 @@ const BookVenues = () => {
   };
 
   const handleViewDetails = (venue) => {
-    setSelectedVenue(venue);
-  };
+       setSelectedVenue(venue);
+       setSelectedVenueId(venue.id);
+       setDetailsOpen(true);
+     };
 
   const handleBookVenue = (venue) => {
     setSelectedVenue(venue);
     setShowBookingModal(true);
   };
 
+//i noticed that it was overshadowing the state BookingData so i changed the variable in case it causes future conflicts
   const submitBooking = async (e) => {
     e.preventDefault();
     try {
-      const bookingData = {
+      const payload = {
         startTime: `${bookingData.eventDate}T${bookingData.startTime}:00.000Z`,
         endTime: `${bookingData.eventDate}T${bookingData.endTime}:00.000Z`,
         venueId: parseInt(selectedVenue.id),
-        organizerId: "current-organizer-id", // You'll need to get this from auth context
-        eventId: bookingData.eventId || null // If booking for existing event
+        organizerId: "current-organizer-id",
+        eventId: bookingData.eventId || null
       };
 
-      const result = await bookVenue(bookingData);
+      const result = await bookVenue(payload);
+
+
       alert(`Venue booking confirmed! Booking ID: ${result.id}`);
       
       setShowBookingModal(false);
@@ -274,8 +285,15 @@ const BookVenues = () => {
       <div className="event-section">
         <h4 className="section-title">Available Venues ({filteredVenues.length})</h4>
         <div className="venues-grid">
-          {filteredVenues.map((venue) => (
-            <div key={venue.id} className="venue-booking-card">
+              {filteredVenues.map((venue) => (
+       <div
+         key={venue.id}
+         className="venue-booking-card"
+         onClick={() => handleViewDetails(venue)}
+         role="button"
+         tabIndex={0}
+         onKeyDown={(e) => e.key === "Enter" && handleViewDetails(venue)}
+       >
               <div className="venue-card-header">
                 <h5 className="venue-card-title">{venue.name}</h5>
                 <span className={`availability-badge ${venue.availability === "Available" ? "available" : "unavailable"}`}>
@@ -309,21 +327,22 @@ const BookVenues = () => {
               </div>
 
               <div className="venue-card-actions">
+              <button
+                className="event-btn secondary"
+                onClick={(e) => { e.stopPropagation(); openDetails(venue.id); }}
+              >
+                View Details
+              </button>
+              {venue.availability === "Available" && (
                 <button
-                  className="event-btn secondary"
-                  onClick={() => handleViewDetails(venue)}
+                  className="event-btn success"
+                  onClick={(e) => { e.stopPropagation(); handleViewDetails(venue); }}
                 >
                   View Details
                 </button>
-                {venue.availability === "Available" && (
-                  <button
-                    className="event-btn success"
-                    onClick={() => handleBookVenue(venue)}
-                  >
-                    Book Venue
-                  </button>
-                )}
-              </div>
+              )}
+            </div>
+
             </div>
           ))}
         </div>
@@ -554,6 +573,14 @@ const BookVenues = () => {
           </div>
         </div>
       )}
+
+<QuickDetailsModal
+  open={detailsOpen}
+  type="venue"
+  itemId={selectedVenueId}
+  onClose={closeDetails}
+/>
+
     </div>
   );
 };
