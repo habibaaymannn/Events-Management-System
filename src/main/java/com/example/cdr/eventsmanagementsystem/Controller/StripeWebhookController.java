@@ -29,19 +29,19 @@ public class StripeWebhookController {
     @PostMapping(STRIPE_WEBHOOK_URL)
     @Transactional
     public ResponseEntity<String> handle(
-            @RequestParam BookingType type,
+            @RequestParam(required = false) BookingType type,
             @RequestBody String payload,
             @RequestHeader(name = "Stripe-Signature", required = false) String sigHeader
     ) {
         try {
-            log.info("Received Stripe webhook: endpoint={}", STRIPE_WEBHOOK_URL);
+            log.info("Received Stripe webhook: endpoint={}, type={}", STRIPE_WEBHOOK_URL, type);
             Event event = webhookService.constructEvent(payload, sigHeader);
             log.info("Processing Stripe event: type={}, id={}", event.getType(), event.getId());
             webhookService.processEvent(event, type);
             return ResponseEntity.ok("ok");
         } catch (Exception e) {
             log.error("Error processing Stripe webhook: {}", e.getMessage(), e);
-            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("webhook error");
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("webhook error: " + e.getMessage());
         }
     }
 }
