@@ -485,12 +485,18 @@ const EventOrganizerDashboard = () => {
     setShowCancellationModal(true);
   };
 
+  const [isCancelling, setIsCancelling] = useState(false);
+  const [cancellingId, setCancellingId] = useState(null); 
+
   const confirmCancellation = async () => {
     if (!bookingToCancel || !cancellationType) return;
 
     const bookingId = bookingToCancel.id || bookingToCancel.bookingId || bookingToCancel.bookingID;
 
     try {
+      setIsCancelling(true);
+      setCancellingId(bookingId);
+
       if (cancellationType === 'venue') {
         await handleCancelVenueBooking(bookingId, cancellationReason);
       } else if (cancellationType === 'service') {
@@ -502,8 +508,12 @@ const EventOrganizerDashboard = () => {
       setCancellationType(null);
     } catch (error) {
       console.error("Error confirming cancellation:", error);
+    } finally {
+      setIsCancelling(false);
+      setCancellingId(null);
     }
   };
+
 
   // Handle venue booking cancellation
   const handleCancelVenueBooking = async (bookingId, reason = "requested_by_customer") => {
@@ -698,6 +708,9 @@ const EventOrganizerDashboard = () => {
       timestamp: new Date().toISOString()
     }]);
   };
+
+
+
 
   // Handle venue selection and booking
   const handleVenueSelection = async (venue) => {
@@ -1499,19 +1512,25 @@ const EventOrganizerDashboard = () => {
             </div>
 
             <div className="modal-actions">
-              <button
-                className="event-btn danger"
-                onClick={confirmCancellation}
-              >
-                Confirm Cancellation
-              </button>
-              <button
-                className="event-btn secondary"
-                onClick={() => setShowCancellationModal(false)}
-              >
-                Cancel
-              </button>
-            </div>
+            <button
+              className="event-btn danger"
+              onClick={confirmCancellation}
+              disabled={isCancelling}
+              style={{ opacity: isCancelling ? 0.6 : 1, pointerEvents: isCancelling ? 'none' : 'auto' }}
+              aria-busy={isCancelling}
+            >
+              {isCancelling ? 'Cancelling…' : 'Confirm Cancellation'}
+            </button>
+            <button
+              className="event-btn secondary"
+              onClick={() => setShowCancellationModal(false)}
+              disabled={isCancelling}
+              style={{ opacity: isCancelling ? 0.6 : 1, pointerEvents: isCancelling ? 'none' : 'auto' }}
+            >
+              Cancel
+            </button>
+          </div>
+
           </div>
         </div>
       )}
