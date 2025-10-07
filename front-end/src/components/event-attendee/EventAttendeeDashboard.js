@@ -20,24 +20,17 @@ const formatDateTime = (dateString) => {
 };
 
 const EventAttendeeDashboard = () => {
-  const [attendeeId, setAttendeeId] = useState(null);
   const [events, setEvents] = useState([]);
   const [myActivities, setMyActivities] = useState([]);
   const [selectedEvent, setSelectedEvent] = useState(null);
   const [filter, setFilter] = useState("All");
   const [sortBy, setSortBy] = useState("date");
   const [searchTerm, setSearchTerm] = useState("");
-  const [showPayment, setShowPayment] = useState(null);
   const [activityFilter, setActivityFilter] = useState("All");
   const [rating, setRating] = useState(0);
   const [showRating, setShowRating] = useState(null);
+  const attendeeId = window.keycloak?.tokenParsed?.sub;
 
-  useEffect(() => {
-    const kc = window.keycloak;
-    if (kc && kc.tokenParsed?.sub) {
-      setAttendeeId(kc.tokenParsed.sub);
-    }
-  }, []);
   useEffect(() => {
     (async () => {
       try {
@@ -46,13 +39,13 @@ const EventAttendeeDashboard = () => {
           const { date, time } = formatDateTime(ev.startTime);
           return {
             id: ev.id,
-            name: ev.name ?? ev.title ?? "Untitled Event",
+            name: ev.name,
             date: date,
             time: time,
             location: ev.venueLocation ?? "Location not set",
-            price: ev.retailPrice ?? 0,
-            category: ev.type ?? ev.category ?? "General",
-            status: ev.status ?? "DRAFT",
+            price: ev.retailPrice,
+            category: ev.type,
+            status: ev.status,
             organizer: ev.organizerName,
           };
         });
@@ -78,13 +71,12 @@ const EventAttendeeDashboard = () => {
             const ev = events.find(e => e.id === b.eventId) || {};
             const { date, time } = formatDateTime(b.startTime);
             return {
-              id: b.id,
-              eventId: b.eventId ?? ev.id,
+              eventId: b.eventId,
               bookingId: b.id,
-              name: ev.name ?? b.eventName ?? "Untitled Event",
+              name: ev.name,
               date: date,
               time: time,
-              price: b.amount ?? 0,
+              price: b.amount,
               status: b.status,
               organizer: ev.organizerName,
             };
@@ -102,7 +94,7 @@ const EventAttendeeDashboard = () => {
       ...fullEvent,
       date: date,
       time: time,
-      price: fullEvent.retailPrice ?? 0,
+      price: fullEvent.retailPrice,
       status: fullEvent.status,
       organizer: fullEvent.organizerName,
       category: fullEvent.type,
@@ -116,7 +108,7 @@ const EventAttendeeDashboard = () => {
         attendeeId: attendeeId,
         startTime: event.startTime,
         endTime: event.endTime,
-        amount: event.retailPrice || 0,
+        amount: event.retailPrice,
         currency: "USD",
         status: "BOOKED",
         isCaptured: false
@@ -140,7 +132,6 @@ const EventAttendeeDashboard = () => {
     }catch (error) {
       alert("Failed to book event. Please try again.");
     }
-    setShowPayment(null);
 };
   const handleCancelRegistration = async (bookingId) => {
     const ev = myActivities.find(a => a.bookingId === bookingId);
@@ -400,7 +391,7 @@ const EventAttendeeDashboard = () => {
                     )}
                     {isPast && !event.rating && (
                       <button
-                        onClick={() => setShowRating(event.id)}
+                        onClick={() => setShowRating(event.bookingId)}
                         className="btn btn-warning"
                         style={{ padding: "6px 12px", fontSize: "0.8rem", flex: 1 }}
                       >
@@ -426,7 +417,7 @@ const EventAttendeeDashboard = () => {
                 </button>
               </div>
               <div>
-                <div style={{marginBottom: "1rem"}}>
+                <div>
                   <p>
                     <strong>Date:</strong> {selectedEvent.date} at {selectedEvent.time}
                   </p>
@@ -444,8 +435,9 @@ const EventAttendeeDashboard = () => {
                   </p>
                 </div>
                 <div>
-                  <strong>Description:</strong>
-                  <p style={{marginTop: "0.5rem", color: "#495057"}}>{selectedEvent.description}</p>
+                  <p style={{ margin: "4px 0", color: "#495057" }}>
+                    <strong>Description:</strong> {selectedEvent.description}
+                  </p>
                 </div>
               </div>
 
