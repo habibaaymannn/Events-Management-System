@@ -13,6 +13,7 @@ import {
   cancelServiceBooking
 } from "../../api/bookingApi";
 import { getAllVenues } from "../../api/venueApi";
+import { getAvailableVenues } from "../../api/venueApi";
 import { getAllAvailableServices } from "../../api/serviceApi";
 
 // Import new components
@@ -87,7 +88,6 @@ const EventOrganizerDashboard = () => {
     const loadEventsFromApi = async () => {
       try {
         const data = await getEventsByOrganizer(0, 100);
-        console.log("Loading events for organizer from API...loadEventsFromApi");
         const list = Array.isArray(data)
           ? data
           : (data?.content ?? data?.data?.content ?? []);
@@ -106,7 +106,6 @@ const EventOrganizerDashboard = () => {
       const bookingsMap = {};
       for (const event of events) {
         try {
-        console.log("loadEventBookings => Loading bookings for event:", event.id);
           const [venueBookings, serviceBookings] = await Promise.all([
             getVenueBookingsByEventId(event.id).catch(() => []),
             getServiceBookingsByEventId(event.id).catch(() => [])
@@ -135,7 +134,6 @@ const EventOrganizerDashboard = () => {
   useEffect(() => {
     const handleStripeReturn = async () => {
       const urlParams = new URLSearchParams(window.location.search);
-      console.log("handleStripeReturn => URL Params:", urlParams.toString());
       const sessionId = urlParams.get('session_id');
       const bookingType = urlParams.get('booking_type');
       const canceled = urlParams.get('canceled') === 'true';
@@ -177,7 +175,6 @@ const EventOrganizerDashboard = () => {
             }
             
             try {
-             console.log("handleStripeReturn => URL Params:", urlParams.toString(), "Event ID:", eventId);
               const [venueBookings, serviceBookings] = await Promise.all([
                 getVenueBookingsByEventId(eventId).catch(() => []),
                 getServiceBookingsByEventId(eventId).catch(() => [])
@@ -195,7 +192,6 @@ const EventOrganizerDashboard = () => {
             }
           }
         } catch (error) {
-          console.error("Error confirming payment:", error);
           setAlerts(prev => [...prev, {
             id: Date.now(),
             type: 'error',
@@ -357,12 +353,10 @@ const EventOrganizerDashboard = () => {
     setShowVenueBookingModal(true);
 
     try {
-      const venuesData = await getAllVenues();
+      const venuesData = await getAvailableVenues(event.startTime, event.endTime);
       const venues = Array.isArray(venuesData) ? venuesData : (venuesData?.content ?? []);
-      console.log("handleBookVenue => Loaded venues:", venues);
       setAvailableVenues(venues);
     } catch (error) {
-      console.error("Error loading venues:", error);
       setAvailableVenues([]); // Fallback to an empty list if loading fails
     }
   };
@@ -377,10 +371,8 @@ const handleBookService = async (event) => {
   try {
     const servicesData = await getAllAvailableServices();
     const services = Array.isArray(servicesData) ? servicesData : (servicesData?.content ?? []);
-    console.log("handleBookService => Loaded services:", services);
     setAvailableServices(services);
   } catch (error) {
-    console.error("Error loading services:", error);
     setAvailableServices([]); // Fallback to an empty list if loading fails
   }
 };
@@ -541,7 +533,6 @@ const handleBookService = async (event) => {
         return;
       }
 
-      console.log('Cancelling service booking with ID:', bookingId, 'Reason:', reason);
       await cancelServiceBooking(bookingId, reason);
 
       // Reload bookings from server to get updated status
@@ -599,7 +590,6 @@ const handleBookService = async (event) => {
       return;
     }
 
-    console.log('Hiding service booking with ID:', bookingId, 'from frontend display');
 
     // Remove the booking from the frontend state (hide from display)
     setEventBookings(prev => ({
@@ -671,7 +661,6 @@ const handleBookService = async (event) => {
         }));
       }
     } catch (error) {
-      console.error("Error booking venue:", error);
       alert("Failed to book venue. Please try again.");
     }
   };
@@ -772,7 +761,6 @@ const handleBookService = async (event) => {
       status: "DRAFT"
     });
     } catch (error) {
-      console.error("Error updating event:", error);
       setAlerts([...alerts, {
         id: Date.now(),
         type: 'error',
@@ -894,38 +882,6 @@ const handleBookService = async (event) => {
                   <p style={{ fontSize: '0.8rem', color: '#6c757d', margin: 0 }}>
                     Found {availableVenues.length} venues
                   </p>
-                  <button 
-                    className="btn btn-secondary"
-                    style={{ padding: '4px 8px', fontSize: '0.7rem' }}
-                    onClick={async () => {
-                      try {
-                        const venuesData = await getAllVenues();
-                        const venues = Array.isArray(venuesData) ? venuesData : (venuesData?.content ?? []);
-                        setAvailableVenues(venues.length > 0 ? venues : [
-                          {
-                            id: 1,
-                            name: "Grand Ballroom",
-                            location: "Downtown Convention Center",
-                            capacity: { minCapacity: 100, maxCapacity: 500 },
-                            pricing: { perEvent: 2000 },
-                            price: 2000
-                          },
-                          {
-                            id: 2,
-                            name: "Garden Pavilion",
-                            location: "City Park",
-                            capacity: { minCapacity: 50, maxCapacity: 200 },
-                            pricing: { perEvent: 1200 },
-                            price: 1200
-                          }
-                        ]);
-                      } catch (error) {
-                        console.error("Error refreshing venues:", error);
-                      }
-                    }}
-                  >
-                    Refresh
-                  </button>
                 </div>
                 {availableVenues.length === 0 ? (
                   <div style={{ textAlign: 'center', padding: '2rem', background: '#f8f9fa', borderRadius: '8px' }}>
@@ -1391,3 +1347,4 @@ const handleBookService = async (event) => {
 };
 
 export default EventOrganizerDashboard;
+

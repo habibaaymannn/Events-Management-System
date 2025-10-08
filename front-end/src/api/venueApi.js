@@ -31,6 +31,39 @@ export async function getAllVenues() {
 }
 
 
+export async function getAvailableVenues(startDate, endDate, page = 0, size = 20) {
+  const formatDate = (date) => {
+    if (date instanceof Date) {
+      return date.toISOString().slice(0, 19);
+    }
+    if (typeof date === 'string') {
+      return new Date(date).toISOString().slice(0, 19);
+    }
+    return date;
+  };
+
+  const formattedStart = formatDate(startDate);
+  const formattedEnd = formatDate(endDate);
+
+  const url = buildApiUrl(
+    `/v1/venues/available?startDate=${encodeURIComponent(formattedStart)}&endDate=${encodeURIComponent(formattedEnd)}&page=${page}&size=${size}`
+  );
+
+  const response = await fetch(url, {
+    method: "GET",
+    headers: getAuthHeaders(true),
+  });
+
+  if (!response.ok) {
+    const errorText = await response.text();
+    console.error('API Error:', errorText);
+    throw new Error(`Failed to fetch available venues: ${response.status} - ${errorText}`);
+  }
+
+  return await response.json();
+}
+
+
 /**
  * Get all venues for the venue provider.
  * @returns {Promise<Array>} - Array of venue objects.
