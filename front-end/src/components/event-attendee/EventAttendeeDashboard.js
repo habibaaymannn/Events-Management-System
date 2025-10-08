@@ -1,10 +1,13 @@
 import React, { useState, useEffect, useMemo } from "react";
 import { getAllEvents, getEventById } from "../../api/eventApi";
-import { getBookingsByAttendeeId, bookEvent /*, cancelEventBooking*/ } from "../../api/bookingApi";
-// If you rely on keycloak config, keep this import; otherwise window.keycloak works too.
+import { getBookingsByAttendeeId, bookEvent , cancelEventBooking } from "../../api/bookingApi";
 import { keycloakSettings } from "../../config/keycloakConfig";
 
+
 const SEGMENTS = ["Past", "Current", "Upcoming"];
+export const ACTIVE_BOOKING_STATUSES = new Set(["BOOKED", "PAID", "CONFIRMED"]);
+export const INACTIVE_BOOKING_STATUSES = new Set(["CANCELLED", "CANCELED", "REFUNDED"]);
+
 
 const EventAttendeeDashboard = () => {
   // ---------- state ----------
@@ -16,6 +19,9 @@ const EventAttendeeDashboard = () => {
   const [sortBy, setSortBy] = useState("date");
   const [searchTerm, setSearchTerm] = useState("");
   const [activeSeg, setActiveSeg] = useState("Current"); // Past | Current | Upcoming
+  const [bookingMap, setBookingMap] = useState(new Map());
+  const activeMeta = selectedEvent ? bookingMap.get(selectedEvent.id) : null;
+  const hasActiveBooking = !!activeMeta && ACTIVE_BOOKING_STATUSES.has(activeMeta.status);
 
   // rating state
   const [showRating, setShowRating] = useState(null); // eventId
@@ -79,8 +85,6 @@ const EventAttendeeDashboard = () => {
                   : ev.price
                 : ev.retailPrice ?? 0,
             category: ev.type ?? ev.category ?? "General",
-            attendees: ev.attendeesCount ?? ev.registeredAttendees ?? 0,
-            maxAttendees: ev.capacity ?? ev.maxAttendees ?? 100,
             status: ev.status ?? "Open",
             organizer: ev.organizer ?? ev.organizerName ?? "Event Organizer",
             description: desc,
@@ -96,16 +100,35 @@ const EventAttendeeDashboard = () => {
   }, []);
 
   // load current registrations (to gate Pay button / rating)
+  
   const refreshRegisteredIds = async () => {
     if (!attendeeId) return;
     try {
       const bookings = await getBookingsByAttendeeId(attendeeId);
-      const regs = new Set(bookings.map((b) => b.eventId ?? b.event?.id).filter(Boolean));
+      const regs = new Set();
+      const map = new Map();
+  
+      bookings.forEach((b) => {
+        const evId = b.eventId ?? b.event?.id;
+        if (!evId) return;
+        const status = (b.status || "").toUpperCase();
+  
+        // Only keep ACTIVE bookings in the "registered" set
+        if (ACTIVE_BOOKING_STATUSES.has(status)) {
+          regs.add(evId);
+          map.set(evId, { bookingId: b.id, status });
+        }
+        // (Optional) You can keep inactive ones out of the map entirely,
+        // or keep them in a separate map if you need history.
+      });
+  
       setRegisteredIds(regs);
+      setBookingMap(map);
     } catch (e) {
       console.error("Failed to load attendee bookings", e);
     }
   };
+  
 
   useEffect(() => {
     refreshRegisteredIds();
@@ -113,6 +136,12 @@ const EventAttendeeDashboard = () => {
   }, [attendeeId]);
 
   // ---------- helpers ----------
+
+  const formatType = (name) => {
+    if (!name) return "Unknown";
+    return String(name).toLowerCase().replace(/_/g, " ").replace(/\b\w/g, c => c.toUpperCase());
+  };
+
   const isSameDay = (a, b) =>
     a &&
     b &&
@@ -214,6 +243,23 @@ const EventAttendeeDashboard = () => {
     alert("Thank you for rating this event!");
   };
 
+  const handleCancelRegistration = async () => {
+    if (!selectedEvent) return;
+    const meta = bookingMap.get(selectedEvent.id);
+    if (!meta?.bookingId) return;
+    const reason = prompt("Please enter cancellation reason:");
+    if (reason === null) return;
+    try {
+      await cancelEventBooking(meta.bookingId, reason);
+      await refreshRegisteredIds();
+      alert("Your registration was cancelled.");
+      setSelectedEvent(null);
+    } catch (e) {
+      console.error(e);
+      alert("Cancellation failed. Please try again.");
+    }
+  };
+  
   const handleViewDetails = async (eventLite) => {
     // fetch the full event so we have startTime/endTime for booking
     try {
@@ -276,18 +322,13 @@ const EventAttendeeDashboard = () => {
       }
   
       // no redirect → treat as success
-      await refreshRegisteredIds();
-      setEvents((prev) =>
-        prev.map((e) =>
-          e.id === selectedEvent.id ? { ...e, attendees: (e.attendees || 0) + 1 } : e
-        )
-      );
+      await refreshRegisteredIds(); 
       alert("Payment successful! Email confirmation sent. Event reminders will be sent closer to the date.");
       setSelectedEvent(null);
     } catch (error) {
       alert("Failed to book event. Please try again.");
       console.error(error);
-    } finally {
+    } finally { 
       // only unlock if we didn't redirect away
       setIsPaying(false);
     }
@@ -615,9 +656,6 @@ const EventAttendeeDashboard = () => {
                     <p style={{ margin: "4px 0" }}>
                       <strong>Category:</strong> {event.category}
                     </p>
-                    <p style={{ margin: "4px 0" }}>
-                      <strong>Attendees:</strong> {event.attendees}/{event.maxAttendees}
-                    </p>
                   </div>
 
                   {/* rating strip */}
@@ -761,9 +799,6 @@ const EventAttendeeDashboard = () => {
                 <p><strong>Organizer:</strong> {selectedEvent.organizer}</p>
                 <p><strong>Price:</strong> ${selectedEvent.price}</p>
                 <p><strong>Category:</strong> {selectedEvent.category}</p>
-                <p>
-                  <strong>Attendees:</strong> {selectedEvent.attendees}/{selectedEvent.maxAttendees}
-                </p>
               </div>
               <div>
                 <strong>Description:</strong>
@@ -773,43 +808,84 @@ const EventAttendeeDashboard = () => {
               </div>
 
               <div style={{ display: "flex", gap: "16px", marginTop: 20, justifyContent: "flex-end" }}>
-              <button className="btn btn-secondary" onClick={() => setSelectedEvent(null)} disabled={isPaying}>
-                Close
-              </button>
-
-              {registeredIds.has(selectedEvent.id) ? (
-                <button className="btn btn-secondary" disabled>
-                  Registered
-                </button>
+              {hasActiveBooking && !isPastEvent(selectedEvent) ? (
+                <>
+                  <button
+                    className="btn btn-secondary"
+                    onClick={() => setSelectedEvent(null)}
+                    disabled={isPaying}
+                  >
+                    Close
+                  </button>
+                  <button
+                    className="btn btn-danger"
+                    onClick={handleCancelRegistration}
+                    disabled={isPaying}
+                  >
+                    Cancel Registration
+                  </button>
+                </>
+              ) : hasActiveBooking ? (
+                <>
+                  <button
+                    className="btn btn-secondary"
+                    onClick={() => setSelectedEvent(null)}
+                    disabled={isPaying}
+                  >
+                    Close
+                  </button>
+                  <button className="btn btn-secondary" disabled>
+                    Registered
+                  </button>
+                </>
               ) : isPastEvent(selectedEvent) ? (
-                <button className="btn btn-secondary" disabled title="Event has ended">
-                  Event Ended
-                </button>
+                <>
+                  <button
+                    className="btn btn-secondary"
+                    onClick={() => setSelectedEvent(null)}
+                    disabled={isPaying}
+                  >
+                    Close
+                  </button>
+                  <button className="btn btn-secondary" disabled title="Event has ended">
+                    Event Ended
+                  </button>
+                </>
               ) : (
-                <button
-                  className="btn btn-success"
-                  onClick={handlePayment}
-                  disabled={isPaying}
-                  aria-busy={isPaying}
-                  style={{ opacity: isPaying ? 0.7 : 1, cursor: isPaying ? "not-allowed" : "pointer" }}
-                >
-                  {isPaying ? (
-                    <span style={{ display: "inline-flex", alignItems: "center", gap: 8 }}>
-                      <span
-                        style={{
-                          width: 14, height: 14, borderRadius: "50%",
-                          border: "2px solid rgba(255,255,255,0.7)", borderTopColor: "transparent",
-                          display: "inline-block", animation: "spin 0.9s linear infinite",
-                        }}
-                      />
-                      Processing…
-                    </span>
-                  ) : (
-                    "Pay Now"
-                  )}
-                </button>
+                <>
+                  <button
+                    className="btn btn-secondary"
+                    onClick={() => setSelectedEvent(null)}
+                    disabled={isPaying}
+                  >
+                    Close
+                  </button>
+                  <button
+                    className="btn btn-success"
+                    onClick={handlePayment}
+                    disabled={isPaying}
+                    aria-busy={isPaying}
+                    style={{ opacity: isPaying ? 0.7 : 1, cursor: isPaying ? "not-allowed" : "pointer" }}
+                  >
+                    {isPaying ? (
+                      <span style={{ display: "inline-flex", alignItems: "center", gap: 8 }}>
+                        <span
+                          style={{
+                            width: 14, height: 14, borderRadius: "50%",
+                            border: "2px solid rgba(255,255,255,0.7)", borderTopColor: "transparent",
+                            display: "inline-block", animation: "spin 0.9s linear infinite",
+                          }}
+                        />
+                        Processing…
+                      </span>
+                    ) : (
+                      "Pay Now"
+                    )}
+                  </button>
+                </>
               )}
             </div>
+
 
               {isPaying && <div className="processing-mask">Processing…</div>}
             </div>
