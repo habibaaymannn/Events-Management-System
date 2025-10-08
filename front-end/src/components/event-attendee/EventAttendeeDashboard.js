@@ -36,8 +36,8 @@ const EventAttendeeDashboard = () => {
   });
 
   // pay state flag 
-  // near your other state
   const [isPaying, setIsPaying] = useState(false);
+  const [isCancelling, setIsCancelling] = useState(false);
 
 
   // Who am I?
@@ -244,11 +244,14 @@ const EventAttendeeDashboard = () => {
   };
 
   const handleCancelRegistration = async () => {
-    if (!selectedEvent) return;
+    if (!selectedEvent || isCancelling) return;
     const meta = bookingMap.get(selectedEvent.id);
     if (!meta?.bookingId) return;
+  
     const reason = prompt("Please enter cancellation reason:");
     if (reason === null) return;
+  
+    setIsCancelling(true);
     try {
       await cancelEventBooking(meta.bookingId, reason);
       await refreshRegisteredIds();
@@ -257,8 +260,11 @@ const EventAttendeeDashboard = () => {
     } catch (e) {
       console.error(e);
       alert("Cancellation failed. Please try again.");
+    } finally {
+      setIsCancelling(false);
     }
   };
+  
   
   const handleViewDetails = async (eventLite) => {
     // fetch the full event so we have startTime/endTime for booking
@@ -783,7 +789,7 @@ const EventAttendeeDashboard = () => {
 
       {/* Event Details Modal */}
       {selectedEvent && (
-        <div className="modal-overlay" onClick={() => !isPaying && setSelectedEvent(null)}>
+        <div className="modal-overlay" onClick={() => !(isPaying || isCancelling) && setSelectedEvent(null)}>
         <div className="modal-content" onClick={(e) => e.stopPropagation()} style={{ position: "relative" }}>
             <div className="modal-header">
               <h4>{selectedEvent.name}</h4>
@@ -813,18 +819,33 @@ const EventAttendeeDashboard = () => {
                   <button
                     className="btn btn-secondary"
                     onClick={() => setSelectedEvent(null)}
-                    disabled={isPaying}
+                    disabled={isPaying || isCancelling}
                   >
                     Close
                   </button>
                   <button
                     className="btn btn-danger"
                     onClick={handleCancelRegistration}
-                    disabled={isPaying}
+                    disabled={isPaying || isCancelling}
+                    aria-busy={isCancelling}
+                    style={{ opacity: (isPaying || isCancelling) ? 0.7 : 1, cursor: (isPaying || isCancelling) ? "not-allowed" : "pointer" }}
                   >
-                    Cancel Registration
-                  </button>
-                </>
+                  {isCancelling ? (
+                          <span style={{ display: "inline-flex", alignItems: "center", gap: 8 }}>
+                            <span
+                              style={{
+                                width: 14, height: 14, borderRadius: "50%",
+                                border: "2px solid rgba(255,255,255,0.7)", borderTopColor: "transparent",
+                                display: "inline-block", animation: "spin 0.9s linear infinite",
+                              }}
+                            />
+                            Cancelling…
+                          </span>
+                        ) : (
+                          "Cancel Registration"
+                        )}
+                      </button>
+                    </>
               ) : hasActiveBooking ? (
                 <>
                   <button
@@ -887,7 +908,12 @@ const EventAttendeeDashboard = () => {
             </div>
 
 
-              {isPaying && <div className="processing-mask">Processing…</div>}
+            {(isPaying || isCancelling) && (
+            <div className="processing-mask">
+              {isPaying ? "Processing…" : "Cancelling…"}
+            </div>
+          )}
+
             </div>
           </div>
         </div>
