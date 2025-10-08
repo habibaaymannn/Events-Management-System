@@ -365,6 +365,11 @@ header {
   color: #495057;
 }
 
+.status-active {
+  background: #b7dcc1;
+  color: #010c01;
+}
+
 .status-planning {
   background: #cfe2ff;
   color: #052c65;
