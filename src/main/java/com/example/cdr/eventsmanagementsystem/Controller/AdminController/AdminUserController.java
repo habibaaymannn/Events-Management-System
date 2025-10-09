@@ -1,19 +1,33 @@
 package com.example.cdr.eventsmanagementsystem.Controller.AdminController;
 
-import com.example.cdr.eventsmanagementsystem.Constants.ControllerConstants.AdminControllerConstants;
-import com.example.cdr.eventsmanagementsystem.Constants.ControllerConstants.RoleConstants;
-import com.example.cdr.eventsmanagementsystem.Keycloak.KeycloakAdminService;
-import com.example.cdr.eventsmanagementsystem.DTO.Admin.PasswordResetResponse;
-import com.example.cdr.eventsmanagementsystem.Email.TerminationEmailService;
-import io.swagger.v3.oas.annotations.Operation;
-import io.swagger.v3.oas.annotations.tags.Tag;
-import lombok.RequiredArgsConstructor;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+
 import org.keycloak.representations.idm.UserRepresentation;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
-import org.springframework.web.bind.annotation.*;
+import org.springframework.web.bind.annotation.DeleteMapping;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.RestController;
 
-import java.util.*;
+import com.example.cdr.eventsmanagementsystem.Constants.ControllerConstants.AdminControllerConstants;
+import com.example.cdr.eventsmanagementsystem.Constants.ControllerConstants.RoleConstants;
+import com.example.cdr.eventsmanagementsystem.DTO.Admin.CreateUserRequest;
+import com.example.cdr.eventsmanagementsystem.DTO.Admin.PasswordResetResponse;
+import com.example.cdr.eventsmanagementsystem.DTO.Admin.SelfRegisterRequest;
+import com.example.cdr.eventsmanagementsystem.Email.TerminationEmailService;
+import com.example.cdr.eventsmanagementsystem.Keycloak.KeycloakAdminService;
+
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.tags.Tag;
+import lombok.RequiredArgsConstructor;
 
 @RestController
 @RequestMapping(AdminControllerConstants.ADMIN_BASE_URL)
@@ -25,21 +39,11 @@ public class AdminUserController {
   private final KeycloakAdminService keycloakService;
   private final TerminationEmailService terminationEmailService;
 
-  /** Request body for creating a user — includes username & password to match your UI */
-  public record CreateUserRequest(
-      String firstName, String lastName, String email, String role, String username, String password
-  ) {}
-
-  /** Request body for self registration (permanent password + default role). */
-  public record SelfRegisterRequest(
-      String firstName, String lastName, String email, String username, String password, String defaultRole
-  ) {}
-
   // ------------------------ CREATE (ADMIN FLOW) ------------------------
   @Operation(
       summary = "Create user (admin flow)",
       description = """
-        Creates a user with the chosen realm role, sets a TEMPORARY password (so Keycloak forces \
+        Admin creates a user with the chosen realm role, sets a TEMPORARY password (so Keycloak forces \
         'Update password' on first login), and sends the UPDATE_PASSWORD email with your configured \
         client/redirect.
         """
@@ -61,14 +65,14 @@ public class AdminUserController {
     return ResponseEntity.ok(Map.of("id", id));
   }
 
-  // ------------------------ SELF REGISTER (PERMANENT PW) ------------------------
+  // ------------------------ SELF REGISTER (PERMANENT PASSWORD) ------------------------
   @Operation(
-      summary = "Register user (self/public flow)",
-      description = """
-        Creates a user with a PERMANENT password (no first-login screen) and assigns a default role \
-        (e.g., 'attendee'). Useful if you expose a public signup backed by your API instead of Keycloak's \
-        built-in registration. Returns the created user id.
-        """
+    summary = "Register user (self/public flow)",
+    description = """
+      Creates a user with a PERMANENT password (skips Keycloak's one-time UPDATE_PASSWORD step).
+      Use this only when you intentionally want immediate login with the chosen password.
+      Returns the created user id.
+    """
   )
   @PostMapping(AdminControllerConstants.ADMIN_USERS_SELF_REGISTER_URL)
   public ResponseEntity<?> selfRegister(@RequestBody SelfRegisterRequest req) {
@@ -76,7 +80,12 @@ public class AdminUserController {
     if (req.password() == null || req.password().length() < 8) return ResponseEntity.badRequest().body("password must be at least 8 chars");
     if (req.email() == null || req.email().isBlank()) return ResponseEntity.badRequest().body("email is required");
 
-    String role = (req.defaultRole() == null || req.defaultRole().isBlank()) ? "attendee" : req.defaultRole().trim();
+  final var role = req.defaultRole().trim().toLowerCase();
+  final var allowed = java.util.Set.of("attendee","organizer","service_provider","venue_provider");
+  if (!allowed.contains(role)) {
+    return ResponseEntity.badRequest().body("defaultRole must be one of: " + allowed);
+  }
+
     String id = keycloakService.registerUserSelf(
         req.username().trim(),
         req.email().trim(),

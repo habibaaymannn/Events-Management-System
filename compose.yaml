@@ -37,8 +37,6 @@ services:
     volumes:
       - keycloak_data:/opt/keycloak/data
       - ./Keycloak/realm.json:/opt/keycloak/data/import/realm.json
-      - ./Keycloak/themes:/opt/keycloak/themes 
-      - ./Keycloak/providers:/opt/keycloak/providers:ro
     networks:
       - ems-network
     command:
