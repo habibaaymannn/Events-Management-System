@@ -7,6 +7,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
 import com.example.cdr.eventsmanagementsystem.DTO.projections.EventTypeCount;
@@ -37,4 +38,18 @@ public interface EventRepository extends JpaRepository<Event, Long> {
     List<EventTypeCount> countEventsByType();
 
     Page<Event> findByOrganizer(Organizer organizer, Pageable pageable);
+
+    @Query("""
+    SELECT CASE WHEN COUNT(e) > 0 THEN true ELSE false END 
+    FROM Event e 
+    WHERE e.id IN :eventIds 
+    AND e.startTime < :endDate 
+    AND e.endTime > :startDate
+    """)
+    boolean existsEventWithTimeConflict(
+            @Param("eventIds") List<Long> eventIds,
+            @Param("startDate") LocalDateTime startDate,
+            @Param("endDate") LocalDateTime endDate
+    );
+
 }

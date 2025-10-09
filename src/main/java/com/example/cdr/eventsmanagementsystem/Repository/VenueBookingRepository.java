@@ -104,4 +104,5 @@ public interface VenueBookingRepository extends JpaRepository<VenueBooking, Long
     );
 
 
+    List<VenueBooking> findByVenueId(Long venueId);
 }

@@ -1,8 +1,14 @@
 package com.example.cdr.eventsmanagementsystem.Service.Venue;
 
+import com.example.cdr.eventsmanagementsystem.Model.Booking.BookingStatus;
+import com.example.cdr.eventsmanagementsystem.Model.Booking.VenueBooking;
+import com.example.cdr.eventsmanagementsystem.Repository.EventRepository;
+import com.example.cdr.eventsmanagementsystem.Repository.VenueBookingRepository;
 import com.example.cdr.eventsmanagementsystem.Util.ImageUtil;
+import org.springframework.data.domain.PageImpl;
 import org.springframework.security.access.AccessDeniedException;
 import java.io.IOException;
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Objects;
 import jakarta.persistence.EntityNotFoundException;
@@ -31,6 +37,8 @@ import org.springframework.web.multipart.MultipartFile;
 @Service
 public class VenueService {
     private final VenueRepository venueRepository;
+    private final EventRepository eventRepository ;
+    private final VenueBookingRepository venueBookingRepository ;
     private final VenueMapper venueMapper;
     private final UserSyncService userSyncService;
     private final ImageUtil imageUtil;
@@ -49,6 +57,26 @@ public class VenueService {
     public Page<VenueDTO> getAllVenues(Pageable pageable) {
         Page<Venue> venues = venueRepository.findAll(pageable);
         return venues.map(venueMapper::toVenueDTO);
+    }
+
+    public Page<VenueDTO> getAvailableVenues(LocalDateTime startDate, LocalDateTime endDate, Pageable pageable) {
+
+        if (startDate.isAfter(endDate)) {
+            throw new IllegalArgumentException("Start date must be before end date");
+        }
+
+        if (startDate.isBefore(LocalDateTime.now())) {
+            throw new IllegalArgumentException("Start date cannot be in the past");
+        }
+
+        Page<Venue> allVenues = venueRepository.findAll(pageable);
+
+        List<VenueDTO> availableVenueDTOs = allVenues.getContent().stream()
+                .filter(venue -> isVenueAvailableDuringPeriod(venue.getId(), startDate, endDate))
+                .map(venueMapper::toVenueDTO)
+                .toList();
+
+        return new PageImpl<>(availableVenueDTOs, pageable, availableVenueDTOs.size());
     }
 
     @Transactional
@@ -92,5 +120,40 @@ public class VenueService {
 
     private VenueProvider ensureCurrentUserAsVenueProvider() {
         return userSyncService.ensureUserExists(VenueProvider.class);
+    }
+
+    private boolean isVenueAvailableDuringPeriod(Long venueId, LocalDateTime startDate, LocalDateTime endDate) {
+        // Step 1: Get all venue bookings for this venue
+        List<VenueBooking> venueBookings = venueBookingRepository.findByVenueId(venueId);
+
+        // Step 2: If no bookings exist, venue is available
+        if (venueBookings == null || venueBookings.isEmpty()) {
+            log.debug("Venue {} has no bookings - available", venueId);
+            return true;
+        }
+
+        // Step 3: Extract event IDs from bookings (exclude cancelled bookings)
+        List<Long> eventIds = venueBookings.stream()
+                .filter(booking -> booking.getStatus() != BookingStatus.CANCELLED)
+                .map(VenueBooking::getEventId)
+                .filter(Objects::nonNull)
+                .distinct()
+                .toList();
+
+        // If no valid event IDs, venue is available
+        if (eventIds.isEmpty()) {
+            log.debug("Venue {} has no active events - available", venueId);
+            return true;
+        }
+
+        // Step 4: Check if any events overlap with the requested period
+
+        boolean hasConflict = eventRepository.existsEventWithTimeConflict(eventIds, startDate, endDate);
+
+        if (hasConflict) {
+            log.debug("Venue {} has conflicting events during period {} to {}", venueId, startDate, endDate);
+        }
+
+        return !hasConflict;
     }
 }
