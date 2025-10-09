@@ -1,55 +1,44 @@
 package com.example.cdr.eventsmanagementsystem.Keycloak;
 
-import jakarta.annotation.PreDestroy;
-import jakarta.ws.rs.core.Response;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+import java.util.Optional;
+import java.util.Set;
+import java.util.stream.Collectors;
+import java.util.*;
+
 import org.keycloak.OAuth2Constants;
 import org.keycloak.admin.client.CreatedResponseUtil;
 import org.keycloak.admin.client.Keycloak;
 import org.keycloak.admin.client.KeycloakBuilder;
-import org.keycloak.admin.client.resource.*;
-import org.keycloak.representations.idm.*;
+import org.keycloak.admin.client.resource.RealmResource;
+import org.keycloak.admin.client.resource.UserResource;
+import org.keycloak.admin.client.resource.UsersResource;
+import org.keycloak.representations.idm.CredentialRepresentation;
+import org.keycloak.representations.idm.RoleRepresentation;
+import org.keycloak.representations.idm.UserRepresentation;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.MediaType;
 import org.springframework.stereotype.Service;
-import org.springframework.util.LinkedMultiValueMap;
-import org.springframework.util.MultiValueMap;
-import org.springframework.web.client.RestClientException;
 import org.springframework.web.client.RestTemplate;
-
-import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
-import org.springframework.http.*;
-import org.springframework.stereotype.Service;
-import org.springframework.util.LinkedMultiValueMap;
-import org.springframework.util.MultiValueMap;
-import org.springframework.web.client.RestClientException;
-import org.springframework.web.client.RestTemplate;
-import org.keycloak.admin.client.resource.*;
-import org.keycloak.representations.idm.*;
-import org.keycloak.admin.client.CreatedResponseUtil;
-import jakarta.ws.rs.core.Response;
-import java.util.Collections;
-import java.util.Optional;
-import java.util.stream.Collectors;
-
-import java.util.Objects;
-
-import org.springframework.stereotype.Service;
 import org.springframework.web.reactive.function.BodyInserters;
 import org.springframework.web.reactive.function.client.WebClient;
-import org.springframework.http.MediaType;
-import com.example.cdr.eventsmanagementsystem.Config.WebClientConfig;
-import reactor.core.publisher.Mono;
+import org.keycloak.representations.idm.UserRepresentation;
+import org.keycloak.representations.idm.RoleRepresentation;
+import org.keycloak.representations.idm.ErrorRepresentation;
+import org.keycloak.admin.client.resource.UserResource;
+
+
 
 import com.example.cdr.eventsmanagementsystem.DTO.Admin.PasswordResetResponse;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.Set;
-import java.util.List;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import java.util.Arrays;
 
-import com.example.cdr.eventsmanagementsystem.Keycloak.KeycloakAdminProps;
+import jakarta.annotation.PreDestroy;
+import jakarta.ws.rs.core.Response;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import reactor.core.publisher.Mono;
 
 
 
@@ -125,20 +114,20 @@ public String createUserByAdmin(String username,
     if (r == null || r.getStatus() >= 300) {
         String msg = null;
         try {
-            var err = r.readEntity(org.keycloak.representations.idm.ErrorRepresentation.class);
-            if (err != null) msg = err.getErrorMessage();
-        } catch (Exception ignore) {}
-        throw new RuntimeException("Keycloak create user failed: HTTP "
-                + (r == null ? "null" : r.getStatus()) + (msg != null ? " - " + msg : ""));
+            ErrorRepresentation err = r != null ? r.readEntity(ErrorRepresentation.class) : null;
+            msg = (err != null && err.getErrorMessage() != null) ? err.getErrorMessage() : "Unknown Keycloak error";
+        } catch (Exception ignored) {}
+        throw new IllegalStateException("Failed to create user: " + (msg != null ? msg : "no details"));
     }
+
 
     String userId = CreatedResponseUtil.getCreatedId(r);
     UserResource userRes = users.get(userId);
 
     // 3) Assign realm role
     if (realmRole != null && !realmRole.isBlank()) {
-        RoleRepresentation rr = realm().roles().get(realmRole).toRepresentation();
-        userRes.roles().realmLevel().add(java.util.List.of(rr));
+        RoleRepresentation realmRoleRep = realm().roles().get(realmRole).toRepresentation();
+        userRes.roles().realmLevel().add(java.util.List.of(realmRoleRep));
     }
 
     // 3.5) Mirror role into userType attribute (so your UIs show it)
@@ -219,19 +208,17 @@ public String registerUserSelf(String username,
 }
 
 private void ensureUserTypeAttribute(UserResource userRes, String roleOrDefault) {
-  try {
-    UserRepresentation rep = userRes.toRepresentation();
-    Map<String, List<String>> attrs = rep.getAttributes();
-    if (attrs == null) attrs = new HashMap<>();
-    String value = (roleOrDefault == null || roleOrDefault.isBlank()) ? "attendee" : roleOrDefault.toLowerCase();
-    attrs.put("userType", List.of(value));
-    rep.setAttributes(attrs);
-    userRes.update(rep);
-  } catch (jakarta.ws.rs.BadRequestException e) {
-    // fallback: don’t block user creation if DUP was stricter than expected
-    log.warn("Failed to set userType={}, leaving attribute unset. Cause: {}", roleOrDefault, e.getMessage());
+  if (roleOrDefault == null || roleOrDefault.isBlank()) {
+    throw new IllegalArgumentException("Role is required to set userType attribute");
   }
+  UserRepresentation rep = userRes.toRepresentation();
+  java.util.Map<String, java.util.List<String>> attrs = rep.getAttributes();
+  if (attrs == null) attrs = new java.util.HashMap<>();
+  attrs.put("userType", java.util.List.of(roleOrDefault.toLowerCase()));
+  rep.setAttributes(attrs);
+  userRes.update(rep);
 }
+
 
 
 private String extractRole(UserRepresentation u) {
