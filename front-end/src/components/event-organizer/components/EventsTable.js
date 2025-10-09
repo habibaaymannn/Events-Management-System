@@ -41,8 +41,8 @@ const EventsTable = ({
                 <td>{event.endTime ? new Date(event.endTime).toLocaleString() : event.date}</td>
                 <td>${event.retailPrice}</td>
                 <td>
-                  <span className={`status-badge status-${(event.status || "planning").toLowerCase()}`}>
-                    {event.status || "PLANNING"}
+                  <span className={`status-badge status-${event.status === 'DRAFT' ? 'active' : (event.status.toLowerCase())}`}>
+                    {event.status === 'DRAFT' ? 'Active' : event.status}
                   </span>
                 </td>
                 <td>

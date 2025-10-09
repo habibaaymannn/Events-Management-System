@@ -231,7 +231,9 @@ const EventAttendeeDashboard = () => {
             width: "100%",
           }}
         >
-          {filteredEvents.map((event) => (
+          {filteredEvents
+              .filter(event => event.status !== 'CANCELLED')
+              .map((event) => (
             <div
               key={event.id}
               className="card"
