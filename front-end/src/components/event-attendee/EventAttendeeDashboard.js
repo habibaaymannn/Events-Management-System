@@ -1,19 +1,83 @@
 import React, { useState, useEffect, useMemo } from "react";
 import { getAllEvents, getEventById } from "../../api/eventApi";
 import { getBookingsByAttendeeId, bookEvent , cancelEventBooking } from "../../api/bookingApi";
-import { keycloakSettings } from "../../config/keycloakConfig";
-
 
 const SEGMENTS = ["Past", "Current", "Upcoming"];
 export const ACTIVE_BOOKING_STATUSES = new Set(["BOOKED", "PAID", "CONFIRMED"]);
 export const INACTIVE_BOOKING_STATUSES = new Set(["CANCELLED", "CANCELED", "REFUNDED"]);
 
+const formatType = (name) => {
+    if (!name) return "Unknown";
+    return name
+        .toLowerCase()
+        .replace(/_/g, " ")
+        .replace(/\b\w/g, (c) => c.toUpperCase());
+};
+
+const formatDateTime = (dateString) => {
+    if (!dateString) return { date: "TBD", time: "" };
+    const date = new Date(dateString);
+    return {
+        date: date.toISOString().slice(0, 10),
+        time: date.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
+    };
+};
+
+const isSameDay = (a, b) =>
+    a &&
+    b &&
+    a.getFullYear() === b.getFullYear() &&
+    a.getMonth() === b.getMonth() &&
+    a.getDate() === b.getDate();
+
+const isPastEvent = (ev) => {
+    if (!ev) return false;
+    const now = new Date();
+
+    // Prefer detailed times if present in the selected event
+    const start =
+        ev.startTime ? new Date(ev.startTime) : ev.startDateObj || null;
+    const end =
+        ev.endTime ? new Date(ev.endTime) : ev.endDateObj || null;
+
+    if (end instanceof Date) return now > end;
+    if (start instanceof Date) {
+        // If no end, treat as past once the start day has passed
+        if (now < start) return false;
+        return !(
+            now.getFullYear() === start.getFullYear() &&
+            now.getMonth() === start.getMonth() &&
+            now.getDate() === start.getDate()
+        );
+    }
+    // Unknown dates: don’t block Pay by default
+    return false;
+};
+
+const segmentFor = (ev) => {
+    const now = new Date();
+    const start = ev.startDateObj;
+    const end = ev.endDateObj;
+    if (!start) return "Upcoming";
+
+    // If we have an end time, "Current" means now ∈ [start, end]
+    if (end instanceof Date) {
+        if (now < start) return "Upcoming";
+        if (now > end) return "Past";
+        return "Current";
+    }
+
+    // Fallback when no endTime: treat as "Current" on the start calendar day
+    if (now < start) return "Upcoming";
+    if (isSameDay(start, now)) return "Current";
+    return "Past";
+};
 
 const EventAttendeeDashboard = () => {
   // ---------- state ----------
+  const attendeeId = window.keycloak?.tokenParsed?.sub;
   const [events, setEvents] = useState([]);
   const [registeredIds, setRegisteredIds] = useState(new Set());
-
   const [selectedEvent, setSelectedEvent] = useState(null); // full event for modal
   const [filter, setFilter] = useState("All");
   const [sortBy, setSortBy] = useState("date");
@@ -22,29 +86,18 @@ const EventAttendeeDashboard = () => {
   const [bookingMap, setBookingMap] = useState(new Map());
   const activeMeta = selectedEvent ? bookingMap.get(selectedEvent.id) : null;
   const hasActiveBooking = !!activeMeta && ACTIVE_BOOKING_STATUSES.has(activeMeta.status);
-
-  // rating state
-  const [showRating, setShowRating] = useState(null); // eventId
+  const [showRating, setShowRating] = useState(null);
   const [rating, setRating] = useState(0);
   const [hovered, setHovered] = useState(0);
-  const [ratings, setRatings] = useState(() => {
-    try {
-      return JSON.parse(localStorage.getItem("ea_ratings") || "{}");
-    } catch {
-      return {};
-    }
-  });
-
-  // pay state flag 
   const [isPaying, setIsPaying] = useState(false);
   const [isCancelling, setIsCancelling] = useState(false);
-
-
-  // Who am I?
-  const attendeeId =
-    (typeof window !== "undefined" && window.keycloak?.tokenParsed?.sub) ||
-    keycloakSettings?.tokenParsed?.sub ||
-    null;
+  const [ratings, setRatings] = useState(() => {
+      try {
+          return JSON.parse(localStorage.getItem("ea_ratings") || "{}");
+      } catch {
+          return {};
+      }
+  });
 
   // ---------- side effects ----------
   useEffect(() => {
@@ -59,38 +112,22 @@ const EventAttendeeDashboard = () => {
         const mapped = apiEvents.map((ev) => {
           const start = ev.startTime ? new Date(ev.startTime) : null;
           const end   = ev.endTime   ? new Date(ev.endTime)   : null;
-          const desc =
-            ev.description ??
-            (Array.isArray(ev.services) && ev.services.length
-              ? `Includes: ${ev.services
-                  .map((s) => (typeof s === "string" ? s : s?.name ?? ""))
-                  .filter(Boolean)
-                  .join(", ")}`
-              : "No description provided.");
-
+          const { date, time } = formatDateTime(ev.startTime);
           return {
             id: ev.id,
-            name: ev.name ?? ev.title ?? "Untitled Event",
-            date: start ? start.toISOString().slice(0, 10) : "TBD",
-            time: start
-              ? start.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })
-              : "",
+            name: ev.name,
+            date: date,
+            time: time,
             startDateObj: start,
             endDateObj: end,
-            location: ev.location ?? ev.venue ?? ev.venueLocation ?? "TBD",
-            price:
-              typeof ev.price === "number"
-                ? ev.price > 10000
-                  ? Math.round(ev.price / 100)
-                  : ev.price
-                : ev.retailPrice ?? 0,
-            category: ev.type ?? ev.category ?? "General",
-            status: ev.status ?? "Open",
-            organizer: ev.organizer ?? ev.organizerName ?? "Event Organizer",
-            description: desc,
+            location: ev.venueLocation ?? "TBD",
+            price: ev.retailPrice,
+            category: ev.type,
+            status: ev.status,
+            organizer: ev.organizerName,
+            description: ev.description,
           };
         });
-
         setEvents(mapped);
       } catch (e) {
         // eslint-disable-next-line no-console
@@ -99,8 +136,12 @@ const EventAttendeeDashboard = () => {
     })();
   }, []);
 
+  useEffect(() => {
+      refreshRegisteredIds();
+      // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [attendeeId]);
+
   // load current registrations (to gate Pay button / rating)
-  
   const refreshRegisteredIds = async () => {
     if (!attendeeId) return;
     try {
@@ -109,7 +150,7 @@ const EventAttendeeDashboard = () => {
       const map = new Map();
   
       bookings.forEach((b) => {
-        const evId = b.eventId ?? b.event?.id;
+        const evId = b.eventId;
         if (!evId) return;
         const status = (b.status || "").toUpperCase();
   
@@ -121,76 +162,12 @@ const EventAttendeeDashboard = () => {
         // (Optional) You can keep inactive ones out of the map entirely,
         // or keep them in a separate map if you need history.
       });
-  
       setRegisteredIds(regs);
       setBookingMap(map);
     } catch (e) {
       console.error("Failed to load attendee bookings", e);
     }
   };
-  
-
-  useEffect(() => {
-    refreshRegisteredIds();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [attendeeId]);
-
-  // ---------- helpers ----------
-
-  const formatType = (name) => {
-    if (!name) return "Unknown";
-    return String(name).toLowerCase().replace(/_/g, " ").replace(/\b\w/g, c => c.toUpperCase());
-  };
-
-  const isSameDay = (a, b) =>
-    a &&
-    b &&
-    a.getFullYear() === b.getFullYear() &&
-    a.getMonth() === b.getMonth() &&
-    a.getDate() === b.getDate();
-
-  const isPastEvent = (ev) => {
-    if (!ev) return false;
-    const now = new Date();
-  
-    // Prefer detailed times if present in the selected event
-    const start =
-      ev.startTime ? new Date(ev.startTime) : ev.startDateObj || null;
-    const end =
-      ev.endTime ? new Date(ev.endTime) : ev.endDateObj || null;
-  
-    if (end instanceof Date) return now > end;
-    if (start instanceof Date) {
-      // If no end, treat as past once the start day has passed
-      if (now < start) return false;
-      return !(
-        now.getFullYear() === start.getFullYear() &&
-        now.getMonth() === start.getMonth() &&
-        now.getDate() === start.getDate()
-      );
-    }
-    // Unknown dates: don’t block Pay by default
-    return false;
-  };
-    
-  const segmentFor = (ev) => {
-        const now = new Date();
-        const start = ev.startDateObj;
-        const end = ev.endDateObj;
-        if (!start) return "Upcoming";
-    
-        // If we have an end time, "Current" means now ∈ [start, end]
-        if (end instanceof Date) {
-          if (now < start) return "Upcoming";
-          if (now > end) return "Past";
-          return "Current";
-        }
-      
-        // Fallback when no endTime: treat as "Current" on the start calendar day
-        if (now < start) return "Upcoming";
-        if (isSameDay(start, now)) return "Current";
-        return "Past";
-      };
 
   // search / filter / sort
   const baseFiltered = useMemo(() => {
@@ -265,28 +242,24 @@ const EventAttendeeDashboard = () => {
     }
   };
   
-  
   const handleViewDetails = async (eventLite) => {
     // fetch the full event so we have startTime/endTime for booking
     try {
       const full = await getEventById(eventLite.id);
-      const start = full.startTime ? new Date(full.startTime) : null;
+      const { date, time } = formatDateTime(full.startTime);
       setSelectedEvent({
         ...eventLite,
         // overwrite with upstream values when present
-        name: full.name ?? eventLite.name,
-        organizer: full.organizerName ?? full.organizer ?? eventLite.organizer,
-        location: full.venueLocation ?? full.location ?? eventLite.location,
-        price: full.retailPrice ?? full.price ?? eventLite.price,
-        category: full.type ?? full.category ?? eventLite.category,
-        description: full.description ?? eventLite.description,
+        name: full.name,
+        organizer: full.organizerName,
+        location: full.venueLocation ?? "TBD",
+        price: full.retailPrice,
+        category: full.type,
+        description: full.description,
         startTime: full.startTime ?? null,
         endTime: full.endTime ?? null,
-        // keep date/time strings your UI uses:
-        date: start ? start.toISOString().slice(0, 10) : eventLite.date,
-        time: start
-          ? start.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })
-          : eventLite.time,
+        date: date,
+        time: time,
       });
     } catch (e) {
       console.error("Failed to fetch event details", e);
@@ -326,7 +299,6 @@ const EventAttendeeDashboard = () => {
         window.location.href = result.paymentUrl;
         return; // don't reset isPaying; we're leaving the page
       }
-  
       // no redirect → treat as success
       await refreshRegisteredIds(); 
       alert("Payment successful! Email confirmation sent. Event reminders will be sent closer to the date.");
@@ -339,7 +311,6 @@ const EventAttendeeDashboard = () => {
       setIsPaying(false);
     }
   };
-  
 
   const goLeft = () => {
     const idx = SEGMENTS.indexOf(activeSeg);
@@ -558,41 +529,42 @@ const EventAttendeeDashboard = () => {
         </div>
 
         {/* Search + filters */}
-        <div
-          className="filter-controls"
-          style={{ margin: "8px 0 20px 0", display: "flex", gap: 10, flexWrap: "wrap" }}
-        >
-          <input
-            type="text"
-            placeholder="Search events..."
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            className="form-control"
-            style={{ flex: 1, minWidth: 250 }}
-          />
-          <select value={filter} onChange={(e) => setFilter(e.target.value)} className="form-control" style={{ minWidth: 150 }}>
-            <option value="All">All Categories</option>
-            <option value="Technology">Technology</option>
-            <option value="Entertainment">Entertainment</option>
-            <option value="Business">Business</option>
-            <option value="Sports">Sports</option>
-            <option value="General">General</option>
-          </select>
-          <select value={sortBy} onChange={(e) => setSortBy(e.target.value)} className="form-control" style={{ minWidth: 150 }}>
-            <option value="date">Sort by Date</option>
-            <option value="price">Sort by Price</option>
-            <option value="name">Sort by Name</option>
-          </select>
-        </div>
+          <div
+              className="filter-controls"
+              style={{margin: "8px 0 20px 0", display: "flex", gap: 10, flexWrap: "wrap"}}
+          >
+              <input
+                  type="text"
+                  placeholder="Search events..."
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  className="form-control"
+                  style={{flex: 1, minWidth: 250}}
+              />
+              <select value={filter} onChange={(e) => setFilter(e.target.value)} className="form-control" style={{minWidth: 150}}>
+                  <option value="All">All Categories</option>
+                  {Array.from(new Set(events.map((e) => e.category))).map((type) => (
+                      <option key={type} value={type}>
+                          {formatType(type)}
+                      </option>
+                  ))}
+              </select>
+              <select value={sortBy} onChange={(e) => setSortBy(e.target.value)} className="form-control"
+                      style={{minWidth: 150}}>
+                  <option value="date">Sort by Date</option>
+                  <option value="price">Sort by Price</option>
+                  <option value="name">Sort by Name</option>
+              </select>
+          </div>
 
-        {/* Section heading */}
-        <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 8 }}>
+          {/* Section heading */}
+          <div style={{display: "flex", alignItems: "center", gap: 10, marginBottom: 8}}>
           <span
-            className="badge"
-            style={{
-              background: activeSeg === "Past" ? "#6c757d" : activeSeg === "Current" ? "#198754" : "#0d6efd",
-              color: "white",
-              borderRadius: 12,
+              className="badge"
+              style={{
+                  background: activeSeg === "Past" ? "#6c757d" : activeSeg === "Current" ? "#198754" : "#0d6efd",
+                  color: "white",
+                  borderRadius: 12,
               padding: "6px 10px",
               fontWeight: 700,
             }}
@@ -660,7 +632,7 @@ const EventAttendeeDashboard = () => {
                       <strong>Price:</strong> <span style={{ fontWeight: 600 }}>${event.price}</span>
                     </p>
                     <p style={{ margin: "4px 0" }}>
-                      <strong>Category:</strong> {event.category}
+                      <strong>Category:</strong> {formatType(event.category)}
                     </p>
                   </div>
 
@@ -796,126 +768,128 @@ const EventAttendeeDashboard = () => {
               <button className="modal-close" onClick={() => setSelectedEvent(null)}>×</button>
             </div>
             <div>
-              <div style={{ marginBottom: "1rem" }}>
-                <p>
-                  <strong>Date:</strong> {selectedEvent.date}{" "}
-                  {selectedEvent.time && `at ${selectedEvent.time}`}
-                </p>
-                <p><strong>Location:</strong> {selectedEvent.location}</p>
-                <p><strong>Organizer:</strong> {selectedEvent.organizer}</p>
-                <p><strong>Price:</strong> ${selectedEvent.price}</p>
-                <p><strong>Category:</strong> {selectedEvent.category}</p>
-              </div>
-              <div>
-                <strong>Description:</strong>
-                <p style={{ marginTop: "0.5rem", color: "#495057" }}>
-                  {selectedEvent.description}
-                </p>
-              </div>
+                <div>
+                    <p>
+                        <strong>Date:</strong> {selectedEvent.date}{" "}
+                        {selectedEvent.time && `at ${selectedEvent.time}`}
+                    </p>
+                    <p><strong>Location:</strong> {selectedEvent.location}</p>
+                    <p><strong>Organizer:</strong> {selectedEvent.organizer}</p>
+                    <p><strong>Price:</strong> ${selectedEvent.price}</p>
+                    <p><strong>Category:</strong> {formatType(selectedEvent.category)}</p>
+                </div>
+                <div>
+                    <p style={{margin: "4px 0", color: "#495057"}}>
+                        <strong>Description:</strong> {selectedEvent.description}
+                    </p>
+                </div>
 
-              <div style={{ display: "flex", gap: "16px", marginTop: 20, justifyContent: "flex-end" }}>
-              {hasActiveBooking && !isPastEvent(selectedEvent) ? (
-                <>
-                  <button
-                    className="btn btn-secondary"
-                    onClick={() => setSelectedEvent(null)}
-                    disabled={isPaying || isCancelling}
-                  >
-                    Close
-                  </button>
-                  <button
-                    className="btn btn-danger"
-                    onClick={handleCancelRegistration}
-                    disabled={isPaying || isCancelling}
-                    aria-busy={isCancelling}
-                    style={{ opacity: (isPaying || isCancelling) ? 0.7 : 1, cursor: (isPaying || isCancelling) ? "not-allowed" : "pointer" }}
-                  >
-                  {isCancelling ? (
-                          <span style={{ display: "inline-flex", alignItems: "center", gap: 8 }}>
+                <div style={{display: "flex", gap: "16px", marginTop: 20, justifyContent: "flex-end"}}>
+                    {hasActiveBooking && !isPastEvent(selectedEvent) ? (
+                        <>
+                            <button
+                                className="btn btn-secondary"
+                                onClick={() => setSelectedEvent(null)}
+                                disabled={isPaying || isCancelling}
+                            >
+                                Close
+                            </button>
+                            <button
+                                className="btn btn-danger"
+                                onClick={handleCancelRegistration}
+                                disabled={isPaying || isCancelling}
+                                aria-busy={isCancelling}
+                                style={{
+                                    opacity: (isPaying || isCancelling) ? 0.7 : 1,
+                                    cursor: (isPaying || isCancelling) ? "not-allowed" : "pointer"
+                                }}
+                            >
+                                {isCancelling ? (
+                                    <span style={{display: "inline-flex", alignItems: "center", gap: 8}}>
                             <span
-                              style={{
-                                width: 14, height: 14, borderRadius: "50%",
-                                border: "2px solid rgba(255,255,255,0.7)", borderTopColor: "transparent",
-                                display: "inline-block", animation: "spin 0.9s linear infinite",
-                              }}
+                                style={{
+                                    width: 14, height: 14, borderRadius: "50%",
+                                    border: "2px solid rgba(255,255,255,0.7)", borderTopColor: "transparent",
+                                    display: "inline-block", animation: "spin 0.9s linear infinite",
+                                }}
                             />
                             Cancelling…
                           </span>
-                        ) : (
-                          "Cancel Registration"
-                        )}
-                      </button>
-                    </>
-              ) : hasActiveBooking ? (
-                <>
-                  <button
-                    className="btn btn-secondary"
-                    onClick={() => setSelectedEvent(null)}
-                    disabled={isPaying}
-                  >
-                    Close
-                  </button>
-                  <button className="btn btn-secondary" disabled>
-                    Registered
-                  </button>
-                </>
-              ) : isPastEvent(selectedEvent) ? (
-                <>
-                  <button
-                    className="btn btn-secondary"
-                    onClick={() => setSelectedEvent(null)}
-                    disabled={isPaying}
-                  >
-                    Close
-                  </button>
-                  <button className="btn btn-secondary" disabled title="Event has ended">
-                    Event Ended
-                  </button>
-                </>
-              ) : (
-                <>
-                  <button
-                    className="btn btn-secondary"
-                    onClick={() => setSelectedEvent(null)}
-                    disabled={isPaying}
-                  >
-                    Close
-                  </button>
-                  <button
-                    className="btn btn-success"
-                    onClick={handlePayment}
-                    disabled={isPaying}
-                    aria-busy={isPaying}
-                    style={{ opacity: isPaying ? 0.7 : 1, cursor: isPaying ? "not-allowed" : "pointer" }}
-                  >
-                    {isPaying ? (
-                      <span style={{ display: "inline-flex", alignItems: "center", gap: 8 }}>
+                                ) : (
+                                    "Cancel Registration"
+                                )}
+                            </button>
+                        </>
+                    ) : hasActiveBooking ? (
+                        <>
+                            <button
+                                className="btn btn-secondary"
+                                onClick={() => setSelectedEvent(null)}
+                                disabled={isPaying}
+                            >
+                                Close
+                            </button>
+                            <button className="btn btn-secondary" disabled>
+                                Registered
+                            </button>
+                        </>
+                    ) : isPastEvent(selectedEvent) ? (
+                        <>
+                            <button
+                                className="btn btn-secondary"
+                                onClick={() => setSelectedEvent(null)}
+                                disabled={isPaying}
+                            >
+                                Close
+                            </button>
+                            <button className="btn btn-secondary" disabled title="Event has ended">
+                                Event Ended
+                            </button>
+                        </>
+                    ) : (
+                        <>
+                            <button
+                                className="btn btn-secondary"
+                                onClick={() => setSelectedEvent(null)}
+                                disabled={isPaying}
+                            >
+                                Close
+                            </button>
+                            <button
+                                className="btn btn-success"
+                                onClick={handlePayment}
+                                disabled={isPaying}
+                                aria-busy={isPaying}
+                                style={{opacity: isPaying ? 0.7 : 1, cursor: isPaying ? "not-allowed" : "pointer"}}
+                            >
+                                {isPaying ? (
+                                    <span style={{display: "inline-flex", alignItems: "center", gap: 8}}>
                         <span
-                          style={{
-                            width: 14, height: 14, borderRadius: "50%",
-                            border: "2px solid rgba(255,255,255,0.7)", borderTopColor: "transparent",
-                            display: "inline-block", animation: "spin 0.9s linear infinite",
-                          }}
+                            style={{
+                                width: 14, height: 14, borderRadius: "50%",
+                                border: "2px solid rgba(255,255,255,0.7)", borderTopColor: "transparent",
+                                display: "inline-block", animation: "spin 0.9s linear infinite",
+                            }}
                         />
                         Processing…
                       </span>
-                    ) : (
-                      "Pay Now"
+                                ) : (
+                                    "Pay Now"
+                                )}
+                            </button>
+                        </>
                     )}
-                  </button>
-                </>
-              )}
-            </div>
+                </div>
 
 
-            {(isPaying || isCancelling) && (
-            <div className="processing-mask">
-              {isPaying ? "Processing…" : "Cancelling…"}
-            </div>
-          )}
+                {(isPaying || isCancelling) && (
+                    <div className="processing-mask">
+                        {isPaying ? "Processing…" : "Cancelling…"}
+                    </div>
+                )}
 
             </div>
-          </div>
+        </div>
         </div>
       )}
     </div>
