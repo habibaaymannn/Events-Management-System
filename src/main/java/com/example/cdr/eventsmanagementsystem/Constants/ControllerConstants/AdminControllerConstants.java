@@ -9,11 +9,13 @@ public final class AdminControllerConstants {
     public static final String ADMIN_USERS_URL = "/users";
     public static final String USER_ID = "/{userId}";
 
-    // ✅ include /users here:
+    // include /users here:
     public static final String ADMIN_UPDATE_USER_ROLE_URL = ADMIN_USERS_URL + USER_ID + "/role";
     public static final String ADMIN_USER_DEACTIVATE_URL  = ADMIN_USERS_URL + USER_ID + "/deactivate";
     public static final String USER_ACTIVATE              = ADMIN_USERS_URL + USER_ID + "/activate";
     public static final String USER_RESET_PASSWORD        = ADMIN_USERS_URL + USER_ID + "/reset-password";
+    public static final String ADMIN_USERS_SELF_REGISTER_URL = ADMIN_USERS_URL + "/self-register";
+    public static final String USER_SEND_UPDATE_PASSWORD_EMAIL = ADMIN_USERS_URL + USER_ID + "/send-update-password-email";
 
     // ---------- Dashboard / Analytics ----------
     public static final String ADMIN_DASHBOARD_URL = "/dashboard";

@@ -1,19 +1,33 @@
 package com.example.cdr.eventsmanagementsystem.Controller.AdminController;
 
-import com.example.cdr.eventsmanagementsystem.Constants.ControllerConstants.AdminControllerConstants;
-import com.example.cdr.eventsmanagementsystem.Constants.ControllerConstants.RoleConstants;
-import com.example.cdr.eventsmanagementsystem.Keycloak.KeycloakAdminService;
-import com.example.cdr.eventsmanagementsystem.DTO.Admin.PasswordResetResponse;
-import com.example.cdr.eventsmanagementsystem.Email.TerminationEmailService;
-import io.swagger.v3.oas.annotations.Operation;
-import io.swagger.v3.oas.annotations.tags.Tag;
-import lombok.RequiredArgsConstructor;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+
 import org.keycloak.representations.idm.UserRepresentation;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
-import org.springframework.web.bind.annotation.*;
+import org.springframework.web.bind.annotation.DeleteMapping;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.RestController;
 
-import java.util.*;
+import com.example.cdr.eventsmanagementsystem.Constants.ControllerConstants.AdminControllerConstants;
+import com.example.cdr.eventsmanagementsystem.Constants.ControllerConstants.RoleConstants;
+import com.example.cdr.eventsmanagementsystem.DTO.Admin.CreateUserRequest;
+import com.example.cdr.eventsmanagementsystem.DTO.Admin.PasswordResetResponse;
+import com.example.cdr.eventsmanagementsystem.DTO.Admin.SelfRegisterRequest;
+import com.example.cdr.eventsmanagementsystem.Email.TerminationEmailService;
+import com.example.cdr.eventsmanagementsystem.Keycloak.KeycloakAdminService;
+
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.tags.Tag;
+import lombok.RequiredArgsConstructor;
 
 @RestController
 @RequestMapping(AdminControllerConstants.ADMIN_BASE_URL)
@@ -25,24 +39,76 @@ public class AdminUserController {
   private final KeycloakAdminService keycloakService;
   private final TerminationEmailService terminationEmailService;
 
-  /** Request body for creating a user — includes username & password to match your UI */
-  public record CreateUserRequest(
-      String firstName, String lastName, String email, String role, String username, String password
-  ) {}
-
-  @Operation(summary = "Create user", description = "Creates a Keycloak user with the given role")
+  // ------------------------ CREATE (ADMIN FLOW) ------------------------
+  @Operation(
+      summary = "Create user (admin flow)",
+      description = """
+        Admin creates a user with the chosen realm role, sets a TEMPORARY password (so Keycloak forces \
+        'Update password' on first login), and sends the UPDATE_PASSWORD email with your configured \
+        client/redirect.
+        """
+  )
   @PostMapping(AdminControllerConstants.ADMIN_USERS_URL)
   public ResponseEntity<?> create(@RequestBody CreateUserRequest req) {
     if (req.username() == null || req.username().isBlank()) return ResponseEntity.badRequest().body("username is required");
     if (req.password() == null || req.password().length() < 8) return ResponseEntity.badRequest().body("password must be at least 8 chars");
     if (req.email() == null || req.email().isBlank()) return ResponseEntity.badRequest().body("email is required");
 
-    String id = keycloakService.createUser(
-        req.username().trim(), req.email().trim(), req.firstName(), req.lastName(), req.password(), req.role()
+    String id = keycloakService.createUserByAdmin(
+        req.username().trim(),
+        req.email().trim(),
+        req.firstName(),
+        req.lastName(),
+        req.role(),
+        req.password() // only for record/UI; login requires the first-login password change
     );
     return ResponseEntity.ok(Map.of("id", id));
   }
 
+  // ------------------------ SELF REGISTER (PERMANENT PASSWORD) ------------------------
+  @Operation(
+    summary = "Register user (self/public flow)",
+    description = """
+      Creates a user with a PERMANENT password (skips Keycloak's one-time UPDATE_PASSWORD step).
+      Use this only when you intentionally want immediate login with the chosen password.
+      Returns the created user id.
+    """
+  )
+  @PostMapping(AdminControllerConstants.ADMIN_USERS_SELF_REGISTER_URL)
+  public ResponseEntity<?> selfRegister(@RequestBody SelfRegisterRequest req) {
+    if (req.username() == null || req.username().isBlank()) return ResponseEntity.badRequest().body("username is required");
+    if (req.password() == null || req.password().length() < 8) return ResponseEntity.badRequest().body("password must be at least 8 chars");
+    if (req.email() == null || req.email().isBlank()) return ResponseEntity.badRequest().body("email is required");
+
+  final var role = req.defaultRole().trim().toLowerCase();
+  final var allowed = java.util.Set.of("attendee","organizer","service_provider","venue_provider");
+  if (!allowed.contains(role)) {
+    return ResponseEntity.badRequest().body("defaultRole must be one of: " + allowed);
+  }
+
+    String id = keycloakService.registerUserSelf(
+        req.username().trim(),
+        req.email().trim(),
+        req.firstName(),
+        req.lastName(),
+        req.password(),
+        role
+    );
+    return ResponseEntity.ok(Map.of("id", id));
+  }
+
+  // ------------------------ RESEND UPDATE_PASSWORD EMAIL ------------------------
+  @Operation(
+      summary = "Send UPDATE_PASSWORD email",
+      description = "Sends a one-time action email that lands the user on Keycloak to update their password."
+  )
+  @PostMapping(AdminControllerConstants.USER_SEND_UPDATE_PASSWORD_EMAIL)
+  public ResponseEntity<Map<String, Object>> sendUpdatePasswordEmail(@PathVariable("userId") String id) {
+    boolean sent = keycloakService.sendUpdatePasswordEmail(id);
+    return ResponseEntity.ok(Map.of("sent", sent));
+  }
+
+  // ------------------------ LIST USERS ------------------------
   @Operation(summary = "List users", description = "Lists Keycloak users (paged as first/max)")
   @GetMapping(AdminControllerConstants.ADMIN_USERS_URL)
   public ResponseEntity<Map<String, Object>> list(@RequestParam(defaultValue = "0") int page,
@@ -55,6 +121,7 @@ public class AdminUserController {
     }});
   }
 
+  // ------------------------ UPDATE ROLE ------------------------
   @Operation(summary = "Update user role", description = "Updates a user's role in Keycloak")
   @PutMapping(AdminControllerConstants.ADMIN_UPDATE_USER_ROLE_URL)
   public ResponseEntity<Map<String, String>> updateRole(@PathVariable("userId") String id,
@@ -63,6 +130,7 @@ public class AdminUserController {
     return ResponseEntity.ok(Map.of("role", role));
   }
 
+  // ------------------------ ENABLE / DISABLE ------------------------
   @Operation(summary = "Deactivate user", description = "Disables a user account in Keycloak")
   @PostMapping(AdminControllerConstants.ADMIN_USER_DEACTIVATE_URL)
   public ResponseEntity<Void> deactivate(@PathVariable("userId") String id) {
@@ -77,6 +145,7 @@ public class AdminUserController {
     return ResponseEntity.ok().build();
   }
 
+  // ------------------------ RESET PASSWORD (KC built-in) ------------------------
   @Operation(summary = "Send reset password email", description = "Sends a password reset email via Keycloak")
   @PostMapping(AdminControllerConstants.USER_RESET_PASSWORD)
   public ResponseEntity<PasswordResetResponse> reset(@PathVariable("userId") String id) {
@@ -84,6 +153,7 @@ public class AdminUserController {
     return ResponseEntity.ok(res);
   }
 
+  // ------------------------ DELETE ------------------------
   @Operation(summary = "Delete user", description = "Deletes a user from Keycloak, optionally notifying them by email")
   @DeleteMapping(AdminControllerConstants.ADMIN_USERS_URL + AdminControllerConstants.USER_ID)
   public ResponseEntity<Map<String, Object>> delete(@PathVariable("userId") String id,

@@ -1,51 +1,44 @@
 package com.example.cdr.eventsmanagementsystem.Keycloak;
 
-import jakarta.annotation.PreDestroy;
-import jakarta.ws.rs.core.Response;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+import java.util.Optional;
+import java.util.Set;
+import java.util.stream.Collectors;
+import java.util.*;
+
 import org.keycloak.OAuth2Constants;
 import org.keycloak.admin.client.CreatedResponseUtil;
 import org.keycloak.admin.client.Keycloak;
 import org.keycloak.admin.client.KeycloakBuilder;
-import org.keycloak.admin.client.resource.*;
-import org.keycloak.representations.idm.*;
+import org.keycloak.admin.client.resource.RealmResource;
+import org.keycloak.admin.client.resource.UserResource;
+import org.keycloak.admin.client.resource.UsersResource;
+import org.keycloak.representations.idm.CredentialRepresentation;
+import org.keycloak.representations.idm.RoleRepresentation;
+import org.keycloak.representations.idm.UserRepresentation;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.MediaType;
 import org.springframework.stereotype.Service;
-import org.springframework.util.LinkedMultiValueMap;
-import org.springframework.util.MultiValueMap;
-import org.springframework.web.client.RestClientException;
 import org.springframework.web.client.RestTemplate;
-
-import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
-import org.springframework.http.*;
-import org.springframework.stereotype.Service;
-import org.springframework.util.LinkedMultiValueMap;
-import org.springframework.util.MultiValueMap;
-import org.springframework.web.client.RestClientException;
-import org.springframework.web.client.RestTemplate;
-
-import java.util.Collections;
-import java.util.Optional;
-import java.util.stream.Collectors;
-
-import java.util.Objects;
-
-import org.springframework.stereotype.Service;
 import org.springframework.web.reactive.function.BodyInserters;
 import org.springframework.web.reactive.function.client.WebClient;
-import org.springframework.http.MediaType;
-import com.example.cdr.eventsmanagementsystem.Config.WebClientConfig;
-import reactor.core.publisher.Mono;
+import org.keycloak.representations.idm.UserRepresentation;
+import org.keycloak.representations.idm.RoleRepresentation;
+import org.keycloak.representations.idm.ErrorRepresentation;
+import org.keycloak.admin.client.resource.UserResource;
+
+
 
 import com.example.cdr.eventsmanagementsystem.DTO.Admin.PasswordResetResponse;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.Set;
-import java.util.List;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
-import com.example.cdr.eventsmanagementsystem.Keycloak.KeycloakAdminProps;
+import jakarta.annotation.PreDestroy;
+import jakarta.ws.rs.core.Response;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import reactor.core.publisher.Mono;
 
 
 
@@ -95,51 +88,172 @@ public class KeycloakAdminService {
         return kc.realm(props.getRealm());
     }
 
-    // ---------- CREATE USER ----------
-    public String createUser(String username, String email, String firstName, String lastName, String password, String realmRole) {
-        UsersResource users = realm().users();
+// ---------- CREATE USER (email one-time action: UPDATE_PASSWORD) ----------
+/** Admin flow: create user, assign role, force first-login password change, send email */
+public String createUserByAdmin(String username,
+                                String email,
+                                String firstName,
+                                String lastName,
+                                String realmRole,
+                                String initialPasswordForRecordOnly /* optional; not used for login */) {
 
-        UserRepresentation u = new UserRepresentation();
-        u.setUsername(username);
-        u.setEnabled(true);
-        u.setEmail(email);
-        u.setFirstName(firstName);
-        u.setLastName(lastName);
-        u.setEmailVerified(props.isMarkEmailVerifiedOnCreate());
+    UsersResource users = realm().users();
 
-        Response r = users.create(u);
-        if (r.getStatus() >= 300) {
-            throw new RuntimeException("Keycloak create user failed: HTTP " + r.getStatus());
-        }
-        String userId = CreatedResponseUtil.getCreatedId(r);
+    // 1) Build user
+    UserRepresentation u = new UserRepresentation();
+    u.setUsername(username);
+    u.setEnabled(true);
+    u.setEmail(email);
+    u.setFirstName(firstName);
+    u.setLastName(lastName);
+    u.setEmailVerified(props.isMarkEmailVerifiedOnCreate());
+    u.setRequiredActions(java.util.Collections.emptyList()); // don't force realm-wide
 
-        CredentialRepresentation cr = new CredentialRepresentation();
-        cr.setType(CredentialRepresentation.PASSWORD);
-        cr.setTemporary(props.isTemporaryPasswordOnCreate());
-        cr.setValue(password);
-
-        UserResource userRes = users.get(userId);
-        userRes.resetPassword(cr);
-
-        if (realmRole != null && !realmRole.isBlank()) {
-            RoleRepresentation rr = realm().roles().get(realmRole).toRepresentation();
-            userRes.roles().realmLevel().add(Collections.singletonList(rr));
-        }
-        return userId;
+    // 2) Create
+    Response r = users.create(u);
+    if (r == null || r.getStatus() >= 300) {
+        String msg = null;
+        try {
+            ErrorRepresentation err = r != null ? r.readEntity(ErrorRepresentation.class) : null;
+            msg = (err != null && err.getErrorMessage() != null) ? err.getErrorMessage() : "Unknown Keycloak error";
+        } catch (Exception ignored) {}
+        throw new IllegalStateException("Failed to create user: " + (msg != null ? msg : "no details"));
     }
+
+
+    String userId = CreatedResponseUtil.getCreatedId(r);
+    UserResource userRes = users.get(userId);
+
+    // 3) Assign realm role
+    if (realmRole != null && !realmRole.isBlank()) {
+        RoleRepresentation realmRoleRep = realm().roles().get(realmRole).toRepresentation();
+        userRes.roles().realmLevel().add(java.util.List.of(realmRoleRep));
+    }
+
+    // 3.5) Mirror role into userType attribute (so your UIs show it)
+    ensureUserTypeAttribute(userRes, realmRole);
+    // 4) Set a TEMPORARY password → KC will force "Update password" at first login (per-user only)
+    CredentialRepresentation tempPw = new CredentialRepresentation();
+    tempPw.setType(CredentialRepresentation.PASSWORD);
+    tempPw.setTemporary(true);
+    tempPw.setValue(java.util.UUID.randomUUID().toString()); // you can also generate something nicer
+    userRes.resetPassword(tempPw);
+
+    // 5) Send the UPDATE_PASSWORD email (optional but nice)
+    // Make sure clientId & redirect URI are allowed in the client config (Valid Redirect URIs)
+    try {
+        userRes.executeActionsEmail(
+            props.getFrontendClientId(),            // e.g. "ems-frontend"
+            props.getPostActionRedirectUri(),      // e.g. "http://localhost:3000/login"
+            java.util.List.of("UPDATE_PASSWORD")
+        );
+    } catch (Throwable ignore) {
+        // If email fails, user can still login with the temp password and will be forced to update.
+    }
+
+    return userId;
+}
+
+/** Public/self-registration flow: create user with a PERMANENT password and default role. */
+public String registerUserSelf(String username,
+                               String email,
+                               String firstName,
+                               String lastName,
+                               String permanentPassword,
+                               String defaultRealmRole /* e.g. "attendee" */) {
+
+    UsersResource users = realm().users();
+
+    UserRepresentation u = new UserRepresentation();
+    u.setUsername(username);
+    u.setEnabled(true);
+    u.setEmail(email);
+    u.setFirstName(firstName);
+    u.setLastName(lastName);
+    u.setEmailVerified(false); // or true if you don’t verify
+    u.setRequiredActions(java.util.Collections.emptyList());
+
+    // Create
+    Response r = users.create(u);
+    if (r == null || r.getStatus() >= 300) {
+        String msg = null;
+        try {
+            var err = r.readEntity(org.keycloak.representations.idm.ErrorRepresentation.class);
+            if (err != null) msg = err.getErrorMessage();
+        } catch (Exception ignore) {}
+        throw new RuntimeException("Keycloak register user failed: HTTP "
+                + (r == null ? "null" : r.getStatus()) + (msg != null ? " - " + msg : ""));
+    }
+
+    String userId = CreatedResponseUtil.getCreatedId(r);
+    UserResource userRes = users.get(userId);
+
+    // Set a PERMANENT password (no first-login screen)
+    CredentialRepresentation cred = new CredentialRepresentation();
+    cred.setType(CredentialRepresentation.PASSWORD);
+    cred.setTemporary(false);
+    cred.setValue(permanentPassword);
+    userRes.resetPassword(cred);
+
+    // Assign default role (so your SPA doesn’t dump them to /unauthorized)
+    if (defaultRealmRole != null && !defaultRealmRole.isBlank()) {
+        RoleRepresentation rr = realm().roles().get(defaultRealmRole).toRepresentation();
+        userRes.roles().realmLevel().add(java.util.List.of(rr));
+    }
+
+    // Mirror into userType attribute
+    ensureUserTypeAttribute(userRes, defaultRealmRole);
+
+    return userId;
+}
+
+private void ensureUserTypeAttribute(UserResource userRes, String roleOrDefault) {
+  if (roleOrDefault == null || roleOrDefault.isBlank()) {
+    throw new IllegalArgumentException("Role is required to set userType attribute");
+  }
+  UserRepresentation rep = userRes.toRepresentation();
+  java.util.Map<String, java.util.List<String>> attrs = rep.getAttributes();
+  if (attrs == null) attrs = new java.util.HashMap<>();
+  attrs.put("userType", java.util.List.of(roleOrDefault.toLowerCase()));
+  rep.setAttributes(attrs);
+  userRes.update(rep);
+}
+
 
 
 private String extractRole(UserRepresentation u) {
-    // 1) Preferred: attribute userType: ["admin" | "organizer" | "attendee" | "service_provider" | "venue_provider"]
+    // 0) Get UsersResource for this realm
+    UsersResource users = realm().users();
+
+    // 1) Prefer explicit attribute if present
     if (u.getAttributes() != null) {
-        List<String> vals = u.getAttributes().get("userType");
-        if (vals != null && !vals.isEmpty() && vals.get(0) != null && !vals.get(0).isBlank()) {
-            return vals.get(0).trim().toLowerCase();
+        var vals = u.getAttributes().get("userType");
+        if (vals != null && !vals.isEmpty()) {
+            var v = vals.get(0);
+            if (v != null && !v.isBlank()) return v.trim().toLowerCase();
         }
     }
-    // 2) Fallback default — keeps your UI consistent
+
+    // 2) Fallback: infer from EFFECTIVE realm roles
+    //    (This is the bit list() doesn't populate on UserRepresentation)
+    List<RoleRepresentation> effective = users.get(u.getId())
+            .roles()
+            .realmLevel()
+            .listEffective(); // includes direct + composite roles
+
+    java.util.Set<String> names = effective.stream()
+            .map(r -> r.getName().toLowerCase())
+            .collect(java.util.stream.Collectors.toSet());
+
+    if (names.contains("admin")) return "admin";
+    if (names.contains("organizer")) return "organizer";
+    if (names.contains("service_provider")) return "service_provider";
+    if (names.contains("venue_provider")) return "venue_provider";
+
+    // 3) Default
     return "attendee";
 }
+
 
 /** Count ALL realm users quickly. */
 public long countUsers() {
@@ -362,8 +476,24 @@ public PasswordResetResponse sendResetPasswordAndOptions(String userId) {
 
     // ---------- LIST ----------
     public List<UserRepresentation> listUsers(int page, int size) {
-        return realm().users().list(page * size, size);
+        List<UserRepresentation> list = realm().users().list(page * size, size);
+    
+        for (UserRepresentation u : list) {
+            String role = extractRole(u); // uses attribute or effective roles
+    
+            // Ensure attributes map exists and mirror the normalized role into userType
+            Map<String, List<String>> attrs = u.getAttributes();
+            if (attrs == null) {
+                attrs = new java.util.HashMap<>();
+                u.setAttributes(attrs);
+            }
+            attrs.put("userType", java.util.List.of(role));
+            // u.setRealmRoles(java.util.List.of(role)); // only if you want this shape
+        }
+    
+        return list;
     }
+    
 
     // ---------- FIND ----------
     public Optional<UserRepresentation> findById(String userId) {

@@ -31,6 +31,7 @@ services:
       KC_HOSTNAME_URL: http://localhost:8080
       KC_HOSTNAME_ADMIN_URL: http://localhost:8080
       KC_HOSTNAME_STRICT: "true"
+      KC_THEME_CACHE_ENABLED: "false"
     ports:
       - "8080:8080"
     volumes:
