@@ -14,6 +14,41 @@ export async function getServiceById(serviceId) {
   return await response.json();
 }
 
+/*
+    * Get all available venues for booking (for event organizers).
+    * Supports filtering by start and end date, with pagination.
+*/
+export async function getAvailableServices(startDate, endDate, page = 0, size = 20) {
+console.log("Fetching available services from API...");
+  const formatDate = (date) => {
+    if (date instanceof Date) {
+      return date.toISOString().slice(0, 19);
+    }
+    if (typeof date === 'string') {
+      return new Date(date).toISOString().slice(0, 19);
+    }
+    return date;
+  };
+
+  const formattedStart = formatDate(startDate);
+  const formattedEnd = formatDate(endDate);
+
+  const url = buildApiUrl(
+    `/v1/services/available?startDate=${encodeURIComponent(formattedStart)}&endDate=${encodeURIComponent(formattedEnd)}&page=${page}&size=${size}`
+  );
+
+  const response = await fetch(url, {
+    method: "GET",
+    headers: getAuthHeaders(true),
+  });
+
+  if (!response.ok) {
+    throw new Error(`Failed to fetch available Service`);
+  }
+
+  return await response.json();
+}
+
 /**
  * Get all services.
  * BE returns a Spring Page<ServicesDTO>. We return the array (content).

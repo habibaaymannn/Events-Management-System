@@ -1,5 +1,7 @@
 package com.example.cdr.eventsmanagementsystem.Controller;
 
+import java.time.LocalDateTime;
+
 import com.example.cdr.eventsmanagementsystem.Constants.ControllerConstants.RoleConstants;
 import com.example.cdr.eventsmanagementsystem.Constants.ControllerConstants.ServiceControllerConstants;
 import com.example.cdr.eventsmanagementsystem.DTO.Service.ServicesDTO;
@@ -12,6 +14,7 @@ import org.springdoc.core.annotations.ParameterObject;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.web.PageableDefault;
+import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
@@ -29,6 +32,20 @@ import static com.example.cdr.eventsmanagementsystem.Constants.ControllerConstan
 @Tag(name = "Service", description = "Service provider APIs for managing services")
 public class ServiceController {
     private final ServicesService servicesService;
+
+
+    @Operation(summary = "Get available service for a time period", description = "Retrieves all services that are not booked during the specified time period")
+    @GetMapping(ServiceControllerConstants.GET_AVAILABLE_SERVICE_URL)
+    @PreAuthorize("hasAnyRole('" + ORGANIZER_ROLE + "','" + ADMIN_ROLE + "')")
+    public Page<ServicesDTO> getAvailableService(
+            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime startDate,
+            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime endDate,
+            @ParameterObject @PageableDefault() Pageable pageable) {
+
+        System.out.println("Controller ==> Start Date: " + startDate + ", End Date: " + endDate);
+        return servicesService.getAvailableServices(startDate, endDate, pageable);
+    }
+
 
     @Operation(summary = "Get service by ID", description = "Retrieves service details by its ID")
     @GetMapping(ServiceControllerConstants.GET_SERVICE_BY_ID_URL)

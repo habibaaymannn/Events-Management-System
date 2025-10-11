@@ -97,5 +97,5 @@ public interface ServiceBookingRepository extends JpaRepository<ServiceBooking, 
     );
 
 
-
+    List<ServiceBooking> findBookingsByServiceId(Long serviceId);
 }
