@@ -14,6 +14,7 @@ import {
 } from "../../api/bookingApi";
 import { getAllVenues } from "../../api/venueApi";
 import { getAvailableVenues } from "../../api/venueApi";
+import { getAvailableServices } from "../../api/serviceApi";
 import { getAllAvailableServices } from "../../api/serviceApi";
 
 // Import new components
@@ -363,21 +364,19 @@ const EventOrganizerDashboard = () => {
   // End code for load Venues when booking venue
 
 
-//----- Start of new code related to Service Booking -----
+
 const handleBookService = async (event) => {
   setSelectedEventForBooking(event);
   setShowServiceBookingModal(true);
 
   try {
-    const servicesData = await getAllAvailableServices();
+    const servicesData = await  getAvailableServices(event.startTime, event.endTime);
     const services = Array.isArray(servicesData) ? servicesData : (servicesData?.content ?? []);
     setAvailableServices(services);
   } catch (error) {
     setAvailableServices([]); // Fallback to an empty list if loading fails
   }
 };
-
-//---- End of new code related to Service Booking -----
 
 
   // Handle edit venue booking
