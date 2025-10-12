@@ -2,7 +2,8 @@ package com.example.cdr.eventsmanagementsystem.Constants;
 
 public final class ExceptionConstants {
 
-    private ExceptionConstants() {}
+    private ExceptionConstants() {
+    }
 
     public static final String EVENT_NOT_FOUND = "Event not found";
     public static final String VENUE_NOT_FOUND = "Venue not found";
@@ -11,9 +12,12 @@ public final class ExceptionConstants {
 
     public static final String YOU_CAN_ONLY_VIEW_YOUR_OWN_BOOKINGS = "You can only view your own bookings";
     public static final String YOU_CAN_ONLY_UPDATE_YOUR_OWN_BOOKINGS = "You can only update your own bookings";
-    public static final String YOU_CAN_ONLY_CANCEL_YOUR_OWN_BOOKINGS = "You can only cancel your own bookings"; 
-    
+    public static final String YOU_CAN_ONLY_CANCEL_YOUR_OWN_BOOKINGS = "You can only cancel your own bookings";
+
     public static final String UNKNOWN_ORGANIZER = "Unknown organizer";
     public static final String UNKNOWN_PROVIDER = "Unknown provider";
     public static final String UNKNOWN_ATTENDEE = "Unknown attendee";
+
+    public static final String START_DATE_MUST_BE_BEFORE_END_DATE = "Start date must be before end date";
+    public static final String START_DATE_CANNOT_BE_IN_THE_PAST = "Start date cannot be in the past";
 }

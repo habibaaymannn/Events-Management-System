@@ -12,7 +12,7 @@ import {
   cancelVenueBooking,
   cancelServiceBooking
 } from "../../api/bookingApi";
-import { getAllVenues } from "../../api/venueApi";
+import { getAvailableServices } from "../../api/serviceApi";
 import { getAvailableVenues } from "../../api/venueApi";
 import { getAllAvailableServices } from "../../api/serviceApi";
 
@@ -116,7 +116,6 @@ const EventOrganizerDashboard = () => {
             service: serviceBookings || []
           };
         } catch (error) {
-          console.error(`Error loading bookings for event ${event.id}:`, error);
           bookingsMap[event.id] = {
             venue: [],
             service: []
@@ -329,7 +328,6 @@ const EventOrganizerDashboard = () => {
           timestamp: new Date().toISOString()
         }]);
       } catch (error) {
-        console.error("Error deleting event:", error);
         setAlerts([...alerts, {
           id: Date.now(),
           type: 'error',
@@ -363,21 +361,18 @@ const EventOrganizerDashboard = () => {
   // End code for load Venues when booking venue
 
 
-//----- Start of new code related to Service Booking -----
 const handleBookService = async (event) => {
   setSelectedEventForBooking(event);
   setShowServiceBookingModal(true);
 
   try {
-    const servicesData = await getAllAvailableServices();
+    const servicesData = await getAvailableServices(event.startTime, event.endTime);
     const services = Array.isArray(servicesData) ? servicesData : (servicesData?.content ?? []);
     setAvailableServices(services);
   } catch (error) {
     setAvailableServices([]); // Fallback to an empty list if loading fails
   }
 };
-
-//---- End of new code related to Service Booking -----
 
 
   // Handle edit venue booking
@@ -419,7 +414,7 @@ const handleBookService = async (event) => {
       setBookingToCancel(null);
       setCancellationType(null);
     } catch (error) {
-      console.error("Error confirming cancellation:", error);
+      console.error("Error confirming cancellation:");
     }
   };
 
@@ -436,7 +431,7 @@ const handleBookService = async (event) => {
         return;
       }
 
-      console.log('Cancelling venue booking with ID:', bookingId, 'Reason:', reason);
+      console.log('Cancelling venue booking' );
       await cancelVenueBooking(bookingId, reason);
 
       // Reload bookings from server to get updated status
@@ -456,7 +451,7 @@ const handleBookService = async (event) => {
 
         setSelectedVenueBooking(venueBookings || []);
       } catch (reloadError) {
-        console.error("Error reloading bookings after cancellation:", reloadError);
+        console.error("Error reloading bookings after cancellation:");
       }
 
       setAlerts(prev => [...prev, {
@@ -467,7 +462,7 @@ const handleBookService = async (event) => {
       }]);
 
     } catch (error) {
-      console.error("Error cancelling venue booking:", error);
+      console.error("Error cancelling venue booking:");
       setAlerts(prev => [...prev, {
         id: Date.now(),
         type: 'error',
@@ -489,7 +484,7 @@ const handleBookService = async (event) => {
       return;
     }
 
-    console.log('Hiding venue booking with ID:', bookingId, 'from frontend display');
+    console.log('Hiding venue booking with ID:');
 
     // Remove the booking from the frontend state (hide from display)
     setEventBookings(prev => ({
@@ -558,7 +553,7 @@ const handleBookService = async (event) => {
         ) || [];
         setSelectedServiceBookings(updatedServiceBookings);
       } catch (reloadError) {
-        console.error("Error reloading bookings after cancellation:", reloadError);
+        console.error("Error reloading bookings after cancellation:");
       }
 
       setAlerts(prev => [...prev, {
@@ -568,7 +563,7 @@ const handleBookService = async (event) => {
         timestamp: new Date().toISOString()
       }]);
     } catch (error) {
-      console.error("Error cancelling service booking:", error);
+      console.error("Error cancelling service booking:");
       setAlerts(prev => [...prev, {
         id: Date.now(),
         type: 'error',
@@ -716,7 +711,7 @@ const handleBookService = async (event) => {
         }));
       }
     } catch (error) {
-      console.error("Error booking service:", error);
+      console.error("Error booking service ");
       alert("Failed to book service. Please try again.");
     }
   };
