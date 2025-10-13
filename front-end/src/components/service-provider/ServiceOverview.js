@@ -9,37 +9,34 @@ const ServiceOverview = () => {
     const [services, setServices] = useState([]);
     const [recentBookings, setRecentBookings] = useState([]);
 
-    // Add missing monthlyData
-    const monthlyData = [
-        { month: "Jan", revenue: 15000, bookings: 12, profit: 3000 },
-        { month: "Feb", revenue: 18000, bookings: 15, profit: 4000 },
-        { month: "Mar", revenue: 22000, bookings: 18, profit: 5000 },
-        { month: "Apr", revenue: 25000, bookings: 20, profit: 6000 },
-        { month: "May", revenue: 28000, bookings: 25, profit: 7000 },
-        { month: "Jun", revenue: 32000, bookings: 30, profit: 8000 },
-    ];
-
     useEffect(() => {
         loadData();
     }, []);
 
     const loadData = async () => {
         try {
-            const [servicesData, bookingsResponse] = await Promise.all([
+            const serviceProviderId = window.keycloak?.tokenParsed?.sub;
+            if (!serviceProviderId) {
+                console.error("No service provider ID found");
+                return;
+            }
+
+            const [servicesData, bookingsData] = await Promise.all([
                 getMyServices(),
-                getServiceProviderBookings(0, 10)
+                getServiceProviderBookings(serviceProviderId)
             ]);
             
-            setServices(servicesData);
+            setServices(Array.isArray(servicesData) ? servicesData : []);
             
             // Map bookings to expected format
-            const mappedBookings = (bookingsResponse || []).map(booking => ({
+            const bookingsContent = bookingsData?.content || [];
+            const mappedBookings = bookingsContent.slice(0, 10).map(booking => ({
                 id: booking.id,
-                service: "Service", // You may need service name from another endpoint
-                client: booking.organizerBooker?.fullName || booking.attendeeBooker?.fullName || "Unknown Client",
+                service: "Service",
+                client: `${booking.organizerBooker?.firstName || ''} ${booking.organizerBooker?.lastName || ''}`.trim() || "Unknown Client",
                 date: new Date(booking.startTime).toLocaleDateString(),
                 status: booking.status,
-                revenue: 0 // Calculate if pricing info available
+                revenue: booking.amount || 0
             }));
             
             setRecentBookings(mappedBookings);
@@ -51,18 +48,18 @@ const ServiceOverview = () => {
     const totalServices = services.length;
     const activeServices = services.filter(s => s.availability === "AVAILABLE").length;
     const totalBookings = recentBookings.length;
-    const totalRevenue = monthlyData.reduce((sum, month) => sum + month.revenue, 0);
+    const totalRevenue = recentBookings.reduce((sum, booking) => sum + (booking.revenue || 0), 0);
 
     const serviceCategories = services.reduce((acc, service) => {
-        const category = service.description || "Other";
+        const category = service.type?.replace(/_/g, ' ') || "Other";
         acc[category] = (acc[category] || 0) + 1;
         return acc;
     }, {});
 
-    const categoryData = Object.entries(serviceCategories).map(([category, count]) => ({
+    const categoryData = Object.entries(serviceCategories).map(([category, count], index) => ({
         name: category,
         value: count,
-        color: ["#667eea", "#764ba2", "#28a745", "#ffc107", "#dc3545"][Object.keys(serviceCategories).indexOf(category)]
+        color: ["#667eea", "#764ba2", "#28a745", "#ffc107", "#dc3545"][index % 5]
     }));
 
     const handleServicesClick = () => navigate('/service-provider/services');
@@ -121,43 +118,29 @@ const ServiceOverview = () => {
             {/* Charts Section */}
             <div className="charts-grid">
                 {/* Service Categories */}
-                <div className="chart-card">
-                    <h4 className="chart-title">Service Categories</h4>
-                    <ResponsiveContainer width="100%" height={300}>
-                        <PieChart>
-                            <Pie
-                                data={categoryData}
-                                dataKey="value"
-                                nameKey="name"
-                                cx="50%"
-                                cy="50%"
-                                outerRadius={80}
-                                label={({ name, value }) => `${name}: ${value}`}
-                            >
-                                {categoryData.map((entry, index) => (
-                                    <Cell key={`cell-${index}`} fill={entry.color} />
-                                ))}
-                            </Pie>
-                            <Tooltip />
-                        </PieChart>
-                    </ResponsiveContainer>
-                </div>
-
-                {/* Monthly Performance */}
-                <div className="chart-card">
-                    <h4 className="chart-title">Monthly Performance</h4>
-                    <ResponsiveContainer width="100%" height={300}>
-                        <BarChart data={monthlyData}>
-                            <CartesianGrid strokeDasharray="3 3" />
-                            <XAxis dataKey="month" />
-                            <YAxis />
-                            <Tooltip />
-                            <Legend />
-                            <Bar dataKey="revenue" fill="#667eea" name="Revenue ($)" />
-                            <Bar dataKey="bookings" fill="#28a745" name="Bookings" />
-                        </BarChart>
-                    </ResponsiveContainer>
-                </div>
+                {categoryData.length > 0 && (
+                  <div className="chart-card">
+                      <h4 className="chart-title">Service Categories</h4>
+                      <ResponsiveContainer width="100%" height={300}>
+                          <PieChart>
+                              <Pie
+                                  data={categoryData}
+                                  dataKey="value"
+                                  nameKey="name"
+                                  cx="50%"
+                                  cy="50%"
+                                  outerRadius={80}
+                                  label={({ name, value }) => `${name}: ${value}`}
+                              >
+                                  {categoryData.map((entry, index) => (
+                                      <Cell key={`cell-${index}`} fill={entry.color} />
+                                  ))}
+                              </Pie>
+                              <Tooltip />
+                          </PieChart>
+                      </ResponsiveContainer>
+                  </div>
+                )}
             </div>
 
             {/* Recent Activity */}
@@ -197,22 +180,12 @@ const ServiceOverview = () => {
                             <div className="service-header">
                                 <h5 className="service-name">{service.name}</h5>
                                 <span className={`service-status ${(service.availability || 'UNAVAILABLE').toLowerCase()}`}>
-                                    {service.availability}
+                                    {service.availability === "AVAILABLE" ? "Available" : "Unavailable"}
                                 </span>
                             </div>
                             <div className="service-details">
-                                <p className="service-category">{service.descriptiob}</p>
+                                <p className="service-category">{service.type?.replace(/_/g, ' ') || 'Service'}</p>
                                 <p className="service-price">${service.price ?? 0}</p>
-                            </div>
-                            <div className="service-stats">
-                                <div className="service-stat">
-                                    <span className="stat-value">{service.bookings}</span>
-                                    <span className="stat-name">ServiceBookings</span>
-                                </div>
-                                <div className="service-stat">
-                                    <span className="stat-value">${service.revenue.toLocaleString()}</span>
-                                    <span className="stat-name">Revenue</span>
-                                </div>
                             </div>
                         </div>
                     ))}

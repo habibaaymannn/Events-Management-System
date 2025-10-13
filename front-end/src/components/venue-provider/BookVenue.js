@@ -33,6 +33,12 @@ const BookVenue = () => {
     if (!venue) return;
     
     try {
+      const organizerId = window.keycloak?.tokenParsed?.sub;
+      if (!organizerId) {
+        alert("Unable to identify organizer. Please log in again.");
+        return;
+      }
+
       const startTime = `${date.toISOString().split('T')[0]}T09:00:00.000Z`;
       const endTime = `${date.toISOString().split('T')[0]}T17:00:00.000Z`;
       
@@ -40,7 +46,7 @@ const BookVenue = () => {
         startTime: startTime,
         endTime: endTime,
         venueId: parseInt(venue.id),
-        organizerId: "current-organizer-id", // Get from auth context
+        organizerId: organizerId,
         eventId: null // Manual booking without specific event
       };
       
