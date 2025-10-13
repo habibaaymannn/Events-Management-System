@@ -65,7 +65,7 @@
         },
         {
           "name": "sub",
-          "protocol": "openid-connect", 
+          "protocol": "openid-connect",
           "protocolMapper": "oidc-sub-mapper",
           "consentRequired": false,
           "config": {
@@ -224,8 +224,11 @@
   "attributes": {
     "userProfileEnabled": "true",
     "declarativeUserProfileEnabled": "true",
-    "userProfileMetadata": "{\"attributes\":[{\"name\":\"username\",\"required\":{\"roles\":[\"user\"]}},{\"name\":\"firstName\",\"required\":{\"roles\":[\"user\"]},\"permissions\":{\"view\":[\"admin\",\"user\"],\"edit\":[\"admin\",\"user\"]}},{\"name\":\"lastName\",\"required\":{\"roles\":[\"user\"]},\"permissions\":{\"view\":[\"admin\",\"user\"],\"edit\":[\"admin\",\"user\"]}},{\"name\":\"email\",\"required\":{\"roles\":[\"user\"]}},{\"name\":\"userType\",\"displayName\":\"Role\",\"required\":{\"roles\":[\"user\"]},\"permissions\":{\"view\":[\"admin\",\"user\"],\"edit\":[\"admin\",\"user\"]},\"annotations\":{\"inputType\":\"select\",\"selectOptions\":\"organizer|Organizer,service_provider|Service Provider,venue_provider|Venue Provider,attendee|Attendee\"},\"validations\":{\"options\":{\"options\":[\"organizer\",\"service_provider\",\"venue_provider\",\"attendee\"]}}}]}",
-    "userProfileConfiguration": "{\"attributes\":[{\"name\":\"username\",\"required\":{\"roles\":[\"user\"]}},{\"name\":\"firstName\",\"required\":{\"roles\":[\"user\"]},\"permissions\":{\"view\":[\"admin\",\"user\"],\"edit\":[\"admin\",\"user\"]}},{\"name\":\"lastName\",\"required\":{\"roles\":[\"user\"]},\"permissions\":{\"view\":[\"admin\",\"user\"],\"edit\":[\"admin\",\"user\"]}},{\"name\":\"email\",\"required\":{\"roles\":[\"user\"]}},{\"name\":\"userType\",\"displayName\":\"Role\",\"required\":{\"roles\":[\"user\"]},\"permissions\":{\"view\":[\"admin\",\"user\"] ,\"edit\":[\"admin\",\"user\"]},\"annotations\":{\"inputType\":\"select\",\"selectOptions\":\"organizer|Organizer,service_provider|Service Provider,venue_provider|Venue Provider,attendee|Attendee\"},\"validations\":{\"options\":{\"options\":[\"organizer\",\"service_provider\",\"venue_provider\",\"attendee\"]}}}]}",
+
+    "userProfileMetadata": "{\"attributes\":[{\"name\":\"username\",\"required\":{\"roles\":[\"user\"]}},{\"name\":\"firstName\",\"required\":{\"roles\":[\"user\"]},\"permissions\":{\"view\":[\"admin\",\"user\"],\"edit\":[\"admin\",\"user\"]}},{\"name\":\"lastName\",\"required\":{\"roles\":[\"user\"]},\"permissions\":{\"view\":[\"admin\",\"user\"],\"edit\":[\"admin\",\"user\"]}},{\"name\":\"email\",\"required\":{\"roles\":[\"user\"]}},{\"name\":\"userType\",\"displayName\":\"Role\",\"required\":{\"roles\":[\"user\"]},\"permissions\":{\"view\":[\"admin\",\"user\"],\"edit\":[\"admin\",\"user\"]},\"annotations\":{\"inputType\":\"select\",\"selectOptions\":\"organizer|Organizer,service_provider|Service Provider,venue_provider|Venue Provider,attendee|Attendee\"},\"validations\":{\"options\":{\"options\":[\"organizer\",\"service_provider\",\"venue_provider\",\"attendee\",\"admin\"]}}}]}",
+
+    "userProfileConfiguration": "{\"attributes\":[{\"name\":\"username\",\"required\":{\"roles\":[\"user\"]}},{\"name\":\"firstName\",\"required\":{\"roles\":[\"user\"]},\"permissions\":{\"view\":[\"admin\",\"user\"],\"edit\":[\"admin\",\"user\"]}},{\"name\":\"lastName\",\"required\":{\"roles\":[\"user\"]},\"permissions\":{\"view\":[\"admin\",\"user\"],\"edit\":[\"admin\",\"user\"]}},{\"name\":\"email\",\"required\":{\"roles\":[\"user\"]}},{\"name\":\"userType\",\"displayName\":\"Role\",\"required\":{\"roles\":[\"user\"]},\"permissions\":{\"view\":[\"admin\",\"user\"],\"edit\":[\"admin\",\"user\"]},\"annotations\":{\"inputType\":\"select\",\"selectOptions\":\"organizer|Organizer,service_provider|Service Provider,venue_provider|Venue Provider,attendee|Attendee\"},\"validations\":{\"options\":{\"options\":[\"organizer\",\"service_provider\",\"venue_provider\",\"attendee\",\"admin\"]}}}]}",
+    
     "userProfileConfigurationDeprecated": "",
     "frontendUrl": "http://localhost:8080"
   },
@@ -239,12 +242,51 @@
         "subComponents": {},
         "config": {
           "kc.user.profile.config": [
-            "{\"attributes\":[{\"name\":\"username\",\"required\":{\"roles\":[\"user\"]}},{\"name\":\"firstName\",\"required\":{\"roles\":[\"user\"]},\"permissions\":{\"view\":[\"admin\",\"user\"],\"edit\":[\"admin\",\"user\"]}},{\"name\":\"lastName\",\"required\":{\"roles\":[\"user\"]},\"permissions\":{\"view\":[\"admin\",\"user\"],\"edit\":[\"admin\",\"user\"]}},{\"name\":\"email\",\"required\":{\"roles\":[\"user\"]}},{\"name\":\"userType\",\"displayName\":\"Role\",\"required\":{\"roles\":[\"user\"]},\"permissions\":{\"view\":[\"admin\",\"user\"],\"edit\":[\"admin\",\"user\"]},\"annotations\":{\"inputType\":\"select\",\"selectOptions\":\"organizer|Organizer,service_provider|Service Provider,venue_provider|Venue Provider,attendee|Attendee\"},\"validations\":{\"options\":{\"options\":[\"organizer\",\"service_provider\",\"venue_provider\",\"attendee\"]}}}]}\""
+            "{\"attributes\":[{\"name\":\"username\",\"required\":{\"roles\":[\"user\"]}},{\"name\":\"firstName\",\"required\":{\"roles\":[\"user\"]},\"permissions\":{\"view\":[\"admin\",\"user\"],\"edit\":[\"admin\",\"user\"]}},{\"name\":\"lastName\",\"required\":{\"roles\":[\"user\"]},\"permissions\":{\"view\":[\"admin\",\"user\"],\"edit\":[\"admin\",\"user\"]}},{\"name\":\"email\",\"required\":{\"roles\":[\"user\"]}},{\"name\":\"userType\",\"displayName\":\"Role\",\"required\":{\"roles\":[\"user\"]},\"permissions\":{\"view\":[\"admin\",\"user\"],\"edit\":[\"admin\",\"user\"]},\"annotations\":{\"inputType\":\"select\",\"selectOptions\":\"organizer|Organizer,service_provider|Service Provider,venue_provider|Venue Provider,attendee|Attendee\"},\"validations\":{\"options\":{\"options\":[\"organizer\",\"service_provider\",\"venue_provider\",\"attendee\", \"admin\"]}}}]}"
           ]
         }
       }
     ]
   },
+
+
+  "requiredActions": [
+    {
+      "alias": "CONFIGURE_TOTP",
+      "name": "Configure OTP",
+      "providerId": "CONFIGURE_TOTP",
+      "enabled": false,
+      "defaultAction": false
+    },
+    {
+      "alias": "UPDATE_PASSWORD",
+      "name": "Update Password",
+      "providerId": "UPDATE_PASSWORD",
+      "enabled": true,
+      "defaultAction": false
+    },
+    {
+      "alias": "VERIFY_EMAIL",
+      "name": "Verify Email",
+      "providerId": "VERIFY_EMAIL",
+      "enabled": false,
+      "defaultAction": false
+    },
+    {
+      "alias": "UPDATE_PROFILE",
+      "name": "Update Profile",
+      "providerId": "UPDATE_PROFILE",
+      "enabled": true,
+      "defaultAction": false
+    },
+    {
+      "alias": "terms_and_conditions",
+      "name": "Terms and Conditions",
+      "providerId": "terms_and_conditions",
+      "enabled": false,
+      "defaultAction": false
+    }
+  ],
 
   "clients": [
     {
@@ -314,19 +356,19 @@
     }
   ],
 
-
-"smtpServer": {
-  "host": "smtp.gmail.com",
-  "port": "587",
-  "from": "mahmoud.smtp.test@gmail.com",
-  "fromDisplayName": "EMS",
-  "auth": "true",
-  "user": "mahmoud.smtp.test@gmail.com",
-  "password": "hpah vdtw ielf guyr",
-  "starttls": "true",
-  "ssl": "false"
+  "smtpServer": {
+    "host": "smtp.gmail.com",
+    "port": "587",
+    "from": "mahmoud.smtp.test@gmail.com",
+    "fromDisplayName": "EMS",
+    "auth": "true",
+    "user": "mahmoud.smtp.test@gmail.com",
+    "password": "hpah vdtw ielf guyr",
+    "starttls": "true",
+    "ssl": "false"
   },
-  "loginTheme": "",
+  "loginTheme": "ems",
+  "emailTheme": "ems",
   "eventsEnabled": true,
-  "eventsListeners": ["role-assignment-listener", "jboss-logging"]
+  "eventsListeners": ["role-assignment-listener", "jboss-logging", "first-login-email"]
 }

@@ -89,6 +89,26 @@ const UserManagement = () => {
     }
   };
 
+
+const deriveRole = (u) => {
+  // 1) explicit field from backend (normalize case)
+  if (u.role && typeof u.role === "string") return u.role.toLowerCase();
+
+  // 2) our custom KC attribute
+  const attr = u.attributes?.userType?.[0];
+  if (attr) return String(attr).toLowerCase();
+
+  // 3) fallback: infer from realm roles if backend returns them
+  const rr = (u.realmRoles || u.roles || u.roleMappings || []).map((r) => String(r).toLowerCase());
+  if (rr.includes("admin")) return "admin";
+  if (rr.includes("organizer")) return "organizer";
+  if (rr.includes("service_provider")) return "service_provider";
+  if (rr.includes("venue_provider")) return "venue_provider";
+
+  // default
+  return "attendee";
+};
+
   // Roles
   const roles = [
     { value: "admin", label: "Admin" },
@@ -111,6 +131,7 @@ const UserManagement = () => {
   };
 
   const mapBackendRoleToFrontendSelect = (backendRole) => {
+    const r = String(backendRole || "").toLowerCase();
     const map = {
       admin: "admin",
       organizer: "organizer",
@@ -118,8 +139,9 @@ const UserManagement = () => {
       service_provider: "service_provider",
       venue_provider: "venue_provider",
     };
-    return map[backendRole] || "attendee";
+    return map[r] || "attendee";
   };
+  
 
   // Load users
   useEffect(() => {
@@ -131,7 +153,7 @@ const UserManagement = () => {
       const response = await getAllUsers(0, 100);
       const normalized = (response.content || []).map((u) => ({
         ...u,
-        role: u.role || u.attributes?.userType?.[0] || "attendee",
+         role: deriveRole(u),
       }));
       setUsers(normalized);
     } catch {
