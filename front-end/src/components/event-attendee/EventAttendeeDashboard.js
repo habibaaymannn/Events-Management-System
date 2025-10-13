@@ -598,7 +598,7 @@ const EventAttendeeDashboard = () => {
                     <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
                       <span style={{ color: "#6c757d" }}>How was it?</span>
                       <button
-                        className="btn btn-primary"
+                        className="btn btn-warning"
                         onClick={(e) => {
                           e.stopPropagation();
                           setShowRating(event.id);
