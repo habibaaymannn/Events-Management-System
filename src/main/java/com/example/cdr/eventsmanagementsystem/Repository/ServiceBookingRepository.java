@@ -96,6 +96,6 @@ public interface ServiceBookingRepository extends JpaRepository<ServiceBooking, 
         @Param("statuses") java.util.Collection<BookingStatus> statuses
     );
 
-
+    List<ServiceBooking> findBookingsByServiceId(Long serviceId);
 
 }

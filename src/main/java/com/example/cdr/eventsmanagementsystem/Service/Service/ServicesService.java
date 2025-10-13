@@ -1,10 +1,16 @@
 package com.example.cdr.eventsmanagementsystem.Service.Service;
 
 import java.io.IOException;
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Objects;
 
+import com.example.cdr.eventsmanagementsystem.Model.Booking.BookingStatus;
+import com.example.cdr.eventsmanagementsystem.Model.Booking.ServiceBooking;
+import com.example.cdr.eventsmanagementsystem.Repository.EventRepository;
+import com.example.cdr.eventsmanagementsystem.Repository.ServiceBookingRepository;
 import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.Pageable;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
@@ -23,6 +29,8 @@ import com.example.cdr.eventsmanagementsystem.Util.ImageUtil;
 import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
 
+import static com.example.cdr.eventsmanagementsystem.Constants.ExceptionConstants.*;
+
 /**
  * Service class for managing services.
  * Provides functionality to create, updateAvailability
@@ -35,11 +43,35 @@ public class ServicesService {
     private final UserSyncService userSyncService;
     private final ServiceMapper serviceMapper;
     private final ImageUtil imageUtil;
+    private final ServiceBookingRepository serviceBookingRepository ;
+    private final EventRepository eventRepository;
 
     public ServicesDTO getServiceById(Long serviceId) {
         Services service = getService(serviceId);
         return serviceMapper.toServiceDTO(service);
     }
+
+    public Page<ServicesDTO> getAvailableServices(LocalDateTime startDate, LocalDateTime endDate, Pageable pageable) {
+
+
+        if (startDate.isAfter(endDate)) {
+            throw new IllegalArgumentException(START_DATE_MUST_BE_BEFORE_END_DATE);
+        }
+
+        if (startDate.isBefore(LocalDateTime.now())) {
+            throw new IllegalArgumentException(START_DATE_CANNOT_BE_IN_THE_PAST);
+        }
+
+        Page<Services> allServices = serviceRepository.findAll(pageable);
+
+        List<ServicesDTO> availableServiceDTOs = allServices.getContent().stream()
+                .filter(service -> isServiceAvailableDuringPeriod(service.getId(), startDate, endDate))
+                .map(serviceMapper::toServiceDTO)
+                .toList();
+
+        return new PageImpl<>(availableServiceDTOs, pageable, availableServiceDTOs.size());
+    }
+
 
     public Page<ServicesDTO> getServicesByServiceProvider(Pageable pageable) {
         ServiceProvider serviceProvider = ensureCurrentUserAsServiceProvider();
@@ -92,4 +124,29 @@ public class ServicesService {
     private ServiceProvider ensureCurrentUserAsServiceProvider() {
         return userSyncService.ensureUserExists(ServiceProvider.class);
     }
+
+    private boolean isServiceAvailableDuringPeriod(Long serviceId, LocalDateTime startDate, LocalDateTime endDate) {
+
+        List<ServiceBooking> serviceBookings = serviceBookingRepository.findBookingsByServiceId(serviceId);
+
+        if ( Objects.isNull(serviceBookings) || serviceBookings.isEmpty()) {
+            return true;
+        }
+
+        List<Long> eventIds = serviceBookings.stream()
+                .filter(booking -> booking.getStatus() != BookingStatus.CANCELLED)
+                .map(ServiceBooking::getEventId)
+                .filter(Objects::nonNull)
+                .distinct()
+                .toList();
+
+        if (eventIds.isEmpty()) {
+            return true;
+        }
+
+        boolean hasConflict = eventRepository.existsEventWithTimeConflict(eventIds, startDate, endDate);
+
+        return !hasConflict;
+    }
+
 }
