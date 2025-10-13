@@ -485,7 +485,7 @@ const EventAttendeeDashboard = () => {
           width: "100%",
         }}
       >
-        {list.map((event) => {
+        {list.filter(event => event.status !== 'CANCELLED').map((event) => {
           const stored = ratings[event.id];
           const canRate = segmentFor(event) === "Past" && registeredIds.has(event.id);
 
