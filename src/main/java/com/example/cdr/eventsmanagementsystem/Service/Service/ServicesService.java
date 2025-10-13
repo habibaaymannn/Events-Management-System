@@ -65,7 +65,7 @@ public class ServicesService {
         Services service = getService(serviceId);
         verifyAccess(service);
         serviceMapper.updateService(dto, service);
-        service.setImages(imageUtil.extractImageData(newImages));
+        service.setImages(imageUtil.mergeImages(service.getImages(), newImages));
         Services updatedVenue = serviceRepository.save(service);
         return serviceMapper.toServiceDTO(updatedVenue);
     }
