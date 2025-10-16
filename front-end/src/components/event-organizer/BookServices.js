@@ -1,165 +1,3 @@
-import React, { useState } from "react";
-import { getMyServices } from "../../api/serviceApi";
-import { bookService } from "../../api/bookingApi";
-
-const mockServices = [
-  {
-    id: 1,
-    name: "Premium Wedding Catering",
-    category: "Food Catering",
-    provider: "Gourmet Solutions",
-    description: "Full-service catering with gourmet menu options for weddings and special events",
-    price: 50,
-    unit: "per person",
-    minOrder: 20,
-    maxOrder: 500,
-    rating: 4.8,
-    reviews: 145,
-    serviceAreas: ["Downtown", "Business District", "Suburbs"],
-    features: ["Appetizers", "Main Course", "Desserts", "Beverages", "Service Staff", "Setup & Cleanup"],
-    images: ["catering1.jpg", "catering2.jpg"],
-    availability: "Available",
-    contact: {
-      phone: "+1 234-567-9000",
-      email: "catering@gourmet.com"
-    },
-    policies: {
-      cancellation: "Free cancellation up to 7 days before event",
-      deposit: "30% deposit required",
-      notice: "Minimum 14 days advance booking required"
-    }
-  },
-  {
-    id: 2,
-    name: "Professional Event Photography",
-    category: "Photography",
-    provider: "Lens Masters Studio",
-    description: "High-quality event photography capturing all your special moments with professional editing",
-    price: 1500,
-    unit: "per event",
-    minOrder: 1,
-    maxOrder: 1,
-    rating: 4.9,
-    reviews: 98,
-    serviceAreas: ["Downtown", "City Park", "Business District", "Suburbs"],
-    features: ["Digital Gallery", "Edited Photos", "Print Rights", "Online Sharing", "USB Drive", "Professional Equipment"],
-    images: ["photo1.jpg", "photo2.jpg"],
-    availability: "Available",
-    contact: {
-      phone: "+1 234-567-9001",
-      email: "bookings@lensmasters.com"
-    },
-    policies: {
-      cancellation: "Free cancellation up to 5 days before event",
-      deposit: "50% deposit required",
-      notice: "Minimum 7 days advance booking required"
-    }
-  },
-  {
-    id: 3,
-    name: "Complete Audio Visual Setup",
-    category: "AV Equipment",
-    provider: "TechSound Pro",
-    description: "Professional audio-visual equipment rental with technical support and setup assistance",
-    price: 800,
-    unit: "per day",
-    minOrder: 1,
-    maxOrder: 7,
-    rating: 4.7,
-    reviews: 234,
-    serviceAreas: ["Downtown", "Convention Center", "Hotels", "Business District"],
-    features: ["Sound System", "Projectors", "Microphones", "Technical Support", "Setup Service", "Backup Equipment"],
-    images: ["av1.jpg", "av2.jpg"],
-    availability: "Booked until Feb 20",
-    contact: {
-      phone: "+1 234-567-9002",
-      email: "rentals@techsound.com"
-    },
-    policies: {
-      cancellation: "Free cancellation up to 3 days before event",
-      deposit: "25% deposit required",
-      notice: "Minimum 5 days advance booking required"
-    }
-  },
-  {
-    id: 4,
-    name: "Elegant Floral Arrangements",
-    category: "Decorations",
-    provider: "Bloom & Co",
-    description: "Beautiful floral decorations for weddings, corporate events, and celebrations with custom designs",
-    price: 300,
-    unit: "per arrangement",
-    minOrder: 2,
-    maxOrder: 50,
-    rating: 4.6,
-    reviews: 167,
-    serviceAreas: ["City Park", "Venues", "Hotels", "Churches"],
-    features: ["Fresh Flowers", "Custom Designs", "Setup Service", "Maintenance", "Color Coordination", "Seasonal Options"],
-    images: ["floral1.jpg", "floral2.jpg"],
-    availability: "Available",
-    contact: {
-      phone: "+1 234-567-9003",
-      email: "orders@bloomco.com"
-    },
-    policies: {
-      cancellation: "Free cancellation up to 5 days before event",
-      deposit: "40% deposit required",
-      notice: "Minimum 10 days advance booking required"
-    }
-  },
-  {
-    id: 5,
-    name: "Live Band Entertainment",
-    category: "Entertainment",
-    provider: "Music Makers",
-    description: "Professional live band with versatile repertoire for all types of events and celebrations",
-    price: 2000,
-    unit: "per event",
-    minOrder: 1,
-    maxOrder: 1,
-    rating: 4.5,
-    reviews: 89,
-    serviceAreas: ["Downtown", "Venues", "Outdoor Locations"],
-    features: ["Live Performance", "Sound Equipment", "Lighting", "Multiple Genres", "MC Services", "Custom Playlist"],
-    images: ["band1.jpg", "band2.jpg"],
-    availability: "Available",
-    contact: {
-      phone: "+1 234-567-9004",
-      email: "bookings@musicmakers.com"
-    },
-    policies: {
-      cancellation: "Free cancellation up to 14 days before event",
-      deposit: "50% deposit required",
-      notice: "Minimum 21 days advance booking required"
-    }
-  },
-  {
-    id: 6,
-    name: "Premium Furniture Rental",
-    category: "Furniture",
-    provider: "Event Furnishings",
-    description: "High-quality furniture rental including chairs, tables, lounge sets, and decorative pieces",
-    price: 25,
-    unit: "per item",
-    minOrder: 10,
-    maxOrder: 200,
-    rating: 4.4,
-    reviews: 201,
-    serviceAreas: ["Downtown", "Business District", "Venues", "Outdoor Locations"],
-    features: ["Delivery", "Setup", "Pickup", "Cleaning", "Variety of Styles", "Damage Protection"],
-    images: ["furniture1.jpg", "furniture2.jpg"],
-    availability: "Available",
-    contact: {
-      phone: "+1 234-567-9005",
-      email: "rentals@eventfurnishings.com"
-    },
-    policies: {
-      cancellation: "Free cancellation up to 3 days before event",
-      deposit: "20% deposit required",
-      notice: "Minimum 7 days advance booking required"
-    }
-  }
-];
 
 const serviceCategories = [
   "All Categories",
@@ -176,8 +14,27 @@ const serviceCategories = [
 ];
 
 const BookServices = () => {
-  const [services, setServices] = useState(mockServices);
+  const [services, setServices] = useState([]);
   const [selectedService, setSelectedService] = useState(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    loadServices();
+  }, []);
+
+  const loadServices = async () => {
+    try {
+      setLoading(true);
+      const servicesData = await getAllAvailableServices();
+      const servicesList = Array.isArray(servicesData) ? servicesData : (servicesData?.content ?? []);
+      setServices(servicesList);
+    } catch (error) {
+      console.error("Error loading services:", error);
+      setServices([]);
+    } finally {
+      setLoading(false);
+    }
+  };
   const [showBookingModal, setShowBookingModal] = useState(false);
   const [cart, setCart] = useState([]);
   const [filters, setFilters] = useState({
@@ -198,10 +55,13 @@ const BookServices = () => {
   });
 
   const filteredServices = services.filter(service => {
-    if (filters.category !== "All Categories" && service.category !== filters.category) {
-      return false;
+    if (filters.category !== "All Categories") {
+      const serviceCategory = service.type?.replace(/_/g, ' ') || '';
+      if (!serviceCategory.toLowerCase().includes(filters.category.toLowerCase())) {
+        return false;
+      }
     }
-    if (filters.serviceArea && !service.serviceAreas.some(area =>
+    if (filters.serviceArea && service.servicesAreas && !service.servicesAreas.some(area =>
       area.toLowerCase().includes(filters.serviceArea.toLowerCase())
     )) {
       return false;
@@ -209,7 +69,7 @@ const BookServices = () => {
     if (filters.maxPrice && service.price > parseInt(filters.maxPrice)) {
       return false;
     }
-    if (filters.availabilityOnly && service.availability !== "Available") {
+    if (filters.availabilityOnly && service.availability !== "AVAILABLE") {
       return false;
     }
     return true;
@@ -238,7 +98,7 @@ const BookServices = () => {
   const handleBookService = (service) => {
     setSelectedService(service);
     setShowBookingModal(true);
-    setBookingData(prev => ({ ...prev, quantity: service.minOrder }));
+    setBookingData(prev => ({ ...prev, quantity: 1 }));
   };
 
   const addToCart = (service, quantity) => {
@@ -263,12 +123,18 @@ const BookServices = () => {
   const submitBooking = async (e) => {
     e.preventDefault();
     try {
+      const organizerId = window.keycloak?.tokenParsed?.sub;
+      if (!organizerId) {
+        alert("Unable to identify organizer. Please log in again.");
+        return;
+      }
+
       const serviceBookingData = {
         startTime: `${bookingData.eventDate}T09:00:00.000Z`, // Default start time
         endTime: `${bookingData.eventDate}T18:00:00.000Z`,   // Default end time
         currency: "USD", // Default currency
         serviceId: parseInt(selectedService.id),
-        organizerId: "current-organizer-id", // You'll need to get this from auth context
+        organizerId: organizerId,
         eventId: bookingData.eventId || null // If booking for existing event
       };
 
@@ -292,6 +158,17 @@ const BookServices = () => {
       alert("Failed to book service. Please try again.");
     }
   };
+
+  if (loading) {
+    return (
+      <div className="event-page">
+        <div className="event-page-header">
+          <h3 className="event-page-title">Book Services</h3>
+          <p className="event-page-subtitle">Loading services...</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="event-page">
@@ -385,51 +262,32 @@ const BookServices = () => {
             <div key={service.id} className="service-booking-card">
               <div className="service-card-header">
                 <h5 className="service-card-title">{service.name}</h5>
-                <span className="service-category-badge">{service.category}</span>
+                <span className="service-category-badge">{service.type?.replace(/_/g, ' ') || 'Service'}</span>
               </div>
 
               <div className="service-card-content">
-                <p className="service-provider">🏪 {service.provider}</p>
-                <p className="service-price">💰 ${service.price} {service.unit}</p>
-                <p className="service-order-info">
-                  📦 Min: {service.minOrder} | Max: {service.maxOrder}
-                </p>
-                <p className="service-description">{service.description}</p>
-
-                <div className="service-rating">
-                  <span className="rating">⭐ {service.rating}</span>
-                  <span className="reviews">({service.reviews} reviews)</span>
-                </div>
+                <p className="service-price">💰 ${service.price || 0}</p>
+                {service.description && <p className="service-description">{service.description}</p>}
 
                 <div className="service-availability">
-                  <span className={`availability-status ${service.availability === "Available" ? "available" : "unavailable"}`}>
-                    {service.availability}
+                  <span className={`availability-status ${service.availability === "AVAILABLE" ? "available" : "unavailable"}`}>
+                    {service.availability === "AVAILABLE" ? "Available" : "Unavailable"}
                   </span>
                 </div>
 
-                <div className="service-areas">
-                  <strong>Service Areas:</strong>
-                  <div className="areas-tags">
-                    {service.serviceAreas.slice(0, 3).map((area, index) => (
-                      <span key={index} className="area-tag">{area}</span>
-                    ))}
-                    {service.serviceAreas.length > 3 && (
-                      <span className="area-tag more">+{service.serviceAreas.length - 3}</span>
-                    )}
+                {service.servicesAreas && service.servicesAreas.length > 0 && (
+                  <div className="service-areas">
+                    <strong>Service Areas:</strong>
+                    <div className="areas-tags">
+                      {service.servicesAreas.slice(0, 3).map((area, index) => (
+                        <span key={index} className="area-tag">{area}</span>
+                      ))}
+                      {service.servicesAreas.length > 3 && (
+                        <span className="area-tag more">+{service.servicesAreas.length - 3}</span>
+                      )}
+                    </div>
                   </div>
-                </div>
-
-                <div className="service-features">
-                  <strong>Features:</strong>
-                  <div className="features-tags">
-                    {service.features.slice(0, 3).map((feature, index) => (
-                      <span key={index} className="feature-tag">{feature}</span>
-                    ))}
-                    {service.features.length > 3 && (
-                      <span className="feature-tag more">+{service.features.length - 3}</span>
-                    )}
-                  </div>
-                </div>
+                )}
               </div>
 
               <div className="service-card-actions">
@@ -439,7 +297,7 @@ const BookServices = () => {
                 >
                   View Details
                 </button>
-                {service.availability === "Available" && (
+                {service.availability === "AVAILABLE" && (
                   <button
                     className="event-btn success"
                     onClick={() => handleBookService(service)}
@@ -471,59 +329,33 @@ const BookServices = () => {
                 <div className="detail-section">
                   <h5>Service Information</h5>
                   <div className="detail-list">
-                    <p><strong>Provider:</strong> {selectedService.provider}</p>
-                    <p><strong>Category:</strong> {selectedService.category}</p>
-                    <p><strong>Price:</strong> ${selectedService.price} {selectedService.unit}</p>
-                    <p><strong>Min Order:</strong> {selectedService.minOrder}</p>
-                    <p><strong>Max Order:</strong> {selectedService.maxOrder}</p>
-                    <p><strong>Rating:</strong> ⭐ {selectedService.rating} ({selectedService.reviews} reviews)</p>
-                    <p><strong>Availability:</strong> {selectedService.availability}</p>
+                    <p><strong>Category:</strong> {selectedService.type?.replace(/_/g, ' ') || 'Service'}</p>
+                    <p><strong>Price:</strong> ${selectedService.price || 0}</p>
+                    <p><strong>Availability:</strong> {selectedService.availability === "AVAILABLE" ? "Available" : "Unavailable"}</p>
                   </div>
                 </div>
 
-                <div className="detail-section">
-                  <h5>Contact Information</h5>
-                  <div className="detail-list">
-                    <p><strong>Phone:</strong> {selectedService.contact.phone}</p>
-                    <p><strong>Email:</strong> {selectedService.contact.email}</p>
+                {selectedService.description && (
+                  <div className="detail-section full-width">
+                    <h5>Description</h5>
+                    <p>{selectedService.description}</p>
                   </div>
-                </div>
+                )}
 
-                <div className="detail-section full-width">
-                  <h5>Description</h5>
-                  <p>{selectedService.description}</p>
-                </div>
-
-                <div className="detail-section full-width">
-                  <h5>Service Areas</h5>
-                  <div className="areas-list">
-                    {selectedService.serviceAreas.map((area, index) => (
-                      <span key={index} className="area-item">📍 {area}</span>
-                    ))}
+                {selectedService.servicesAreas && selectedService.servicesAreas.length > 0 && (
+                  <div className="detail-section full-width">
+                    <h5>Service Areas</h5>
+                    <div className="areas-list">
+                      {selectedService.servicesAreas.map((area, index) => (
+                        <span key={index} className="area-item">📍 {area}</span>
+                      ))}
+                    </div>
                   </div>
-                </div>
-
-                <div className="detail-section full-width">
-                  <h5>Features Included</h5>
-                  <div className="features-list">
-                    {selectedService.features.map((feature, index) => (
-                      <span key={index} className="feature-item">✓ {feature}</span>
-                    ))}
-                  </div>
-                </div>
-
-                <div className="detail-section full-width">
-                  <h5>Policies</h5>
-                  <div className="policies-list">
-                    <p><strong>Cancellation:</strong> {selectedService.policies.cancellation}</p>
-                    <p><strong>Deposit:</strong> {selectedService.policies.deposit}</p>
-                    <p><strong>Advance Notice:</strong> {selectedService.policies.notice}</p>
-                  </div>
-                </div>
+                )}
               </div>
 
               <div className="modal-actions">
-                {selectedService.availability === "Available" && (
+                {selectedService.availability === "AVAILABLE" && (
                   <button
                     className="event-btn success"
                     onClick={() => handleBookService(selectedService)}
@@ -561,9 +393,8 @@ const BookServices = () => {
                 <div className="booking-summary">
                   <h5>Service Details</h5>
                   <p><strong>Service:</strong> {selectedService.name}</p>
-                  <p><strong>Provider:</strong> {selectedService.provider}</p>
-                  <p><strong>Price:</strong> ${selectedService.price} {selectedService.unit}</p>
-                  <p><strong>Min/Max Order:</strong> {selectedService.minOrder} - {selectedService.maxOrder}</p>
+                  <p><strong>Category:</strong> {selectedService.type?.replace(/_/g, ' ') || 'Service'}</p>
+                  <p><strong>Price:</strong> ${selectedService.price || 0}</p>
                 </div>
 
                 <div className="form-grid">
@@ -616,8 +447,7 @@ const BookServices = () => {
                       value={bookingData.quantity}
                       onChange={handleBookingChange}
                       className="form-control"
-                      min={selectedService.minOrder}
-                      max={selectedService.maxOrder}
+                      min={1}
                       required
                     />
                   </div>

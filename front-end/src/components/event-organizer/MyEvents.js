@@ -1,6 +1,6 @@
-import React, { useState, useEffect } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { getAllEvents, cancelEvent, updateEvent, createEvent, getEventsByOrganizer } from "../../api/eventApi";
+import { cancelEvent, getEventsByOrganizer } from "../../api/eventApi";
 import { getBookingById, getBookingsByEventId } from "../../api/bookingApi";
 
 const MyEvents = () => {

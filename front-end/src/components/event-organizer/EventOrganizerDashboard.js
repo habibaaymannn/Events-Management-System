@@ -1,8 +1,7 @@
 import React, { useState, useEffect } from "react";
-import { Routes, Route, useLocation } from "react-router-dom";
+import { useLocation } from "react-router-dom";
 import "./EventOrganizerDashboard.css";
-import { initializeAllDummyData } from "../../utils/initializeDummyData";
-import { createEvent, updateEvent, cancelEvent, getAllEvents, getEventsByOrganizer } from "../../api/eventApi";
+import { createEvent, updateEvent, cancelEvent, getEventsByOrganizer } from "../../api/eventApi";
 import {
   bookVenue,
   bookService,
@@ -21,11 +20,6 @@ import EventForm from "./components/EventForm";
 import EventsTable from "./components/EventsTable";
 import EditEventModal from "./components/EditEventModal";
 import AlertsSection from "./components/AlertsSection";
-import CreateEvent from "./CreateEvent";
-import MyEvents from "./MyEvents";
-import BookVenues from "./BookVenues";
-import BookServices from "./BookServices";
-import EventOverview from "./EventOverview";
 
 // Enum values for EventType
 const EVENT_TYPES = [
@@ -59,17 +53,6 @@ const initialEvents = [];
 const EventOrganizerDashboard = () => {
   const location = useLocation();
   
-  // Initialize all dummy data when component mounts
-  useEffect(() => {
-    const { events } = initializeAllDummyData();
-    
-    // If events were just initialized, update the state
-    if (events && events.length > 0 && (!events.length || events.length !== JSON.parse(localStorage.getItem("organizerEvents") || "[]").length)) {
-      setEvents(events);
-    }
-  }, []);
-
-  // Load data from localStorage
 
   const [events, setEvents] = useState(() => {
     const stored = localStorage.getItem("organizerEvents");
@@ -342,10 +325,6 @@ const EventOrganizerDashboard = () => {
   // The new code for load Venues when booking venue
   const handleBookVenue = async (event) => {
 
-   const bookings = eventBookings[event.id] || { venue: [], service: [] };
-      const activeVenueBookings = bookings.venue?.filter(booking =>
-       booking.status !== 'CANCELLED' && booking.status !== 'CANCELLED_BY_CUSTOMER' && booking.status !== 'CANCELLED_BY_PROVIDER'
-     ) || [];
 
     setSelectedEventForBooking(event);
     setShowVenueBookingModal(true);
@@ -376,7 +355,7 @@ const handleBookService = async (event) => {
 
 
   // Handle edit venue booking
-  const handleEditVenueBooking = (event, venueBooking) => {
+  const handleEditVenueBooking = (event) => {
     setSelectedEventForBooking(event);
     // Get all venue bookings for this event
     const allVenueBookings = eventBookings[event.id]?.venue || [];
@@ -890,20 +869,24 @@ const handleBookService = async (event) => {
                   <p style={{ fontSize: '0.8rem', color: '#6c757d', margin: 0 }}>
                     Found {availableVenues.length} venues
                   </p>
+                  <button 
+                    className="btn btn-secondary"
+                    style={{ padding: '4px 8px', fontSize: '0.7rem' }}
+                    onClick={async () => {
+                      try {
+                        const venuesData = await getAllVenues();
+                        setAvailableVenues(Array.isArray(venuesData) ? venuesData : (venuesData?.content ?? []));
+                      } catch (error) {
+                        console.error("Error refreshing venues:", error);
+                      }
+                    }}
+                  >
+                    Refresh
+                  </button>
                 </div>
                 {availableVenues.length === 0 ? (
                   <div style={{ textAlign: 'center', padding: '2rem', background: '#f8f9fa', borderRadius: '8px' }}>
                     <p style={{ color: '#6c757d', fontStyle: 'italic', marginBottom: '1rem' }}>No venues are available to host your event at the same time as your event</p>
-                    <p style={{ fontSize: '0.9rem', color: '#495057' }}>
-                      To book venues, you need venues created by venue providers.
-                    </p>
-                    <button
-                      className="btn btn-primary"
-                      onClick={() => window.open('/venue-provider', '_blank')}
-                      style={{ padding: '8px 16px', fontSize: '0.9rem' }}
-                    >
-                      Create Venues (Venue Provider)
-                    </button>
                   </div>
                 ) : (
                   <div style={{ display: 'grid', gap: '1rem', maxHeight: '400px', overflowY: 'auto' }}>
@@ -987,17 +970,7 @@ const handleBookService = async (event) => {
 
                 {availableServices.length === 0 ? (
                   <div style={{ textAlign: 'center', padding: '2rem', background: '#f8f9fa', borderRadius: '8px' }}>
-                    <p style={{ color: '#6c757d', fontStyle: 'italic', marginBottom: '1rem' }}>No services available</p>
-                    <p style={{ fontSize: '0.9rem', color: '#495057' }}>
-                      No services are available to support your event at the same time
-                    </p>
-                    <button
-                      className="btn btn-success"
-                      onClick={() => window.open('/service-provider', '_blank')}
-                      style={{ padding: '8px 16px', fontSize: '0.9rem' }}
-                    >
-                      Create Services (Service Provider)
-                    </button>
+                    <p style={{ color: '#6c757d', fontStyle: 'italic', marginBottom: '1rem' }}>No services are available to support your event at the same time</p>
                   </div>
                 ) : (
                   <div style={{ display: 'grid', gap: '1rem', maxHeight: '400px', overflowY: 'auto' }}>
@@ -1342,14 +1315,6 @@ const handleBookService = async (event) => {
         </div>
       )}
 
-      {/* Routes for sub-components */}
-      <Routes>
-        <Route path="/" element={<EventOverview />} />
-        <Route path="create-event" element={<CreateEvent />} />
-        <Route path="my-events" element={<MyEvents />} />
-        <Route path="book-venues" element={<BookVenues />} />
-        <Route path="book-services" element={<BookServices />} />
-      </Routes>
     </div>
   );
 };

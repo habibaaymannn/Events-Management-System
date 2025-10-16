@@ -1,52 +1,80 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, LineChart, Line, PieChart, Pie, Cell } from "recharts";
-
-const monthlyData = [
-    { month: "Jan", revenue: 15000, bookings: 18, expenses: 3000 },
-    { month: "Feb", revenue: 22000, bookings: 25, expenses: 4000 },
-    { month: "Mar", revenue: 28000, bookings: 32, expenses: 5000 },
-    { month: "Apr", revenue: 25000, bookings: 28, expenses: 4500 },
-    { month: "May", revenue: 35000, bookings: 38, expenses: 6000 },
-    { month: "Jun", revenue: 42000, bookings: 45, expenses: 7000 },
-];
-
-const serviceRevenueData = [
-    { name: "Food Catering", revenue: 65000, bookings: 35, avgPrice: 1857 },
-    { name: "Photography", revenue: 48000, bookings: 24, avgPrice: 2000 },
-    { name: "AV Equipment", revenue: 32000, bookings: 40, avgPrice: 800 },
-    { name: "Decorations", revenue: 18000, bookings: 25, avgPrice: 720 },
-    { name: "Furniture Rental", revenue: 15000, bookings: 60, avgPrice: 250 },
-];
-
-const expenseData = [
-    { category: "Equipment & Supplies", amount: 12000, color: "#667eea" },
-    { category: "Transportation", amount: 6000, color: "#764ba2" },
-    { category: "Staff & Labor", amount: 8000, color: "#28a745" },
-    { category: "Marketing", amount: 3000, color: "#ffc107" },
-    { category: "Insurance & Permits", amount: 2500, color: "#dc3545" },
-];
-
-const clientData = [
-    { name: "Corporate Events", revenue: 85000, percentage: 45 },
-    { name: "Weddings", revenue: 65000, percentage: 35 },
-    { name: "Private Parties", revenue: 25000, percentage: 13 },
-    { name: "Charity Events", revenue: 13000, percentage: 7 },
-];
+import { getMyServices, getServiceProviderBookings } from "../../api/serviceApi";
 
 const ServiceRevenue = () => {
     const [selectedPeriod, setSelectedPeriod] = useState("6months");
+    const [services, setServices] = useState([]);
+    const [bookings, setBookings] = useState([]);
+    const [loading, setLoading] = useState(true);
 
-    const totalRevenue = monthlyData.reduce((sum, month) => sum + month.revenue, 0);
-    const totalExpenses = monthlyData.reduce((sum, month) => sum + month.expenses, 0);
+    useEffect(() => {
+        loadData();
+    }, []);
+
+    const loadData = async () => {
+        try {
+            setLoading(true);
+            const serviceProviderId = window.keycloak?.tokenParsed?.sub;
+            if (!serviceProviderId) {
+                console.error("No service provider ID found");
+                return;
+            }
+
+            const [servicesData, bookingsData] = await Promise.all([
+                getMyServices(),
+                getServiceProviderBookings(serviceProviderId)
+            ]);
+            
+            setServices(Array.isArray(servicesData) ? servicesData : []);
+            setBookings(bookingsData?.content || []);
+        } catch (error) {
+            console.error("Error loading revenue data:", error);
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    const totalRevenue = bookings.reduce((sum, booking) => sum + (booking.amount || 0), 0);
+    const totalBookings = bookings.length;
+    const totalExpenses = 0; 
     const netProfit = totalRevenue - totalExpenses;
-    const profitMargin = ((netProfit / totalRevenue) * 100).toFixed(1);
+    const profitMargin = totalRevenue > 0 ? ((netProfit / totalRevenue) * 100).toFixed(1) : 0;
+    const averageRevenuePerBooking = totalBookings > 0 ? Math.round(totalRevenue / totalBookings) : 0;
 
-    const totalBookings = monthlyData.reduce((sum, month) => sum + month.bookings, 0);
-    const averageRevenuePerBooking = Math.round(totalRevenue / totalBookings);
+    const serviceRevenueMap = bookings.reduce((acc, booking) => {
+        const serviceId = booking.serviceId;
+        if (!acc[serviceId]) {
+            acc[serviceId] = { revenue: 0, bookings: 0 };
+        }
+        acc[serviceId].revenue += booking.amount || 0;
+        acc[serviceId].bookings += 1;
+        return acc;
+    }, {});
 
-    const topPerformingService = serviceRevenueData.reduce((prev, current) =>
-        (prev.revenue > current.revenue) ? prev : current
-    );
+    const serviceRevenueData = services.map(service => ({
+        name: service.name,
+        revenue: serviceRevenueMap[service.id]?.revenue || 0,
+        bookings: serviceRevenueMap[service.id]?.bookings || 0,
+        avgPrice: serviceRevenueMap[service.id]?.bookings > 0 
+            ? Math.round(serviceRevenueMap[service.id].revenue / serviceRevenueMap[service.id].bookings)
+            : 0
+    })).filter(s => s.revenue > 0);
+
+    const topPerformingService = serviceRevenueData.length > 0 
+        ? serviceRevenueData.reduce((prev, current) => (prev.revenue > current.revenue) ? prev : current)
+        : { name: "N/A", revenue: 0 };
+
+    if (loading) {
+        return (
+            <div className="service-page">
+                <div className="service-page-header">
+                    <h3 className="service-page-title">Revenue Analytics</h3>
+                    <p className="service-page-subtitle">Loading revenue data...</p>
+                </div>
+            </div>
+        );
+    }
 
     return (
         <div className="service-page">
@@ -62,7 +90,7 @@ const ServiceRevenue = () => {
                     <div className="stat-content">
                         <h3 className="stat-number">${totalRevenue.toLocaleString()}</h3>
                         <p className="stat-label">Total Revenue</p>
-                        <span className="stat-change positive">+18.5% from last period</span>
+                        <span className="stat-change neutral">Total from all bookings</span>
                     </div>
                 </div>
 
@@ -89,7 +117,7 @@ const ServiceRevenue = () => {
                     <div className="stat-content">
                         <h3 className="stat-number">${averageRevenuePerBooking}</h3>
                         <p className="stat-label">Avg. Revenue/Booking</p>
-                        <span className="stat-change positive">+12.3% efficiency</span>
+                        <span className="stat-change neutral">Per booking average</span>
                     </div>
                 </div>
             </div>
@@ -106,220 +134,108 @@ const ServiceRevenue = () => {
                 </div>
 
                 <div className="highlight-card">
-                    <div className="highlight-icon">📅</div>
-                    <div className="highlight-content">
-                        <h5>Best Month</h5>
-                        <p>June 2024</p>
-                        <span className="highlight-value">$42,000</span>
-                    </div>
-                </div>
-
-                <div className="highlight-card">
-                    <div className="highlight-icon">👥</div>
-                    <div className="highlight-content">
-                        <h5>Client Satisfaction</h5>
-                        <p>Average Rating</p>
-                        <span className="highlight-value">4.8/5.0</span>
-                    </div>
-                </div>
-
-                <div className="highlight-card">
                     <div className="highlight-icon">📊</div>
                     <div className="highlight-content">
-                        <h5>Growth Rate</h5>
-                        <p>Monthly Growth</p>
-                        <span className="highlight-value">+18.5%</span>
+                        <h5>Total Services</h5>
+                        <p>Active Services</p>
+                        <span className="highlight-value">{services.length}</span>
+                    </div>
+                </div>
+
+                <div className="highlight-card">
+                    <div className="highlight-icon">📅</div>
+                    <div className="highlight-content">
+                        <h5>Total Bookings</h5>
+                        <p>All Time</p>
+                        <span className="highlight-value">{totalBookings}</span>
+                    </div>
+                </div>
+
+                <div className="highlight-card">
+                    <div className="highlight-icon">💰</div>
+                    <div className="highlight-content">
+                        <h5>Avg Per Booking</h5>
+                        <p>Revenue Average</p>
+                        <span className="highlight-value">${averageRevenuePerBooking.toLocaleString()}</span>
                     </div>
                 </div>
             </div>
 
-            {/* Revenue Trends Chart */}
-            <div className="chart-section">
-                <div className="chart-card large">
-                    <div className="chart-header">
-                        <h4 className="chart-title">Revenue & Expense Trends</h4>
-                        <select
-                            value={selectedPeriod}
-                            onChange={(e) => setSelectedPeriod(e.target.value)}
-                            className="form-control"
-                            style={{ width: "150px" }}
-                        >
-                            <option value="6months">Last 6 Months</option>
-                            <option value="12months">Last 12 Months</option>
-                            <option value="ytd">Year to Date</option>
-                        </select>
-                    </div>
-                    <ResponsiveContainer width="100%" height={400}>
-                        <BarChart data={monthlyData}>
-                            <CartesianGrid strokeDasharray="3 3" />
-                            <XAxis dataKey="month" />
-                            <YAxis />
-                            <Tooltip formatter={(value) => [`$${value.toLocaleString()}`, ""]} />
-                            <Legend />
-                            <Bar dataKey="revenue" fill="#667eea" name="Revenue" />
-                            <Bar dataKey="expenses" fill="#ff6b6b" name="Expenses" />
-                        </BarChart>
-                    </ResponsiveContainer>
-                </div>
-            </div>
-
-            {/* Service Performance and Client Breakdown */}
+            {/* Service Performance */}
             <div className="charts-grid">
-                <div className="chart-card">
-                    <h4 className="chart-title">Revenue by Service Category</h4>
-                    <ResponsiveContainer width="100%" height={300}>
-                        <BarChart data={serviceRevenueData} layout="horizontal">
-                            <CartesianGrid strokeDasharray="3 3" />
-                            <XAxis type="number" />
-                            <YAxis dataKey="name" type="category" width={100} />
-                            <Tooltip formatter={(value) => [`$${value.toLocaleString()}`, "Revenue"]} />
-                            <Bar dataKey="revenue" fill="#28a745" />
-                        </BarChart>
-                    </ResponsiveContainer>
-                </div>
-
-                <div className="chart-card">
-                    <h4 className="chart-title">Expense Breakdown</h4>
-                    <ResponsiveContainer width="100%" height={300}>
-                        <PieChart>
-                            <Pie
-                                data={expenseData}
-                                dataKey="amount"
-                                nameKey="category"
-                                cx="50%"
-                                cy="50%"
-                                outerRadius={80}
-                                label={({ category, percent }) =>
-                                    `${category}: ${(percent * 100).toFixed(0)}%`
-                                }
-                            >
-                                {expenseData.map((entry, index) => (
-                                    <Cell key={`cell-${index}`} fill={entry.color} />
-                                ))}
-                            </Pie>
-                            <Tooltip formatter={(value) => [`$${value.toLocaleString()}`, ""]} />
-                        </PieChart>
-                    </ResponsiveContainer>
-                </div>
+                {serviceRevenueData.length > 0 && (
+                  <div className="chart-card">
+                      <h4 className="chart-title">Revenue by Service</h4>
+                      <ResponsiveContainer width="100%" height={300}>
+                          <BarChart data={serviceRevenueData} layout="horizontal">
+                              <CartesianGrid strokeDasharray="3 3" />
+                              <XAxis type="number" />
+                              <YAxis dataKey="name" type="category" width={100} />
+                              <Tooltip formatter={(value) => [`$${value.toLocaleString()}`, "Revenue"]} />
+                              <Bar dataKey="revenue" fill="#28a745" />
+                          </BarChart>
+                      </ResponsiveContainer>
+                  </div>
+                )}
             </div>
 
             {/* Detailed Revenue Table */}
-            <div className="service-section">
-                <h4 className="section-title">Service Performance Details</h4>
-                <div className="revenue-table-container">
-                    <table className="service-table">
-                        <thead>
-                            <tr>
-                                <th>Service Category</th>
-                                <th>Total Bookings</th>
-                                <th>Revenue</th>
-                                <th>Avg. Price</th>
-                                <th>Market Share</th>
-                                <th>Growth</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            {serviceRevenueData.map((service, index) => {
-                                const marketShare = ((service.revenue / totalRevenue) * 100).toFixed(1);
-                                const growth = (Math.random() * 30 - 5).toFixed(1); // Mock growth data
+            {serviceRevenueData.length > 0 ? (
+              <div className="service-section">
+                  <h4 className="section-title">Service Performance Details</h4>
+                  <div className="revenue-table-container">
+                      <table className="service-table">
+                          <thead>
+                              <tr>
+                                  <th>Service Name</th>
+                                  <th>Total Bookings</th>
+                                  <th>Revenue</th>
+                                  <th>Avg. Price</th>
+                                  <th>Market Share</th>
+                              </tr>
+                          </thead>
+                          <tbody>
+                              {serviceRevenueData.map((service, index) => {
+                                  const marketShare = totalRevenue > 0 ? ((service.revenue / totalRevenue) * 100).toFixed(1) : 0;
 
-                                return (
-                                    <tr key={index}>
-                                        <td>
-                                            <div className="service-name-cell">
-                                                <strong>{service.name}</strong>
-                                            </div>
-                                        </td>
-                                        <td>{service.bookings}</td>
-                                        <td>
-                                            <span className="revenue-amount">
-                                                ${service.revenue.toLocaleString()}
-                                            </span>
-                                        </td>
-                                        <td>${service.avgPrice.toLocaleString()}</td>
-                                        <td>
-                                            <div className="market-share-bar">
-                                                <div
-                                                    className="market-share-fill"
-                                                    style={{ width: `${marketShare}%` }}
-                                                ></div>
-                                                <span className="market-share-text">{marketShare}%</span>
-                                            </div>
-                                        </td>
-                                        <td>
-                                            <span className={`growth-indicator ${growth >= 0 ? 'positive' : 'negative'}`}>
-                                                {growth >= 0 ? '+' : ''}{growth}%
-                                            </span>
-                                        </td>
-                                    </tr>
-                                );
-                            })}
-                        </tbody>
-                    </table>
-                </div>
-            </div>
-
-            {/* Client Analysis */}
-            <div className="service-section">
-                <h4 className="section-title">Client Revenue Analysis</h4>
-                <div className="client-analysis-grid">
-                    {clientData.map((client, index) => (
-                        <div key={index} className="client-card">
-                            <div className="client-header">
-                                <h5>{client.name}</h5>
-                                <span className="client-percentage">{client.percentage}%</span>
-                            </div>
-                            <div className="client-revenue">
-                                ${client.revenue.toLocaleString()}
-                            </div>
-                            <div className="client-bar">
-                                <div
-                                    className="client-bar-fill"
-                                    style={{ width: `${client.percentage}%` }}
-                                ></div>
-                            </div>
-                        </div>
-                    ))}
-                </div>
-            </div>
-
-            {/* Business Insights */}
-            <div className="insights-section">
-                <h4 className="section-title">Business Insights</h4>
-                <div className="insights-grid">
-                    <div className="insight-card">
-                        <div className="insight-icon">🎯</div>
-                        <div className="insight-content">
-                            <h5>Revenue Opportunity</h5>
-                            <p>Food Catering shows highest revenue potential. Consider expanding menu options.</p>
-                        </div>
-                    </div>
-
-                    <div className="insight-card">
-                        <div className="insight-icon">📈</div>
-                        <div className="insight-content">
-                            <h5>Growth Strategy</h5>
-                            <p>Corporate events generate 45% of revenue. Focus marketing on business sectors.</p>
-                        </div>
-                    </div>
-
-                    <div className="insight-card">
-                        <div className="insight-icon">💡</div>
-                        <div className="insight-content">
-                            <h5>Cost Optimization</h5>
-                            <p>Equipment costs are 38% of expenses. Consider bulk purchasing or leasing options.</p>
-                        </div>
-                    </div>
-
-                    <div className="insight-card">
-                        <div className="insight-icon">🏆</div>
-                        <div className="insight-content">
-                            <h5>Premium Services</h5>
-                            <p>Photography services have highest per-booking value. Promote premium packages.</p>
-                        </div>
-                    </div>
-                </div>
-            </div>
+                                  return (
+                                      <tr key={index}>
+                                          <td>
+                                              <div className="service-name-cell">
+                                                  <strong>{service.name}</strong>
+                                              </div>
+                                          </td>
+                                          <td>{service.bookings}</td>
+                                          <td>
+                                              <span className="revenue-amount">
+                                                  ${service.revenue.toLocaleString()}
+                                              </span>
+                                          </td>
+                                          <td>${service.avgPrice.toLocaleString()}</td>
+                                          <td>
+                                              <div className="market-share-bar">
+                                                  <div
+                                                      className="market-share-fill"
+                                                      style={{ width: `${marketShare}%` }}
+                                                  ></div>
+                                                  <span className="market-share-text">{marketShare}%</span>
+                                              </div>
+                                          </td>
+                                      </tr>
+                                  );
+                              })}
+                          </tbody>
+                      </table>
+                  </div>
+              </div>
+            ) : (
+              <div className="service-section">
+                  <h4 className="section-title">Service Performance Details</h4>
+                  <p style={{ textAlign: 'center', color: '#6c757d', padding: '2rem' }}>
+                      No revenue data available yet. Start accepting bookings to see performance metrics.
+                  </p>
+              </div>
+            )}
         </div>
     );
 };

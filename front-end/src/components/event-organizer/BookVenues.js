@@ -2,107 +2,9 @@ import React, { useState, useEffect } from "react";
 import { getAllVenues } from "../../api/venueApi";
 import { bookVenue } from "../../api/bookingApi";
 
-const mockVenues = [
-  {
-    id: 1,
-    name: "Grand Ballroom",
-    location: "Downtown Convention Center",
-    address: "123 Main Street, Downtown",
-    capacity: 500,
-    price: 2000,
-    priceUnit: "per day",
-    description: "Elegant ballroom perfect for large corporate events and galas",
-    amenities: ["Stage", "Audio System", "Lighting", "Air Conditioning", "Parking", "Catering Kitchen"],
-    images: ["ballroom1.jpg", "ballroom2.jpg"],
-    availability: "Available",
-    rating: 4.8,
-    reviews: 156,
-    contact: {
-      phone: "+1 234-567-8900",
-      email: "booking@grandballroom.com"
-    },
-    policies: {
-      cancellation: "Free cancellation up to 7 days before event",
-      deposit: "25% deposit required",
-      setup: "Setup allowed 2 hours before event"
-    }
-  },
-  {
-    id: 2,
-    name: "Conference Center",
-    location: "Business District",
-    address: "456 Business Ave, Business District",
-    capacity: 200,
-    price: 1500,
-    priceUnit: "per day",
-    description: "Modern conference center with state-of-the-art technology",
-    amenities: ["Projectors", "Sound System", "WiFi", "Whiteboards", "Coffee Station", "Reception Area"],
-    images: ["conference1.jpg", "conference2.jpg"],
-    availability: "Available",
-    rating: 4.7,
-    reviews: 89,
-    contact: {
-      phone: "+1 234-567-8901",
-      email: "events@bizconference.com"
-    },
-    policies: {
-      cancellation: "Free cancellation up to 5 days before event",
-      deposit: "30% deposit required",
-      setup: "Setup allowed 1 hour before event"
-    }
-  },
-  {
-    id: 3,
-    name: "Garden Pavilion",
-    location: "City Park",
-    address: "789 Park Lane, City Park",
-    capacity: 150,
-    price: 1200,
-    priceUnit: "per day",
-    description: "Beautiful outdoor pavilion surrounded by gardens",
-    amenities: ["Gazebo", "Garden Views", "Outdoor Lighting", "Restrooms", "Parking", "Weather Backup"],
-    images: ["garden1.jpg", "garden2.jpg"],
-    availability: "Booked until Feb 25",
-    rating: 4.9,
-    reviews: 234,
-    contact: {
-      phone: "+1 234-567-8902",
-      email: "reserve@citypark.gov"
-    },
-    policies: {
-      cancellation: "Free cancellation up to 14 days before event",
-      deposit: "20% deposit required",
-      setup: "Setup allowed 3 hours before event"
-    }
-  },
-  {
-    id: 4,
-    name: "Rooftop Terrace",
-    location: "Downtown Skyline",
-    address: "321 Sky Tower, Downtown",
-    capacity: 100,
-    price: 1800,
-    priceUnit: "per day",
-    description: "Stunning rooftop venue with panoramic city views",
-    amenities: ["City Views", "Bar Area", "Lounge Seating", "Heating", "Sound System", "Elevator Access"],
-    images: ["rooftop1.jpg", "rooftop2.jpg"],
-    availability: "Available",
-    rating: 4.6,
-    reviews: 78,
-    contact: {
-      phone: "+1 234-567-8903",
-      email: "events@skytower.com"
-    },
-    policies: {
-      cancellation: "Free cancellation up to 10 days before event",
-      deposit: "50% deposit required",
-      setup: "Setup allowed 2 hours before event"
-    }
-  }
-];
-
 const BookVenues = () => {
-  const [venues, setVenues] = useState(mockVenues);
+  const [venues, setVenues] = useState([]);
+  const [loading, setLoading] = useState(true);
   const [selectedVenue, setSelectedVenue] = useState(null);
   const [showBookingModal, setShowBookingModal] = useState(false);
   const [filters, setFilters] = useState({
@@ -123,8 +25,17 @@ const BookVenues = () => {
 
   useEffect(() => {
     const fetchVenues = async () => {
-      const result = await getAllVenues();
-      setVenues(result);
+      try {
+        setLoading(true);
+        const result = await getAllVenues();
+        const venuesList = Array.isArray(result) ? result : (result?.content ?? []);
+        setVenues(venuesList);
+      } catch (error) {
+        console.error("Error loading venues:", error);
+        setVenues([]);
+      } finally {
+        setLoading(false);
+      }
     };
 
     fetchVenues();
@@ -134,13 +45,15 @@ const BookVenues = () => {
     if (filters.location && !venue.location.toLowerCase().includes(filters.location.toLowerCase())) {
       return false;
     }
-    if (filters.minCapacity && venue.capacity < parseInt(filters.minCapacity)) {
+    const venueCapacity = venue.capacity?.maxCapacity || 0;
+    if (filters.minCapacity && venueCapacity < parseInt(filters.minCapacity)) {
       return false;
     }
-    if (filters.maxPrice && venue.price > parseInt(filters.maxPrice)) {
+    const venuePrice = venue.pricing?.perEvent || venue.price || 0;
+    if (filters.maxPrice && venuePrice > parseInt(filters.maxPrice)) {
       return false;
     }
-    if (filters.availabilityOnly && venue.availability !== "Available") {
+    if (filters.availabilityOnly && venue.availability !== "AVAILABLE") {
       return false;
     }
     return true;
@@ -174,15 +87,21 @@ const BookVenues = () => {
   const submitBooking = async (e) => {
     e.preventDefault();
     try {
-      const bookingData = {
+      const organizerId = window.keycloak?.tokenParsed?.sub;
+      if (!organizerId) {
+        alert("Unable to identify organizer. Please log in again.");
+        return;
+      }
+
+      const venueBookingData = {
         startTime: `${bookingData.eventDate}T${bookingData.startTime}:00.000Z`,
         endTime: `${bookingData.eventDate}T${bookingData.endTime}:00.000Z`,
         venueId: parseInt(selectedVenue.id),
-        organizerId: "current-organizer-id", // You'll need to get this from auth context
+        organizerId: organizerId,
         eventId: bookingData.eventId || null // If booking for existing event
       };
 
-      const result = await bookVenue(bookingData);
+      const result = await bookVenue(venueBookingData);
       alert(`Venue booking confirmed! Booking ID: ${result.id}`);
       
       setShowBookingModal(false);
@@ -211,6 +130,17 @@ const BookVenues = () => {
       alert("Failed to book venue. Please try again.");
     }
   };
+
+  if (loading) {
+    return (
+      <div className="event-page">
+        <div className="event-page-header">
+          <h3 className="event-page-title">Book Venues</h3>
+          <p className="event-page-subtitle">Loading venues...</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="event-page">
@@ -278,34 +208,30 @@ const BookVenues = () => {
             <div key={venue.id} className="venue-booking-card">
               <div className="venue-card-header">
                 <h5 className="venue-card-title">{venue.name}</h5>
-                <span className={`availability-badge ${venue.availability === "Available" ? "available" : "unavailable"}`}>
-                  {venue.availability}
+                <span className={`availability-badge ${venue.availability === "AVAILABLE" ? "available" : "unavailable"}`}>
+                  {venue.availability === "AVAILABLE" ? "Available" : "Unavailable"}
                 </span>
               </div>
 
               <div className="venue-card-content">
                 <p className="venue-location">📍 {venue.location}</p>
-                <p className="venue-address">{venue.address}</p>
-                <p className="venue-capacity">👥 Capacity: {venue.capacity} guests</p>
-                <p className="venue-price">💰 ${venue.price} {venue.priceUnit}</p>
-                <p className="venue-description">{venue.description}</p>
+                <p className="venue-capacity">👥 Capacity: {venue.capacity?.minCapacity || 0}-{venue.capacity?.maxCapacity || 0} guests</p>
+                <p className="venue-price">💰 ${venue.pricing?.perHour || 0}/hour | ${venue.pricing?.perEvent || 0}/event</p>
+                {venue.description && <p className="venue-description">{venue.description}</p>}
 
-                <div className="venue-rating">
-                  <span className="rating">⭐ {venue.rating}</span>
-                  <span className="reviews">({venue.reviews} reviews)</span>
-                </div>
-
-                <div className="venue-amenities">
-                  <strong>Amenities:</strong>
-                  <div className="amenities-tags">
-                    {venue.amenities.slice(0, 4).map((amenity, index) => (
-                      <span key={index} className="amenity-tag">{amenity}</span>
-                    ))}
-                    {venue.amenities.length > 4 && (
-                      <span className="amenity-tag more">+{venue.amenities.length - 4} more</span>
-                    )}
+                {venue.eventTypes && venue.eventTypes.length > 0 && (
+                  <div className="venue-amenities">
+                    <strong>Supported Event Types:</strong>
+                    <div className="amenities-tags">
+                      {venue.eventTypes.slice(0, 4).map((eventType, index) => (
+                        <span key={index} className="amenity-tag">{eventType.replace(/_/g, ' ')}</span>
+                      ))}
+                      {venue.eventTypes.length > 4 && (
+                        <span className="amenity-tag more">+{venue.eventTypes.length - 4} more</span>
+                      )}
+                    </div>
                   </div>
-                </div>
+                )}
               </div>
 
               <div className="venue-card-actions">
@@ -315,7 +241,7 @@ const BookVenues = () => {
                 >
                   View Details
                 </button>
-                {venue.availability === "Available" && (
+                {venue.availability === "AVAILABLE" && (
                   <button
                     className="event-btn success"
                     onClick={() => handleBookVenue(venue)}
@@ -348,48 +274,34 @@ const BookVenues = () => {
                   <h5>Venue Information</h5>
                   <div className="detail-list">
                     <p><strong>Location:</strong> {selectedVenue.location}</p>
-                    <p><strong>Address:</strong> {selectedVenue.address}</p>
-                    <p><strong>Capacity:</strong> {selectedVenue.capacity} guests</p>
-                    <p><strong>Price:</strong> ${selectedVenue.price} {selectedVenue.priceUnit}</p>
-                    <p><strong>Rating:</strong> ⭐ {selectedVenue.rating} ({selectedVenue.reviews} reviews)</p>
-                    <p><strong>Availability:</strong> {selectedVenue.availability}</p>
+                    <p><strong>Capacity:</strong> {selectedVenue.capacity?.minCapacity || 0}-{selectedVenue.capacity?.maxCapacity || 0} guests</p>
+                    <p><strong>Price Per Hour:</strong> ${selectedVenue.pricing?.perHour || 0}</p>
+                    <p><strong>Price Per Event:</strong> ${selectedVenue.pricing?.perEvent || 0}</p>
+                    <p><strong>Availability:</strong> {selectedVenue.availability === "AVAILABLE" ? "Available" : "Unavailable"}</p>
                   </div>
                 </div>
 
-                <div className="detail-section">
-                  <h5>Contact Information</h5>
-                  <div className="detail-list">
-                    <p><strong>Phone:</strong> {selectedVenue.contact.phone}</p>
-                    <p><strong>Email:</strong> {selectedVenue.contact.email}</p>
+                {selectedVenue.description && (
+                  <div className="detail-section full-width">
+                    <h5>Description</h5>
+                    <p>{selectedVenue.description}</p>
                   </div>
-                </div>
+                )}
 
-                <div className="detail-section full-width">
-                  <h5>Description</h5>
-                  <p>{selectedVenue.description}</p>
-                </div>
-
-                <div className="detail-section full-width">
-                  <h5>Amenities</h5>
-                  <div className="amenities-list">
-                    {selectedVenue.amenities.map((amenity, index) => (
-                      <span key={index} className="amenity-item">✓ {amenity}</span>
-                    ))}
+                {selectedVenue.eventTypes && selectedVenue.eventTypes.length > 0 && (
+                  <div className="detail-section full-width">
+                    <h5>Supported Event Types</h5>
+                    <div className="amenities-list">
+                      {selectedVenue.eventTypes.map((eventType, index) => (
+                        <span key={index} className="amenity-item">✓ {eventType.replace(/_/g, ' ')}</span>
+                      ))}
+                    </div>
                   </div>
-                </div>
-
-                <div className="detail-section full-width">
-                  <h5>Policies</h5>
-                  <div className="policies-list">
-                    <p><strong>Cancellation:</strong> {selectedVenue.policies.cancellation}</p>
-                    <p><strong>Deposit:</strong> {selectedVenue.policies.deposit}</p>
-                    <p><strong>Setup:</strong> {selectedVenue.policies.setup}</p>
-                  </div>
-                </div>
+                )}
               </div>
 
               <div className="modal-actions">
-                {selectedVenue.availability === "Available" && (
+                {selectedVenue.availability === "AVAILABLE" && (
                   <button
                     className="event-btn success"
                     onClick={() => handleBookVenue(selectedVenue)}
@@ -428,8 +340,9 @@ const BookVenues = () => {
                   <h5>Venue Details</h5>
                   <p><strong>Venue:</strong> {selectedVenue.name}</p>
                   <p><strong>Location:</strong> {selectedVenue.location}</p>
-                  <p><strong>Capacity:</strong> {selectedVenue.capacity} guests</p>
-                  <p><strong>Price:</strong> ${selectedVenue.price} {selectedVenue.priceUnit}</p>
+                  <p><strong>Capacity:</strong> {selectedVenue.capacity?.minCapacity || 0}-{selectedVenue.capacity?.maxCapacity || 0} guests</p>
+                  <p><strong>Price Per Hour:</strong> ${selectedVenue.pricing?.perHour || 0}</p>
+                  <p><strong>Price Per Event:</strong> ${selectedVenue.pricing?.perEvent || 0}</p>
                 </div>
 
                 <div className="form-grid">
@@ -504,7 +417,7 @@ const BookVenues = () => {
                       value={bookingData.expectedGuests}
                       onChange={handleBookingChange}
                       className="form-control"
-                      max={selectedVenue.capacity}
+                      max={selectedVenue.capacity?.maxCapacity || 1000}
                       required
                     />
                   </div>
@@ -524,16 +437,16 @@ const BookVenues = () => {
                 <div className="booking-total">
                   <h5>Booking Summary</h5>
                   <div className="total-row">
-                    <span>Venue Cost:</span>
-                    <span>${selectedVenue.price}</span>
+                    <span>Venue Cost (Per Event):</span>
+                    <span>${selectedVenue.pricing?.perEvent || 0}</span>
                   </div>
                   <div className="total-row">
-                    <span>Deposit Required:</span>
-                    <span>${Math.round(selectedVenue.price * 0.25)}</span>
+                    <span>Deposit Required (25%):</span>
+                    <span>${Math.round((selectedVenue.pricing?.perEvent || 0) * 0.25)}</span>
                   </div>
                   <div className="total-row total">
                     <span><strong>Total Due:</strong></span>
-                    <span><strong>${selectedVenue.price}</strong></span>
+                    <span><strong>${selectedVenue.pricing?.perEvent || 0}</strong></span>
                   </div>
                 </div>
 

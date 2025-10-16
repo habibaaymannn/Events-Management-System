@@ -21,8 +21,11 @@ const AttendeeDashboard = () => {
 
     const loadDashboardData = async () => {
         try {
-            // Get attendee ID from auth context
-            const attendeeId = "current-attendee-id"; // Replace with actual attendee ID
+            const attendeeId = window.keycloak?.tokenParsed?.sub;
+            if (!attendeeId) {
+                console.error("No attendee ID found in auth context");
+                return;
+            }
             
             const [attendeeBookings, eventsResponse] = await Promise.all([
                 getBookingsByAttendeeId(attendeeId),

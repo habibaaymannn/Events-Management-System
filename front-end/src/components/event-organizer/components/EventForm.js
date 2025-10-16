@@ -5,7 +5,6 @@ const EventForm = ({
   setFormEvent,
   editEventId,
   onSubmit,
-  onCancel,
   EVENT_TYPES,
   EVENT_TYPE_LABELS
 }) => {

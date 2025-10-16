@@ -16,8 +16,13 @@ const AttendeeBookings = () => {
     const loadBookings = async () => {
         try {
             setLoading(true);
-            // Get attendee ID from auth context or localStorage
-            const attendeeId = "current-attendee-id"; // Replace with actual attendee ID
+            const attendeeId = window.keycloak?.tokenParsed?.sub;
+            if (!attendeeId) {
+                console.error("No attendee ID found in auth context");
+                setBookings([]);
+                setLoading(false);
+                return;
+            }
             const bookingsData = await getBookingsByAttendeeId(attendeeId);
             setBookings(bookingsData);
         } catch (error) {
