@@ -64,7 +64,10 @@ services:
       KEYCLOAK_ADMIN_CLIENT_ID: ${KEYCLOAK_ADMIN_CLIENT_ID}       # admin-cli (no secret)
       KEYCLOAK_ADMIN_CLIENT_SECRET: ${KEYCLOAK_ADMIN_CLIENT_SECRET}
       KEYCLOAK_ADMIN_USERNAME: ${KEYCLOAK_ADMIN_USERNAME}         # admin1
-      KEYCLOAK_ADMIN_PASSWORD: ${KEYCLOAK_ADMIN_PASSWORD}    
+      KEYCLOAK_ADMIN_PASSWORD: ${KEYCLOAK_ADMIN_PASSWORD}
+ 
+      PAYMENT_SERVICE_ENABLED: ${PAYMENT_SERVICE_ENABLED:-true}
+      PAYMENT_SERVICE_URL: ${PAYMENT_SERVICE_URL:-http://host.docker.internal:8082}
     depends_on:
       postgres:
         condition: service_healthy
@@ -72,6 +75,9 @@ services:
         condition: service_started
     networks:
       - ems-network
+    # Add this for Linux Docker support
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
     env_file:
       - .env
 

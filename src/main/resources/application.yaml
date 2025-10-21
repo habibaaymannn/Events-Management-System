@@ -53,6 +53,10 @@ app:
   payment:
     return-url: http://localhost:8180/v1/payments/confirm
     webhook-secret: ${STRIPE_WEBHOOK_SECRET:}
+    service-url: ${PAYMENT_SERVICE_URL:http://localhost:8082}
+    enabled: ${PAYMENT_SERVICE_ENABLED:true}
+    success-url: ${PAYMENT_SUCCESS_URL:http://localhost:8080/api/v1/bookings/success}
+    cancel-url: ${PAYMENT_CANCEL_URL:http://localhost:8080/api/v1/bookings/cancel}
   booking:
     free-cancel-days-before-start: 1
     penalty-percent: 0.

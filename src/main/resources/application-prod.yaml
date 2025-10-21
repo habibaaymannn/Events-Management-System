@@ -8,3 +8,7 @@ spring:
   jpa:
     hibernate:
       ddl-auto: update
+payment:
+  service:
+    url: ${PAYMENT_SERVICE_URL:http://localhost:8082}
+    enabled: true

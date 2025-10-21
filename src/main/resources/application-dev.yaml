@@ -28,3 +28,7 @@ server:
     include-message: always
     include-binding-errors: always
     include-stacktrace: never
+payment:
+  service:
+    url: ${PAYMENT_SERVICE_URL:http://localhost:8082}
+    enabled: true

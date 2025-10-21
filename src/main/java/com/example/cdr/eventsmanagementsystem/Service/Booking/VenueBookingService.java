@@ -1,19 +1,16 @@
 package com.example.cdr.eventsmanagementsystem.Service.Booking;
 
-import java.math.BigDecimal;
-import java.time.LocalDateTime;
-
-import com.example.cdr.eventsmanagementsystem.Service.Payment.StripeService;
-import com.example.cdr.eventsmanagementsystem.Util.BookingUtil;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.ApplicationEventPublisher;
-
-import com.example.cdr.eventsmanagementsystem.Model.Booking.BookingType;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.http.MediaType;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.client.RestClient;
+import org.springframework.web.client.RestClientException;
 
 import static com.example.cdr.eventsmanagementsystem.Constants.ControllerConstants.RoleConstants.ADMIN_ROLE;
 import static com.example.cdr.eventsmanagementsystem.Constants.ExceptionConstants.BOOKING_NOT_FOUND;
@@ -22,30 +19,30 @@ import static com.example.cdr.eventsmanagementsystem.Constants.ExceptionConstant
 import static com.example.cdr.eventsmanagementsystem.Constants.ExceptionConstants.YOU_CAN_ONLY_CANCEL_YOUR_OWN_BOOKINGS;
 import static com.example.cdr.eventsmanagementsystem.Constants.ExceptionConstants.YOU_CAN_ONLY_UPDATE_YOUR_OWN_BOOKINGS;
 import static com.example.cdr.eventsmanagementsystem.Constants.ExceptionConstants.YOU_CAN_ONLY_VIEW_YOUR_OWN_BOOKINGS;
-import static com.example.cdr.eventsmanagementsystem.Constants.PaymentConstants.SETUP_FUTURE_USAGE_ON_SESSION;
 import com.example.cdr.eventsmanagementsystem.DTO.Booking.Request.BookingCancelRequest;
 import com.example.cdr.eventsmanagementsystem.DTO.Booking.Request.VenueBookingRequest;
 import com.example.cdr.eventsmanagementsystem.DTO.Booking.Response.VenueBookingResponse;
+import com.example.cdr.eventsmanagementsystem.DTO.Payment.FirstPaymentRequest;
+import com.example.cdr.eventsmanagementsystem.DTO.Payment.FirstPaymentResponse;
+import com.example.cdr.eventsmanagementsystem.DTO.Payment.PaymentServiceResponse;
+import com.example.cdr.eventsmanagementsystem.DTO.Payment.SubsequentPaymentRequest;
 import com.example.cdr.eventsmanagementsystem.Mapper.VenueBookingMapper;
 import com.example.cdr.eventsmanagementsystem.Model.Booking.BookingStatus;
 import com.example.cdr.eventsmanagementsystem.Model.Booking.VenueBooking;
 import com.example.cdr.eventsmanagementsystem.Model.User.Organizer;
 import com.example.cdr.eventsmanagementsystem.Model.Venue.Venue;
-import com.example.cdr.eventsmanagementsystem.NotificationEvent.BookingCancellation.VenueBookingCancelled;
 import com.example.cdr.eventsmanagementsystem.NotificationEvent.BookingConfirmation.VenueBookingConfirmed;
-import com.example.cdr.eventsmanagementsystem.NotificationEvent.BookingCreation.VenueBookingCreated;
 import com.example.cdr.eventsmanagementsystem.Repository.VenueBookingRepository;
 import com.example.cdr.eventsmanagementsystem.Repository.VenueRepository;
 import com.example.cdr.eventsmanagementsystem.Service.Auth.UserSyncService;
+import com.example.cdr.eventsmanagementsystem.Service.Payment.StripeService;
 import com.example.cdr.eventsmanagementsystem.Util.AuthUtil;
+import com.example.cdr.eventsmanagementsystem.Util.BookingUtil;
 import com.stripe.model.Customer;
 
 import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import java.time.ZoneId;
-import java.time.ZoneOffset;
-import java.time.ZonedDateTime;
 
 @Slf4j
 @Service
@@ -58,6 +55,18 @@ public class VenueBookingService {
     private final VenueBookingMapper bookingMapper;
     private final ApplicationEventPublisher eventPublisher;
     private final BookingUtil bookingUtil;
+    private final RestClient restClient;
+    
+    @Value("${payment.service.url:http://localhost:8082}")
+    private String paymentServiceBaseUrl;
+
+    @Value("${payment.service.enabled:true}")
+    private boolean paymentServiceEnabled;
+
+    @Value("${payment.service.success-url:http://localhost:8080/api/v1/bookings/success}")
+    private String paymentSuccessUrl;
+    @Value("${payment.service.cancel-url:http://localhost:8080/api/v1/bookings/cancel}")
+    private String paymentCancelUrl;
 
     public Page<VenueBookingResponse> getAllVenueBookings(Pageable pageable) {
         Page<VenueBooking> bookings = bookingRepository.findAll(pageable);
@@ -105,25 +114,60 @@ public class VenueBookingService {
             userSyncService.getHandlerForRole(userSyncService.getCurrentUserRole(SecurityContextHolder.getContext().getAuthentication())).saveUser(organizer);
         }
 
-        BigDecimal amount = BigDecimal.valueOf(venue.getPricing().getPerEvent());
         VenueBooking booking = bookingMapper.toVenueBooking(request);
-        var session = stripeService.createCheckoutSession(
-                organizer.getStripeCustomerId(),
-                amount,
-                request.getCurrency(),
-                "Venue booking for: " + venue.getName(),
-                booking.getId(),
-                SETUP_FUTURE_USAGE_ON_SESSION,
-                request.getIsCaptured() != null ? request.getIsCaptured() : false,
-                BookingType.VENUE
-        );
-        booking.setStripeSessionId(session.getId());
-
+        
         bookingRepository.save(booking);
-        eventPublisher.publishEvent(new VenueBookingCreated(booking));
+
+        String paymentUrl = null;
+
+        if (paymentServiceEnabled) {
+            try {
+                FirstPaymentRequest paymentRequest = new FirstPaymentRequest(
+                        request.getAmount(),
+                        request.getCurrency(),
+                        request.getPaymentProvider(),
+                        "Event ticket for: " + venue.getName(),
+                        1L,
+                        organizer.getFullName(),
+                        organizer.getEmail(),
+                        paymentSuccessUrl, // successUrl
+                        paymentCancelUrl, // cancelUrl
+                        null
+                        // booking.getId().toString()
+                );
+
+                String paymentEndpoint = "/api/v1/payments/direct";
+                log.info("Calling payment service at: {}{}", paymentServiceBaseUrl, paymentEndpoint);
+                
+                PaymentServiceResponse serviceResponse = restClient.post()
+                        .uri(paymentEndpoint)  
+                        .body(paymentRequest)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .retrieve()
+                        .body(PaymentServiceResponse.class);
+
+                if (serviceResponse != null && serviceResponse.data() != null) {
+                    FirstPaymentResponse paymentResponse = serviceResponse.data();
+                    paymentUrl = paymentResponse.redirectUrl();
+                    booking.setStripeSessionId(paymentResponse.referenceId());
+                    bookingRepository.save(booking);
+                }
+            } catch (RestClientException e) {
+                log.error("Failed to process payment via external service at {}{}: {}", 
+                         paymentServiceBaseUrl, "/api/v1/payments/direct", e.getMessage(), e);
+                throw new RestClientException("Payment service is unavailable. Please try again later.", e);
+            } catch (Exception e) {
+                log.error("Unexpected error during payment processing: {}", e.getMessage(), e);
+                throw new RuntimeException("Payment processing failed. Please try again later.", e);
+            }
+        } else {
+            log.warn("Payment service is disabled. Booking created without external payment processing.");
+            booking.setStatus(BookingStatus.PENDING);
+            bookingRepository.save(booking);
+        }
 
         VenueBookingResponse response = bookingMapper.toVenueBookingResponse(booking);
-        response.setPaymentUrl(session.getUrl());
+        response.setPaymentUrl(paymentUrl);
         return response;
     }
 
@@ -168,19 +212,38 @@ public class VenueBookingService {
             throw new RuntimeException(YOU_CAN_ONLY_CANCEL_YOUR_OWN_BOOKINGS);
         }
 
-        if (booking.getStripePaymentId() != null && booking.getStatus() == BookingStatus.BOOKED) {
-            String stripeReason = bookingUtil.mapToStripeRefundReason(request.getReason());
-            stripeService.createRefund(booking.getStripePaymentId(), null, stripeReason);
-            booking.setRefundProcessedAt(LocalDateTime.now());
+        if (booking.getStripeSessionId() != null && booking.getStatus() == BookingStatus.BOOKED) {
+
+            if(paymentServiceEnabled) {
+                try {
+                    String cancelEndpoint = "/api/v1/payments/cancel";
+                    log.info("Calling payment service at: {}{}", paymentServiceBaseUrl, cancelEndpoint);
+
+                    SubsequentPaymentRequest cancelRequest = new SubsequentPaymentRequest(
+                            booking.getStripeSessionId(),
+                            booking.getAmount().longValue(),
+                            booking.getCurrency(),
+                            booking.getPaymentProvider()
+                    );
+
+                    restClient.post()
+                            .uri(cancelEndpoint)  
+                            .body(cancelRequest)
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .retrieve()
+                            .body(Void.class);
+                } catch (RestClientException e) {
+                    log.error("Failed to process cancellation via external service at {}{}: {}", 
+                             paymentServiceBaseUrl, "/api/v1/payments/cancel", e.getMessage(), e);
+                    throw new RestClientException("Payment service is unavailable. Please try again later.", e);
+                } catch (Exception e) {
+                    log.error("Unexpected error during cancellation processing: {}", e.getMessage(), e);
+                    throw new RuntimeException("Cancellation processing failed. Please try again later.", e);
+                }
+            } 
+            else {
+                log.warn("Payment service is disabled. Refund not processed.");
+            }
         }
-
-        ZoneId utc = ZoneOffset.UTC;
-        booking.setStatus(BookingStatus.CANCELLED);
-        booking.setCancellationReason(request.getReason());
-        booking.setCancelledAt(LocalDateTime.now(utc));
-        booking.setCancelledBy(currentUserId);
-
-        bookingRepository.save(booking);
-        eventPublisher.publishEvent(new VenueBookingCancelled(booking, request.getReason()));
     }
 }
