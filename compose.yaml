@@ -66,6 +66,11 @@ services:
       KEYCLOAK_ADMIN_USERNAME: ${KEYCLOAK_ADMIN_USERNAME}         # admin1
       KEYCLOAK_ADMIN_PASSWORD: ${KEYCLOAK_ADMIN_PASSWORD}
  
+      # Kafka configuration - using external Kafka
+      SPRING_KAFKA_BOOTSTRAP_SERVERS: kafka:9092
+      KAFKA_SCHEMA_REGISTRY_URL: http://schema-registry:8081
+      KAFKA_TOPIC_PAYMENT_STATUS: ems-payment-status-events
+      
       PAYMENT_SERVICE_ENABLED: ${PAYMENT_SERVICE_ENABLED:-true}
       PAYMENT_SERVICE_URL: ${PAYMENT_SERVICE_URL:-http://host.docker.internal:8082}
     depends_on:
@@ -75,7 +80,7 @@ services:
         condition: service_started
     networks:
       - ems-network
-    # Add this for Linux Docker support
+      - kafka-network  # ADD THIS LINE - Connect to Kafka network
     extra_hosts:
       - "host.docker.internal:host-gateway"
     env_file:
@@ -104,6 +109,9 @@ volumes:
 networks:
   ems-network:
     driver: bridge
+  kafka-network:
+    external: true
+    name: kafka-network  
 
 #  config-server:
 #    build:

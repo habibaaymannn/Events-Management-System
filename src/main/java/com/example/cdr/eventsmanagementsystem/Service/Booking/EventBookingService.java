@@ -1,5 +1,8 @@
 package com.example.cdr.eventsmanagementsystem.Service.Booking;
 
+import java.util.HashMap;
+import java.util.Map;
+
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.data.domain.Page;
@@ -28,6 +31,7 @@ import com.example.cdr.eventsmanagementsystem.DTO.Payment.PaymentServiceResponse
 import com.example.cdr.eventsmanagementsystem.DTO.Payment.SubsequentPaymentRequest;
 import com.example.cdr.eventsmanagementsystem.Mapper.EventBookingMapper;
 import com.example.cdr.eventsmanagementsystem.Model.Booking.BookingStatus;
+import com.example.cdr.eventsmanagementsystem.Model.Booking.BookingType;
 import com.example.cdr.eventsmanagementsystem.Model.Booking.EventBooking;
 import com.example.cdr.eventsmanagementsystem.Model.Event.Event;
 import com.example.cdr.eventsmanagementsystem.Model.User.Attendee;
@@ -68,6 +72,9 @@ public class EventBookingService {
     private String paymentSuccessUrl;
     @Value("${payment.service.cancel-url:http://localhost:8080/api/v1/bookings/cancel}")
     private String paymentCancelUrl;
+
+    @Value("${payment.service.system-id:EVENTS_MANAGEMENT_SYSTEM}")
+    private String systemId;
 
     public Page<EventBookingResponse> getAllEventBookings(Pageable pageable) {
         Page<EventBooking> bookings = bookingRepository.findAll(pageable);
@@ -130,6 +137,10 @@ public class EventBookingService {
 
         if (paymentServiceEnabled) {
             try {
+
+                Map<String, String> metadata = new HashMap<>();
+                metadata.put("bookingType", BookingType.EVENT.name());
+
                 FirstPaymentRequest paymentRequest = new FirstPaymentRequest(
                         request.getAmount(),
                         request.getCurrency(),
@@ -140,8 +151,10 @@ public class EventBookingService {
                         attendee.getEmail(),
                         paymentSuccessUrl, // successUrl
                         paymentCancelUrl, // cancelUrl
-                        null
-                        // booking.getId().toString()
+                        null,
+                        systemId,
+                        booking.getId().toString(),
+                        metadata
                 );
 
                 String paymentEndpoint = "/api/v1/payments/direct";

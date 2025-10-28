@@ -1,6 +1,7 @@
 package com.example.cdr.eventsmanagementsystem.DTO.Payment;
 
 import java.math.BigDecimal;
+import java.util.Map;
 
 /**
  * This class is used to send the first payment request.
@@ -43,5 +44,8 @@ public record FirstPaymentRequest(
         String email,
         String successUrl,
         String cancelUrl,
-        String id
+        String id,
+        String systemId, 
+        String bookingId,
+        Map<String, String> metadata
 ) {}
