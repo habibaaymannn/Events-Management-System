@@ -1,23 +1,39 @@
 package com.example.cdr.eventsmanagementsystem.Controller.BookingController;
 
-import com.example.cdr.eventsmanagementsystem.DTO.Booking.Request.BookingCancelRequest;
-import com.example.cdr.eventsmanagementsystem.DTO.Booking.Request.EventBookingRequest;
-import com.example.cdr.eventsmanagementsystem.DTO.Booking.Response.EventBookingResponse;
-import com.example.cdr.eventsmanagementsystem.Model.Booking.BookingStatus;
-import com.example.cdr.eventsmanagementsystem.Service.Booking.EventBookingService;
-import io.swagger.v3.oas.annotations.Operation;
-import io.swagger.v3.oas.annotations.tags.Tag;
-import lombok.RequiredArgsConstructor;
 import org.springdoc.core.annotations.ParameterObject;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.web.PageableDefault;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
-import org.springframework.web.bind.annotation.*;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RestController;
 
-import static com.example.cdr.eventsmanagementsystem.Constants.ControllerConstants.BookingControllerConstants.*;
-import static com.example.cdr.eventsmanagementsystem.Constants.ControllerConstants.RoleConstants.*;
+import static com.example.cdr.eventsmanagementsystem.Constants.ControllerConstants.BookingControllerConstants.CANCEL_BOOKING;
+import static com.example.cdr.eventsmanagementsystem.Constants.ControllerConstants.BookingControllerConstants.CREATE_BOOKING;
+import static com.example.cdr.eventsmanagementsystem.Constants.ControllerConstants.BookingControllerConstants.EVENT_BOOKING;
+import static com.example.cdr.eventsmanagementsystem.Constants.ControllerConstants.BookingControllerConstants.GET_ALL;
+import static com.example.cdr.eventsmanagementsystem.Constants.ControllerConstants.BookingControllerConstants.GET_BOOKING_BY_ATTENDEE_ID;
+import static com.example.cdr.eventsmanagementsystem.Constants.ControllerConstants.BookingControllerConstants.GET_BOOKING_BY_EVENT_ID;
+import static com.example.cdr.eventsmanagementsystem.Constants.ControllerConstants.BookingControllerConstants.GET_BOOKING_BY_ID;
+import static com.example.cdr.eventsmanagementsystem.Constants.ControllerConstants.BookingControllerConstants.UPDATE_BOOKING_STATUS;
+import static com.example.cdr.eventsmanagementsystem.Constants.ControllerConstants.RoleConstants.ADMIN_ROLE;
+import static com.example.cdr.eventsmanagementsystem.Constants.ControllerConstants.RoleConstants.ATTENDEE_ROLE;
+import static com.example.cdr.eventsmanagementsystem.Constants.ControllerConstants.RoleConstants.ORGANIZER_ROLE;
+import com.example.cdr.eventsmanagementsystem.DTO.Booking.Request.BookingCancelRequest;
+import com.example.cdr.eventsmanagementsystem.DTO.Booking.Request.EventBookingRequest;
+import com.example.cdr.eventsmanagementsystem.DTO.Booking.Response.EventBookingResponse;
+import com.example.cdr.eventsmanagementsystem.Model.Booking.BookingStatus;
+import com.example.cdr.eventsmanagementsystem.Service.Booking.EventBookingService;
+
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.tags.Tag;
+import lombok.RequiredArgsConstructor;
 
 /**
  * REST controller for booking.
@@ -63,7 +79,7 @@ public class EventBookingController {
         return ResponseEntity.ok(response);
     }
 
-    @Operation(summary = "Create an event booking", description = "Creates a new event booking for an attendee. Creates a new event booking for an attendee. Use 'authorizeOnly=true' for 'Reserve Now, Pay Later' or 'authorizeOnly=false' for immediate payment.")
+    @Operation(summary = "Create an event booking", description = "Creates a new event booking and initiates payment via the external payment service.")
     @PostMapping(CREATE_BOOKING)
     @PreAuthorize("hasAnyRole('" + ATTENDEE_ROLE + "', '" + ADMIN_ROLE + "')")
     public ResponseEntity<EventBookingResponse> createBooking(@RequestBody EventBookingRequest request) {

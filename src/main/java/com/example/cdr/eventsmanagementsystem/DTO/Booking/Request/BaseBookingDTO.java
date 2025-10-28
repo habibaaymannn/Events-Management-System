@@ -12,4 +12,5 @@ public abstract class BaseBookingDTO {
     protected String currency = "usd";
     protected BigDecimal amount;
     protected Boolean isCaptured; // true = "Pay Now", false = "Reserve Now, Pay Later"
+    protected String paymentProvider;
 }

@@ -1,0 +1,71 @@
+{
+  "namespace": "com.ittovative.ems.payment.avro",
+  "type": "record",
+  "name": "PaymentStatusEvent",
+  "doc": "Generic payment status event for multiple payment providers",
+  "fields": [
+    {
+      "name": "systemId",
+      "type": "string",
+      "doc": "Identifier for the source system"
+    },
+    {
+      "name": "bookingId", 
+      "type": "string",
+      "doc": "Unique identifier for the booking in EMS"
+    },
+    {
+      "name": "paymentStatus",
+      "type": {
+        "type": "enum",
+        "name": "PaymentStatus",
+        "symbols": ["SUCCEEDED", "FAILED", "REFUNDED", "CANCELLED", "PENDING", "EXPIRED", "PARTIALLY_REFUNDED"]
+      },
+      "doc": "Current status of the payment"
+    },
+    {
+      "name": "paymentProvider",
+      "type": {
+        "type": "enum", 
+        "name": "PaymentProvider",
+        "symbols": ["STRIPE", "AYDEN", "PAYPAL"]
+      },
+      "doc": "Payment provider identifier"
+    },
+    {
+      "name": "referenceId",
+      "type": "string",
+      "doc": "Transaction ID from the payment provider"
+    },
+    {
+      "name": "amount",
+      "type": "string",
+      "doc": "Payment amount as string"
+    },
+    {
+      "name": "currency",
+      "type": "string",
+      "doc": "Currency code (e.g., USD, EUR)"
+    },
+    {
+      "name": "timestamp",
+      "type": "long",
+      "doc": "Event timestamp in milliseconds since epoch"
+    },
+    {
+      "name": "failureReason",
+      "type": ["null", "string"],
+      "default": null,
+      "doc": "Generic failure reason if payment failed"
+    },
+    {
+      "name": "metadata",
+      "type": ["null", {
+        "type": "map",
+        "values": "string"
+      }],
+      "default": null,
+      "doc": "Additional metadata including bookingType and other custom fields"
+    }
+  ]
+}

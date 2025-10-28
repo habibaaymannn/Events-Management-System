@@ -6,14 +6,28 @@ spring:
 
   servlet:
     multipart:
-      max-file-size: 10MB        
-      max-request-size: 50MB     
+      max-file-size: 10MB
+      max-request-size: 50MB
       enabled: true
 
   datasource:
     username: ${DB_USERNAME}
     password: ${DB_PASSWORD}
     driver-class-name: org.postgresql.Driver
+
+  kafka:
+    bootstrap-servers: ${SPRING_KAFKA_BOOTSTRAP_SERVERS:localhost:9092}
+    consumer:
+      group-id: events-management-system-group
+      auto-offset-reset: earliest
+      key-deserializer: org.apache.kafka.common.serialization.StringDeserializer
+      value-deserializer: io.confluent.kafka.serializers.KafkaAvroDeserializer
+      enable-auto-commit: false
+      properties:
+        specific.avro.reader: true
+        schema.registry.url: ${KAFKA_SCHEMA_REGISTRY_URL:http://localhost:8081}
+    listener:
+      ack-mode: manual_immediate
 
   mail:
     host: smtp.gmail.com
@@ -30,8 +44,8 @@ spring:
           connectiontimeout: 10000
           timeout: 10000
           writetimeout: 10000
-        debug: false            # set true temporarily to troubleshoot SMTP
-    test-connection: false      # set true to fail fast if SMTP creds are wrong
+        debug: false # set true temporarily to troubleshoot SMTP
+    test-connection: false # set true to fail fast if SMTP creds are wrong
 
   oauth2:
     resourceserver:
@@ -48,17 +62,24 @@ server:
 app:
   name: Events Management System
   mail:
-    from: ${MAIL_FROM:${spring.mail.username}}   # default to the same Gmail sender
-  supportEmail: ${SUPPORT_EMAIL:${spring.mail.username}}  # fallback to sender
+    from: ${MAIL_FROM:${spring.mail.username}} # default to the same Gmail sender
+  supportEmail: ${SUPPORT_EMAIL:${spring.mail.username}} # fallback to sender
   payment:
     return-url: http://localhost:8180/v1/payments/confirm
     webhook-secret: ${STRIPE_WEBHOOK_SECRET:}
+    service-url: ${PAYMENT_SERVICE_URL:http://localhost:8082}
+    enabled: ${PAYMENT_SERVICE_ENABLED:true}
+    success-url: ${PAYMENT_SUCCESS_URL:http://localhost:8080/api/v1/bookings/success}
+    cancel-url: ${PAYMENT_CANCEL_URL:http://localhost:8080/api/v1/bookings/cancel}
   booking:
     free-cancel-days-before-start: 1
     penalty-percent: 0.
+  kafka:
+    topic:
+      payment-status: ${KAFKA_TOPIC_PAYMENT_STATUS:ems-payment-status-events}
 
 keycloak:
-  base-url: ${KEYCLOAK_BASE_URL}         # REQUIRED (dev: http://localhost:8080, docker: http://ems-keycloak:8080)
+  base-url: ${KEYCLOAK_BASE_URL} # REQUIRED (dev: http://localhost:8080, docker: http://ems-keycloak:8080)
   realm: ${KEYCLOAK_REALM:EMS-realm}
   # internal URL used INSIDE Docker (backend -> keycloak)
   internalBaseUrl: ${KEYCLOAK_BASE_URL:http://keycloak:8080}
@@ -68,10 +89,18 @@ keycloak:
   frontendClientId: ${KEYCLOAK_FRONTEND_CLIENT_ID:ems-frontend}
   postActionRedirectUri: ${FRONTEND_REDIRECT_URI:http://localhost:3000/password-updated}
   admin:
-    client-id: ${KEYCLOAK_ADMIN_CLIENT_ID}               # REQUIRED
-    client-secret: ${KEYCLOAK_ADMIN_CLIENT_SECRET:}      # optional in user/password mode
-    username: ${KEYCLOAK_ADMIN_USERNAME:}                # fill if you want backend to act as admin user
+    client-id: ${KEYCLOAK_ADMIN_CLIENT_ID} # REQUIRED
+    client-secret: ${KEYCLOAK_ADMIN_CLIENT_SECRET:} # optional in user/password mode
+    username: ${KEYCLOAK_ADMIN_USERNAME:} # fill if you want backend to act as admin user
     password: ${KEYCLOAK_ADMIN_PASSWORD:}
   create:
     email-verified: false
     password-temporary: false
+management:
+  endpoint:
+    health:
+      show-details: always
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics

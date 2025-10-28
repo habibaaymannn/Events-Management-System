@@ -2,8 +2,13 @@ package com.example.cdr.eventsmanagementsystem.Model.Booking;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
+
 import com.example.cdr.eventsmanagementsystem.Util.BaseEntity;
-import jakarta.persistence.*;
+
+import jakarta.persistence.Column;
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
+import jakarta.persistence.MappedSuperclass;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
@@ -43,4 +48,6 @@ public abstract class Booking extends BaseEntity {
     private String cancellationReason;
     private LocalDateTime cancelledAt;
     private String cancelledBy;
+
+    private String paymentProvider;
 }
